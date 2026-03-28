@@ -1,5 +1,7 @@
 import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
+import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -27,13 +29,20 @@ class _LoginPageState extends State<LoginPage> {
   void _submit() {
     FocusScope.of(context).unfocus();
 
+    if (kDebugMode) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const TimeClockPage()));
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Login validado. Conecte sua autenticação aqui.'),
+        content: Text('Login validado. Conecte a autenticacao real aqui.'),
       ),
     );
   }
@@ -41,9 +50,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline: 'Acesso rápido para quem precisa entrar e continuar.',
+      brandHeadline: 'Acesso rapido para quem precisa entrar e continuar.',
       brandDescription:
-          'Uma base de login limpa, escalável e coerente com o tema global do aplicativo.',
+          'Uma base de login limpa, escalavel e coerente com o tema global do aplicativo.',
       brandTags: const ['Tema unificado', 'Pronto para API', 'Responsivo'],
       formPanel: _buildLoginPanel(context),
     );
@@ -80,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'O cadastro nesta plataforma é exclusivo para empresas com CNPJ.',
+              'O cadastro nesta plataforma e exclusivo para empresas com CNPJ.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 height: 1.4,
@@ -93,7 +102,7 @@ class _LoginPageState extends State<LoginPage> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'E-mail',
-                hintText: 'você@empresa.com',
+                hintText: 'voce@empresa.com',
                 prefixIcon: Icon(Icons.alternate_email_rounded),
               ),
               validator: (value) {
@@ -102,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                 }
 
                 if (!value.contains('@') || !value.contains('.')) {
-                  return 'Digite um e-mail válido.';
+                  return 'Digite um e-mail valido.';
                 }
 
                 return null;
@@ -186,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Sua empresa ainda não tem conta?',
+                    'Sua empresa ainda nao tem conta?',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
