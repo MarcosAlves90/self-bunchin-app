@@ -5,6 +5,7 @@ class AppTheme {
   AppTheme._();
 
   static const Color accent = Color(0xFFFFB020);
+  static const BorderRadius _radius = BorderRadius.zero;
 
   static const Color _lightBackground = Color(0xFFFAFAF7);
   static const Color _lightSurface = Color(0xFFFFFFFF);
@@ -102,9 +103,7 @@ class AppTheme {
         color: colorScheme.surfaceContainerHighest,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       dividerTheme: DividerThemeData(
         color: colorScheme.outlineVariant,
@@ -119,15 +118,15 @@ class AppTheme {
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: _radius,
           borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: _radius,
           borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: _radius,
           borderSide: const BorderSide(color: accent, width: 1.5),
         ),
       ),
@@ -137,9 +136,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(52),
           backgroundColor: accent,
           foregroundColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: _radius),
           textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -150,9 +147,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(52),
           foregroundColor: colorScheme.onSurface,
           side: BorderSide(color: colorScheme.outlineVariant),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: _radius),
           textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -162,7 +157,7 @@ class AppTheme {
         backgroundColor: accent,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       chipTheme: baseTheme.chipTheme.copyWith(
         backgroundColor: colorScheme.surfaceContainerHighest,
@@ -172,9 +167,7 @@ class AppTheme {
         secondaryLabelStyle: textTheme.labelLarge?.copyWith(
           color: colorScheme.onSurface,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -182,16 +175,12 @@ class AppTheme {
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: colorScheme.onInverseSurface,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colorScheme.surface,
         modalBackgroundColor: colorScheme.surface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: _radius),
       ),
     );
   }
