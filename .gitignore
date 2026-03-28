@@ -1,45 +1,87 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# OS / Editor
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
 .atom/
-.build/
-.buildlog/
 .history
 .svn/
 .swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
+.vscode/
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-.vscode/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# Env / Secrets
+.env
+.env.*
+!.env.example
 
-# Symbolication related
-app.*.symbols
+# Generic build outputs
+build/
+dist/
+coverage/
+migrate_working_dir/
 
-# Obfuscation related
-app.*.map.json
+# Monorepo: Frontend (Flutter)
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub/
+frontend/.pub-cache/
+frontend/build/
+frontend/coverage/
+frontend/**/doc/api/
+frontend/**/ios/Flutter/.last_build_id
+frontend/**/Flutter/ephemeral/
+frontend/**/Flutter/Generated.xcconfig
+frontend/**/Flutter/flutter_export_environment.sh
+frontend/**/.symlinks/
+frontend/**/Pods/
+frontend/**/generated_plugin_registrant.dart
+frontend/android/app/debug/
+frontend/android/app/profile/
+frontend/android/app/release/
+frontend/app.*.symbols
+frontend/app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Monorepo: Backend (Python)
+backend/.venv/
+backend/venv/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.hypothesis/
+backend/.tox/
+backend/.nox/
+backend/.cache/
+backend/.coverage
+backend/.coverage.*
+backend/htmlcov/
+backend/build/
+backend/dist/
+backend/*.egg-info/
+backend/.python-version
+
+# Monorepo: Backend (Node/TypeScript)
+backend/node_modules/
+backend/.npm/
+backend/.pnpm-store/
+backend/.yarn/
+backend/.next/
+backend/.nuxt/
+backend/.svelte-kit/
+backend/.turbo/
+backend/*.tsbuildinfo
