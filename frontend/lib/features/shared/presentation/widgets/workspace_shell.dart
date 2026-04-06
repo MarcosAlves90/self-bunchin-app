@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
+import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -22,6 +24,7 @@ class WorkspaceScaffold extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      drawer: _AppNavigationDrawer(),
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -109,11 +112,149 @@ class WorkspaceScaffold extends StatelessWidget {
   }
 
   Widget _buildNarrowLayout(BuildContext context, BoxConstraints constraints) {
-    return SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: Column(
-          children: <Widget>[sidebar, contentBuilder(context, false)],
+    return Column(
+      children: <Widget>[
+        sidebar,
+        Expanded(
+          child: SingleChildScrollView(child: contentBuilder(context, false)),
+        ),
+      ],
+    );
+  }
+}
+
+class _AppNavigationDrawer extends StatelessWidget {
+  const _AppNavigationDrawer();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Drawer(
+      width: 280,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      backgroundColor: colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+            decoration: BoxDecoration(color: AppTheme.accent),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.fingerprint_rounded,
+                    size: 32,
+                    color: AppTheme.accent,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'BUNCHIN',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.onPrimary,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  'CONTROLE DE PONTO',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.6),
+                    letterSpacing: 1,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildDrawerItem(
+            context,
+            icon: Icons.timer_outlined,
+            label: 'Bater Ponto',
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(builder: (_) => const TimeClockPage()),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.groups_2_rounded,
+            label: 'Administrar Equipe',
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminEmployeesPage(),
+                ),
+              );
+            },
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.logout_rounded,
+            label: 'Sair do Sistema',
+            color: colorScheme.error,
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    Color? color,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final finalColor = color ?? colorScheme.onSurface.withValues(alpha: 0.8);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 24, color: finalColor),
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: finalColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -140,70 +281,175 @@ class WorkspaceSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isWide = MediaQuery.of(context).size.width >= 1080;
+
+    if (!isWide) {
+      return _buildMobileHeader(context);
+    }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+      padding: const EdgeInsets.fromLTRB(28, 20, 28, 40),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            AppTheme.accent.withValues(alpha: 0.96),
-            const Color(0xFFE28E00),
-          ],
+        color: AppTheme.accent,
+        border: Border(
+          right: BorderSide(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-            ),
-            child: Text(
-              brandLabel,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimary,
-                letterSpacing: 2.4,
-                fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => Scaffold.of(context).openDrawer(),
+                icon: Icon(Icons.menu_rounded, color: colorScheme.onPrimary),
+                tooltip: 'Abrir menu',
+                visualDensity: VisualDensity.compact,
               ),
-            ),
+              const SizedBox(width: 8),
+              Text(
+                brandLabel,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 48),
           Text(
             title,
             style: theme.textTheme.displaySmall?.copyWith(
               color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w700,
-              height: 1.02,
+              fontWeight: FontWeight.w900,
+              height: 1.1,
+              letterSpacing: -0.8,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
+          Container(
+            width: 48,
+            height: 6,
+            decoration: BoxDecoration(
+              color: colorScheme.onPrimary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 24),
           Text(
             description,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.92),
+              color: colorScheme.onPrimary.withValues(alpha: 0.8),
               height: 1.55,
+              fontWeight: FontWeight.w500,
             ),
           ),
           if (summaryChildren.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 28),
-            for (
-              var index = 0;
-              index < summaryChildren.length;
-              index++
-            ) ...<Widget>[
-              if (index > 0) const SizedBox(height: 16),
-              summaryChildren[index],
-            ],
+            const SizedBox(height: 48),
+            Text(
+              'RESUMO',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onPrimary.withValues(alpha: 0.5),
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...summaryChildren.map(
+              (w) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DefaultTextStyle.merge(
+                  style: TextStyle(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  child: w,
+                ),
+              ),
+            ),
           ],
           if (highlightChips.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 32),
-            Wrap(spacing: 12, runSpacing: 12, children: highlightChips),
+            const SizedBox(height: 24),
+            Theme(
+              data: theme.copyWith(
+                chipTheme: theme.chipTheme.copyWith(
+                  backgroundColor: Colors.black.withValues(alpha: 0.1),
+                  labelStyle: TextStyle(color: colorScheme.onPrimary),
+                ),
+              ),
+              child: Wrap(spacing: 8, runSpacing: 8, children: highlightChips),
+            ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildMobileHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+      decoration: BoxDecoration(
+        color: AppTheme.accent,
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.black.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              icon: Icon(Icons.menu_rounded, color: colorScheme.onPrimary),
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              brandLabel,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title.split(' ').first,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.account_circle,
+                    color: colorScheme.onPrimary,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

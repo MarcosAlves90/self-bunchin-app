@@ -34,6 +34,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return _employees.where((employee) {
+      // Don't show the current user in the admin list
+      if (employee.name == 'Marina Costa') {
+        return false;
+      }
+
       final matchesFilter = switch (_filter) {
         _EmployeeFilter.all => true,
         _EmployeeFilter.active => employee.status == _EmployeeStatus.active,
@@ -288,13 +293,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             description:
                 'Visualize funcionários, revise pendências operacionais e ajuste cadastros sem sair do contexto do produto.',
             maxContentWidth: 620,
-            actions: <Widget>[
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Voltar'),
-              ),
-            ],
           ),
           const SizedBox(height: 28),
           _buildHeroCard(isWide),

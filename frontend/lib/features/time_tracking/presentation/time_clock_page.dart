@@ -448,24 +448,6 @@ class _TimeClockPageState extends State<TimeClockPage> {
             description:
                 'Registre sua jornada com um fluxo direto, auditável e com coordenadas anexadas para validação operacional.',
             maxContentWidth: 520,
-            actions: <Widget>[
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const AdminEmployeesPage(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.groups_2_rounded),
-                label: const Text('Administrar equipe'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Voltar'),
-              ),
-            ],
           ),
           const SizedBox(height: 28),
           _buildHeroCard(isWide),
@@ -681,7 +663,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
               unawaited(_handlePunch(_PunchType.checkOut));
             },
       icon: const Icon(Icons.logout_rounded),
-      label: const Text('Registrar saía'),
+      label: const Text('Registrar saída'),
     );
   }
 
@@ -832,7 +814,7 @@ class _PunchRecord {
       _PunchType.checkIn => 'Entrada',
       _PunchType.breakStart => 'Pausa',
       _PunchType.breakEnd => 'Retorno',
-      _PunchType.checkOut => 'Saía',
+      _PunchType.checkOut => 'Saída',
     };
   }
 
