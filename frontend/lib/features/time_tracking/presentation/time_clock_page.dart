@@ -16,18 +16,18 @@ class TimeClockPage extends StatefulWidget {
 class _TimeClockPageState extends State<TimeClockPage> {
   static const List<String> _weekdays = <String>[
     'segunda-feira',
-    'terÃ§a-feira',
+    'terça-feira',
     'quarta-feira',
     'quinta-feira',
     'sexta-feira',
-    'sÃ¡bado',
+    'sábado',
     'domingo',
   ];
 
   static const List<String> _months = <String>[
     'janeiro',
     'fevereiro',
-    'marÃ§o',
+    'março',
     'abril',
     'maio',
     'junho',
@@ -142,7 +142,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
         _PunchRecord(
           type: _PunchType.breakEnd,
           timestamp: startOfDay.add(const Duration(hours: 12, minutes: 58)),
-          detail: 'Retorno validado sem inconsistÃªncias',
+          detail: 'Retorno validado sem inconsistências',
         ),
       );
     }
@@ -152,7 +152,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
         _PunchRecord(
           type: _PunchType.checkOut,
           timestamp: startOfDay.add(const Duration(hours: 18, minutes: 2)),
-          detail: 'SaÃ­da registrada para encerramento do turno',
+          detail: 'Saída registrada para encerramento do turno',
         ),
       );
     }
@@ -182,10 +182,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
     required PunchLocationSnapshot location,
   }) {
     final detail = switch (type) {
-      _PunchType.checkIn => 'Entrada registrada com localizaÃ§Ã£o validada',
-      _PunchType.breakStart => 'Pausa iniciada com localizaÃ§Ã£o capturada',
-      _PunchType.breakEnd => 'Jornada retomada com localizaÃ§Ã£o capturada',
-      _PunchType.checkOut => 'SaÃ­da registrada com localizaÃ§Ã£o validada',
+      _PunchType.checkIn => 'Entrada registrada com localização validada',
+      _PunchType.breakStart => 'Pausa iniciada com localização capturada',
+      _PunchType.breakEnd => 'Jornada retomada com localização capturada',
+      _PunchType.checkOut => 'Saída registrada com localização validada',
     };
 
     setState(() {
@@ -203,7 +203,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$detail. Coordenadas anexadas Ã  auditoria.')),
+      SnackBar(content: Text('$detail. Coordenadas anexadas à auditoria.')),
     );
   }
 
@@ -319,10 +319,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
   String _statusDescription() {
     return switch (_status) {
       _ShiftStatus.checkedOut =>
-        'Nenhuma jornada ativa. O prÃ³ximo registro deve ser a entrada.',
+        'Nenhuma jornada ativa. O próximo registro deve ser a entrada.',
       _ShiftStatus.working => 'Jornada em andamento com dispositivo validado.',
       _ShiftStatus.onBreak =>
-        'Pausa aberta. O prÃ³ximo registro recomendado Ã© o retorno.',
+        'Pausa aberta. O próximo registro recomendado é o retorno.',
     };
   }
 
@@ -336,25 +336,25 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   String _locationStatusLabel() {
     return switch (_locationState.status) {
-      PunchLocationStatus.checking => 'Validando localizaÃ§Ã£o',
+      PunchLocationStatus.checking => 'Validando localização',
       PunchLocationStatus.ready =>
         _lastRegisteredLocation == null
-            ? 'PermissÃ£o ativa'
-            : 'LocalizaÃ§Ã£o pronta',
-      PunchLocationStatus.serviceDisabled => 'LocalizaÃ§Ã£o desativada',
-      PunchLocationStatus.permissionDenied => 'PermissÃ£o negada',
-      PunchLocationStatus.permissionDeniedForever => 'PermissÃ£o bloqueada',
-      PunchLocationStatus.unsupported => 'GeolocalizaÃ§Ã£o indisponÃ­vel',
-      PunchLocationStatus.error => 'Falha de localizaÃ§Ã£o',
+            ? 'Permissão ativa'
+            : 'Localização pronta',
+      PunchLocationStatus.serviceDisabled => 'Localização desativada',
+      PunchLocationStatus.permissionDenied => 'Permissão negada',
+      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
+      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
+      PunchLocationStatus.error => 'Falha de localização',
     };
   }
 
   String _locationActionLabel() {
     return switch (_locationState.status) {
       PunchLocationStatus.checking => 'Atualizando',
-      PunchLocationStatus.ready => 'Atualizar permissÃ£o',
+      PunchLocationStatus.ready => 'Atualizar permissão',
       PunchLocationStatus.serviceDisabled => 'Tentar novamente',
-      PunchLocationStatus.permissionDenied => 'Solicitar permissÃ£o',
+      PunchLocationStatus.permissionDenied => 'Solicitar permissão',
       PunchLocationStatus.permissionDeniedForever => 'Revalidar acesso',
       PunchLocationStatus.unsupported => 'Tentar novamente',
       PunchLocationStatus.error => 'Tentar novamente',
@@ -387,13 +387,13 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   String _locationChipLabel() {
     return switch (_locationState.status) {
-      PunchLocationStatus.ready => 'GeolocalizaÃ§Ã£o pronta',
-      PunchLocationStatus.checking => 'Validando permissÃ£o',
-      PunchLocationStatus.serviceDisabled => 'Ative a localizaÃ§Ã£o',
-      PunchLocationStatus.permissionDenied => 'PermissÃ£o pendente',
-      PunchLocationStatus.permissionDeniedForever => 'PermissÃ£o bloqueada',
-      PunchLocationStatus.unsupported => 'GeolocalizaÃ§Ã£o indisponÃ­vel',
-      PunchLocationStatus.error => 'Falha de localizaÃ§Ã£o',
+      PunchLocationStatus.ready => 'Geolocalização pronta',
+      PunchLocationStatus.checking => 'Validando permissão',
+      PunchLocationStatus.serviceDisabled => 'Ative a localização',
+      PunchLocationStatus.permissionDenied => 'Permissão pendente',
+      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
+      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
+      PunchLocationStatus.error => 'Falha de localização',
     };
   }
 
@@ -409,7 +409,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     return WorkspaceSidebar(
       title: 'Ponto digital em tempo real.',
       description:
-          'Uma tela operacional para registrar entrada, pausa e saÃ­da com localizaÃ§Ã£o vinculada a cada batida.',
+          'Uma tela operacional para registrar entrada, pausa e saída com localização vinculada a cada batida.',
       summaryChildren: <Widget>[
         WorkspaceSummaryStripe(
           label: 'Status',
@@ -417,12 +417,12 @@ class _TimeClockPageState extends State<TimeClockPage> {
           helper: _statusDescription(),
         ),
         const WorkspaceSummaryStripe(
-          label: 'FuncionÃ¡rio',
+          label: 'Funcionário',
           value: 'Marina Costa',
-          helper: 'OperaÃ§Ãµes Â· Unidade Paulista',
+          helper: 'Operações · Unidade Paulista',
         ),
         WorkspaceSummaryStripe(
-          label: 'Ãšltima batida',
+          label: 'Última batida',
           value: _lastRecord == null
               ? '--:--'
               : _formatTime(_lastRecord!.timestamp),
@@ -431,8 +431,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
       ],
       highlightChips: <Widget>[
         WorkspaceHighlightChip(label: _locationChipLabel()),
-        const WorkspaceHighlightChip(label: 'Dispositivo confiÃ¡vel'),
-        const WorkspaceHighlightChip(label: 'Jornada auditÃ¡vel'),
+        const WorkspaceHighlightChip(label: 'Dispositivo confiável'),
+        const WorkspaceHighlightChip(label: 'Jornada auditável'),
       ],
     );
   }
@@ -446,7 +446,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           WorkspaceHeader(
             title: 'Bater ponto',
             description:
-                'Registre sua jornada com um fluxo direto, auditÃ¡vel e com coordenadas anexadas para validaÃ§Ã£o operacional.',
+                'Registre sua jornada com um fluxo direto, auditável e com coordenadas anexadas para validação operacional.',
             maxContentWidth: 520,
             actions: <Widget>[
               OutlinedButton.icon(
@@ -608,7 +608,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           if (lastLocation != null) ...[
             const SizedBox(height: 10),
             Text(
-              'Ãšltima coordenada auditada: ${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)} | precisÃ£o ${_formatAccuracy(lastLocation.accuracyMeters)}',
+              'Última coordenada auditada: ${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)} | precisão ${_formatAccuracy(lastLocation.accuracyMeters)}',
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
             ),
           ],
@@ -670,7 +670,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
       return OutlinedButton.icon(
         onPressed: null,
         icon: const Icon(Icons.logout_rounded),
-        label: const Text('Registrar saÃ­da'),
+        label: const Text('Registrar saída'),
       );
     }
 
@@ -681,7 +681,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
               unawaited(_handlePunch(_PunchType.checkOut));
             },
       icon: const Icon(Icons.logout_rounded),
-      label: const Text('Registrar saÃ­da'),
+      label: const Text('Registrar saía'),
     );
   }
 
@@ -719,13 +719,13 @@ class _TimeClockPageState extends State<TimeClockPage> {
                 value: _firstCheckIn == null
                     ? '--:--'
                     : _formatTime(_firstCheckIn!.timestamp),
-                helper: 'Primeiro registro vÃ¡lido de hoje',
+                helper: 'Primeiro registro válido de hoje',
               ),
             ),
             SizedBox(
               width: width,
               child: WorkspaceMetricCard(
-                label: 'Ãšltimo evento',
+                label: 'Útimo evento',
                 value: _lastRecord == null
                     ? '--:--'
                     : _formatTime(_lastRecord!.timestamp),
@@ -754,7 +754,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'HistÃ³rico cronolÃ³gico das batidas com contexto suficiente para auditoria operacional.',
+            'Histórico cronolóco das batidas com contexto suficiente para auditoria operacional.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -790,15 +790,15 @@ class _TimeClockPageState extends State<TimeClockPage> {
         spacing: 12,
         runSpacing: 12,
         children: [
-          _InfoFlag(label: 'PermissÃ£o', value: _locationStatusLabel()),
+          _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
           _InfoFlag(
-            label: 'Ãšltima coordenada',
+            label: 'Última coordenada',
             value: lastLocation == null
                 ? 'Aguardando batida'
                 : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
           ),
           _InfoFlag(
-            label: 'PrecisÃ£o',
+            label: 'Precisã',
             value: lastLocation == null
                 ? '--'
                 : _formatAccuracy(lastLocation.accuracyMeters),
@@ -832,7 +832,7 @@ class _PunchRecord {
       _PunchType.checkIn => 'Entrada',
       _PunchType.breakStart => 'Pausa',
       _PunchType.breakEnd => 'Retorno',
-      _PunchType.checkOut => 'SaÃ­da',
+      _PunchType.checkOut => 'Saía',
     };
   }
 
@@ -901,7 +901,7 @@ class _TimelineTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'PrecisÃ£o estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
+                  'Precisã estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

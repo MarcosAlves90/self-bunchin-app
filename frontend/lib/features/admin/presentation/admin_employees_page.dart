@@ -135,7 +135,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${employee.name} foi adicionado a empresa.')),
+      SnackBar(content: Text('${employee.name} foi adicionado à empresa.')),
     );
   }
 
@@ -224,7 +224,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   String _workModeLabel(_EmployeeWorkMode workMode) {
     return switch (workMode) {
       _EmployeeWorkMode.onsite => 'Presencial',
-      _EmployeeWorkMode.hybrid => 'Hibrido',
+      _EmployeeWorkMode.hybrid => 'Híbrido',
       _EmployeeWorkMode.remote => 'Remoto',
     };
   }
@@ -233,7 +233,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     return switch (filter) {
       _EmployeeFilter.all => 'Todos',
       _EmployeeFilter.active => 'Ativos',
-      _EmployeeFilter.attention => 'Atencao',
+      _EmployeeFilter.attention => 'Atenção',
       _EmployeeFilter.inactive => 'Inativos',
     };
   }
@@ -270,8 +270,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         ),
       ],
       highlightChips: const <Widget>[
-        WorkspaceHighlightChip(label: 'Cadastro auditavel'),
-        WorkspaceHighlightChip(label: 'Politicas por equipe'),
+        WorkspaceHighlightChip(label: 'Cadastro auditável'),
+        WorkspaceHighlightChip(label: 'Políticas por equipe'),
         WorkspaceHighlightChip(label: 'Pronto para RH'),
       ],
     );
@@ -286,7 +286,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           WorkspaceHeader(
             title: 'Administrar equipe',
             description:
-                'Visualize funcionarios, revise pendencias operacionais e ajuste cadastros sem sair do contexto do produto.',
+                'Visualize funcionários, revise pendências operacionais e ajuste cadastros sem sair do contexto do produto.',
             maxContentWidth: 620,
             actions: <Widget>[
               OutlinedButton.icon(
@@ -335,7 +335,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     const WorkspaceStatusBadge(
-                      label: 'Administracao ativa',
+                      label: 'Administração ativa',
                       tone: Color(0xFF1F4E79),
                     ),
                     const SizedBox(height: 16),
@@ -348,7 +348,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '$_attentionEmployees colaboradores exigem revisao. O restante segue dentro das politicas configuradas.',
+                      '$_attentionEmployees colaboradores exigem revisão. O restante segue dentro das políticas configuradas.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         height: 1.45,
@@ -369,7 +369,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 child: ElevatedButton.icon(
                   onPressed: _openCreateEmployeeDialog,
                   icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: const Text('Novo funcionario'),
+                  label: const Text('Novo funcionário'),
                 ),
               ),
               SizedBox(
@@ -411,7 +411,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             SizedBox(
               width: width,
               child: WorkspaceMetricCard(
-                label: 'Funcionarios ativos',
+                label: 'Funcionários ativos',
                 value: _activeEmployees.toString(),
                 helper: 'Pessoas em jornada regular e com acesso liberado',
               ),
@@ -419,15 +419,15 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             SizedBox(
               width: width,
               child: WorkspaceMetricCard(
-                label: 'Geolocalizacao exigida',
+                label: 'Geolocalização exigida',
                 value: _locationTrackedEmployees.toString(),
-                helper: 'Perfis com validacao de local no registro de ponto',
+                helper: 'Perfis com validação de local no registro de ponto',
               ),
             ),
             SizedBox(
               width: width,
               child: WorkspaceMetricCard(
-                label: 'Itens em atencao',
+                label: 'Itens em atenção',
                 value: _attentionEmployees.toString(),
                 helper: 'Ajustes, onboarding ou perfis com risco operacional',
               ),
@@ -476,14 +476,14 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Funcionarios da empresa',
+            'Funcionários da empresa',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Busque, filtre e selecione perfis para editar dados mestres e politicas operacionais.',
+            'Busque, filtre e selecione perfis para editar dados mestres e políticas operacionais.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -497,7 +497,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               });
             },
             decoration: InputDecoration(
-              labelText: 'Buscar funcionario',
+              labelText: 'Buscar funcionário',
               hintText: 'Nome, cargo, unidade ou e-mail',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchQuery.isEmpty
@@ -542,7 +542,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Nenhum funcionario encontrado.',
+                    'Nenhum funcionário encontrado.',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -559,7 +559,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                   OutlinedButton.icon(
                     onPressed: _openCreateEmployeeDialog,
                     icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('Novo funcionario'),
+                    label: const Text('Novo funcionário'),
                   ),
                 ],
               ),
@@ -605,7 +605,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     if (employee == null) {
       return WorkspaceSectionCard(
         child: Text(
-          'Selecione um funcionario para ver o detalhe do cadastro.',
+          'Selecione um funcionário para ver o detalhe do cadastro.',
           style: theme.textTheme.bodyLarge?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -751,12 +751,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       _EmployeeProfile(
         id: 'emp-01',
         name: 'Marina Costa',
-        role: 'Coordenadora de Operacoes',
-        department: 'Operacoes',
+        role: 'Coordenadora de Operações',
+        department: 'Operações',
         email: 'marina.costa@bunchin.com',
         phone: '(11) 99123-1001',
         unit: 'Unidade Paulista',
-        expectedShift: '08:00 as 17:00',
+        expectedShift: '08:00 às 17:00',
         status: _EmployeeStatus.active,
         workMode: _EmployeeWorkMode.onsite,
         roleLevel: _RoleLevel.leadership,
@@ -766,7 +766,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         pendingAdjustments: 0,
         lastPunchAt: DateTime.now().subtract(const Duration(minutes: 12)),
         notes:
-            'Responsavel pela abertura da operacao e pela validacao das equipes presenciais.',
+            'Responsável pela abertura da operação e pela validação das equipes presenciais.',
       ),
       _EmployeeProfile(
         id: 'emp-02',
@@ -788,7 +788,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           const Duration(hours: 1, minutes: 8),
         ),
         notes:
-            'Acompanha admissoes, desligamentos e ajustes de cadastro dos funcionarios.',
+            'Acompanha admissões, desligamentos e ajustes de cadastro dos funcionários.',
       ),
       _EmployeeProfile(
         id: 'emp-03',
@@ -797,7 +797,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         department: 'Campo',
         email: 'bianca.nogueira@bunchin.com',
         phone: '(11) 97777-3030',
-        unit: 'Loja Santo Andre',
+        unit: 'Loja Santo André',
         expectedShift: '13:40 as 22:00',
         status: _EmployeeStatus.onLeave,
         workMode: _EmployeeWorkMode.onsite,
@@ -808,7 +808,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         pendingAdjustments: 1,
         lastPunchAt: DateTime.now().subtract(const Duration(days: 3, hours: 2)),
         notes:
-            'Afastada temporariamente. RH precisa revisar escala e substituicao da unidade.',
+            'Afastada temporariamente. RH precisa revisar escala e substituição da unidade.',
       ),
       _EmployeeProfile(
         id: 'emp-04',
@@ -828,17 +828,17 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         pendingAdjustments: 0,
         lastPunchAt: DateTime.now().subtract(const Duration(minutes: 34)),
         notes:
-            'Atua no app corporativo e em integracoes internas com foco em evolucao de produto.',
+            'Atua no app corporativo e em integrações internas com foco em evolução de produto.',
       ),
       _EmployeeProfile(
         id: 'emp-05',
-        name: 'Larissa Araujo',
+        name: 'Larissa Araújo',
         role: 'Assistente Administrativa',
         department: 'Financeiro',
         email: 'larissa.araujo@bunchin.com',
         phone: '(11) 95555-5050',
         unit: 'Backoffice Centro',
-        expectedShift: '08:30 as 17:30',
+        expectedShift: '08:30 às 17:30',
         status: _EmployeeStatus.onboarding,
         workMode: _EmployeeWorkMode.hybrid,
         roleLevel: _RoleLevel.staff,
@@ -848,7 +848,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         pendingAdjustments: 3,
         lastPunchAt: null,
         notes:
-            'Admissao em andamento. Falta concluir politica de localizacao e dispositivo confiavel.',
+            'Admissão em andamento. Falta concluir política de localização e dispositivo confiável.',
       ),
     ];
   }
@@ -1117,14 +1117,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    _isEditing ? 'Editar funcionario' : 'Novo funcionario',
+                    _isEditing ? 'Editar funcionário' : 'Novo funcionário',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Atualize dados mestres, politicas de ponto e contexto operacional do colaborador.',
+                    'Atualize dados mestres, políticas de ponto e contexto operacional do colaborador.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       height: 1.45,
@@ -1135,7 +1135,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     controller: _nameController,
                     label: 'Nome completo',
                     icon: Icons.person_outline_rounded,
-                    validatorMessage: 'Informe o nome do funcionario.',
+                    validatorMessage: 'Informe o nome do funcionário.',
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -1164,7 +1164,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                           value.trim().isEmpty ||
                           !value.contains('@') ||
                           !value.contains('.')) {
-                        return 'Informe um e-mail valido.';
+                        return 'Informe um e-mail válido.';
                       }
                       return null;
                     },
@@ -1181,7 +1181,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     controller: _unitController,
                     label: 'Unidade',
                     icon: Icons.location_city_outlined,
-                    validatorMessage: 'Informe a unidade de referencia.',
+                    validatorMessage: 'Informe a unidade de referência.',
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -1201,7 +1201,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     value: _requiresLocationOnPunch,
                     contentPadding: EdgeInsets.zero,
                     title: const Text(
-                      'Exigir localizacao no registro de ponto',
+                      'Exigir localização no registro de ponto',
                     ),
                     onChanged: (value) {
                       setState(() {
@@ -1212,7 +1212,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   SwitchListTile(
                     value: _trustedDeviceRequired,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Restringir a dispositivo confiavel'),
+                    title: const Text('Restringir a dispositivo confiável'),
                     onChanged: (value) {
                       setState(() {
                         _trustedDeviceRequired = value;
@@ -1242,8 +1242,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                           icon: const Icon(Icons.save_outlined),
                           label: Text(
                             _isEditing
-                                ? 'Salvar alteracoes'
-                                : 'Criar funcionario',
+                                ? 'Salvar alterações'
+                                : 'Criar funcionário',
                           ),
                         ),
                       ),

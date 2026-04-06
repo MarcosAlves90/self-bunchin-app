@@ -42,7 +42,7 @@ class _LoginPageState extends State<LoginPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Login validado. Conecte a autenticacao real aqui.'),
+        content: Text('Login validado. Conecte a autenticação real aqui.'),
       ),
     );
   }
@@ -50,9 +50,9 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline: 'Acesso rapido para quem precisa entrar e continuar.',
+      brandHeadline: 'Acesso rápido para quem precisa entrar e continuar.',
       brandDescription:
-          'Uma base de login limpa, escalavel e coerente com o tema global do aplicativo.',
+          'Uma base de login limpa, escalável e coerente com o tema global do aplicativo.',
       brandTags: const ['Tema unificado', 'Pronto para API', 'Responsivo'],
       formPanel: _buildLoginPanel(context),
     );
@@ -89,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'O cadastro nesta plataforma e exclusivo para empresas com CNPJ.',
+              'O cadastro nesta plataforma é exclusivo para empresas com CNPJ.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 height: 1.4,
@@ -111,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                 }
 
                 if (!value.contains('@') || !value.contains('.')) {
-                  return 'Digite um e-mail valido.';
+                  return 'Digite um e-mail válido.';
                 }
 
                 return null;
