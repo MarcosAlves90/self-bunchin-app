@@ -1,5 +1,4 @@
-import 'dart:ui';
-
+import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -241,230 +240,55 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              colorScheme.surface,
-              colorScheme.surfaceContainerHighest.withValues(alpha: 0.84),
-            ],
-          ),
-        ),
-        child: Stack(
-          children: <Widget>[
-            Positioned(
-              top: -120,
-              right: -40,
-              child: _AmbientGlow(
-                color: AppTheme.accent.withValues(alpha: 0.22),
-                size: 280,
-              ),
-            ),
-            Positioned(
-              bottom: -120,
-              left: -60,
-              child: _AmbientGlow(
-                color: colorScheme.secondary.withValues(alpha: 0.14),
-                size: 260,
-              ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= 1080;
-
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.74),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.6,
-                        ),
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.zero,
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: isWide
-                            ? _buildWideLayout(constraints)
-                            : _buildNarrowLayout(constraints),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWideLayout(BoxConstraints constraints) {
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 360,
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: _buildSummaryPanel(),
-            ),
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: _buildWorkspace(isWide: true),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNarrowLayout(BoxConstraints constraints) {
-    return SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: Column(
-          children: <Widget>[
-            _buildSummaryPanel(),
-            _buildWorkspace(isWide: false),
-          ],
-        ),
-      ),
+    return WorkspaceScaffold(
+      sidebar: _buildSummaryPanel(),
+      contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
     );
   }
 
   Widget _buildSummaryPanel() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: <Color>[
-            AppTheme.accent.withValues(alpha: 0.96),
-            const Color(0xFFE28E00),
-          ],
+    return WorkspaceSidebar(
+      title: 'Painel administrativo da empresa.',
+      description:
+          'Centralize equipe, onboarding e politicas operacionais em uma visao unica de gestao.',
+      summaryChildren: <Widget>[
+        const WorkspaceSummaryStripe(
+          label: 'Empresa',
+          value: 'Bunchin Servicos Digitais',
+          helper: '4 unidades e operacao com RH centralizado',
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-            ),
-            child: Text(
-              'BUNCHIN',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimary,
-                letterSpacing: 2.4,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'Painel administrativo da empresa.',
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w700,
-              height: 1.02,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Centralize equipe, onboarding e politicas operacionais em uma visao unica de gestao.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.92),
-              height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 28),
-          _SummaryStripe(
-            label: 'Empresa',
-            value: 'Bunchin Servicos Digitais',
-            helper: '4 unidades e operacao com RH centralizado',
-          ),
-          const SizedBox(height: 16),
-          _SummaryStripe(
-            label: 'Headcount',
-            value: '${_employees.length} funcionarios',
-            helper:
-                '$_activeEmployees ativos e $_leadershipEmployees liderancas cadastradas',
-          ),
-          const SizedBox(height: 16),
-          _SummaryStripe(
-            label: 'Pendencias',
-            value: '$_attentionEmployees em atencao',
-            helper: 'Onboarding, afastamentos e ajustes de ponto',
-          ),
-          const SizedBox(height: 32),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: const <Widget>[
-              _HighlightChip(label: 'Cadastro auditavel'),
-              _HighlightChip(label: 'Politicas por equipe'),
-              _HighlightChip(label: 'Pronto para RH'),
-            ],
-          ),
-        ],
-      ),
+        WorkspaceSummaryStripe(
+          label: 'Headcount',
+          value: '${_employees.length} funcionarios',
+          helper:
+              '$_activeEmployees ativos e $_leadershipEmployees liderancas cadastradas',
+        ),
+        WorkspaceSummaryStripe(
+          label: 'Pendencias',
+          value: '$_attentionEmployees em atencao',
+          helper: 'Onboarding, afastamentos e ajustes de ponto',
+        ),
+      ],
+      highlightChips: const <Widget>[
+        WorkspaceHighlightChip(label: 'Cadastro auditavel'),
+        WorkspaceHighlightChip(label: 'Politicas por equipe'),
+        WorkspaceHighlightChip(label: 'Pronto para RH'),
+      ],
     );
   }
 
   Widget _buildWorkspace({required bool isWide}) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: 12,
-            spacing: 12,
-            children: <Widget>[
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 620),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Administrar equipe',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Visualize funcionarios, revise pendencias operacionais e ajuste cadastros sem sair do contexto do produto.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          WorkspaceHeader(
+            title: 'Administrar equipe',
+            description:
+                'Visualize funcionarios, revise pendencias operacionais e ajuste cadastros sem sair do contexto do produto.',
+            maxContentWidth: 620,
+            actions: <Widget>[
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).maybePop(),
                 icon: const Icon(Icons.arrow_back_rounded),
@@ -487,7 +311,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -510,7 +334,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const _StatusBadge(
+                    const WorkspaceStatusBadge(
                       label: 'Administracao ativa',
                       tone: Color(0xFF1F4E79),
                     ),
@@ -578,7 +402,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           children: <Widget>[
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Total de colaboradores',
                 value: _employees.length.toString(),
                 helper: 'Base administrada pela empresa neste momento',
@@ -586,7 +410,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Funcionarios ativos',
                 value: _activeEmployees.toString(),
                 helper: 'Pessoas em jornada regular e com acesso liberado',
@@ -594,7 +418,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Geolocalizacao exigida',
                 value: _locationTrackedEmployees.toString(),
                 helper: 'Perfis com validacao de local no registro de ponto',
@@ -602,7 +426,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Itens em atencao',
                 value: _attentionEmployees.toString(),
                 helper: 'Ajustes, onboarding ou perfis com risco operacional',
@@ -647,7 +471,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final colorScheme = theme.colorScheme;
     final visibleEmployees = _visibleEmployees;
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -779,7 +603,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final employee = _selectedEmployee;
 
     if (employee == null) {
-      return _SectionCard(
+      return WorkspaceSectionCard(
         child: Text(
           'Selecione um funcionario para ver o detalhe do cadastro.',
           style: theme.textTheme.bodyLarge?.copyWith(
@@ -789,7 +613,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       );
     }
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -800,7 +624,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _StatusBadge(
+                    WorkspaceStatusBadge(
                       label: _statusLabel(employee.status),
                       tone: _statusColor(employee.status),
                     ),
@@ -1710,186 +1534,6 @@ class _EmployeeListTile extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.56),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.helper,
-  });
-
-  final String label;
-  final String value;
-  final String helper;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.78),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            helper,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryStripe extends StatelessWidget {
-  const _SummaryStripe({
-    required this.label,
-    required this.value,
-    required this.helper,
-  });
-
-  final String label;
-  final String value;
-  final String helper;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.1),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.9),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            helper,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.88),
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HighlightChip extends StatelessWidget {
-  const _HighlightChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.tone});
-
-  final String label;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.14),
-        border: Border.all(color: tone.withValues(alpha: 0.28)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: tone,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
 class _InfoFlag extends StatelessWidget {
   const _InfoFlag({required this.label, required this.value});
 
@@ -1969,29 +1613,6 @@ class _InlinePill extends StatelessWidget {
         style: theme.textTheme.labelMedium?.copyWith(
           color: tone,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _AmbientGlow extends StatelessWidget {
-  const _AmbientGlow({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: <Color>[color, color.withValues(alpha: 0)],
-          ),
         ),
       ),
     );

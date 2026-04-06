@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
+import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -16,18 +16,18 @@ class TimeClockPage extends StatefulWidget {
 class _TimeClockPageState extends State<TimeClockPage> {
   static const List<String> _weekdays = <String>[
     'segunda-feira',
-    'terça-feira',
+    'terÃ§a-feira',
     'quarta-feira',
     'quinta-feira',
     'sexta-feira',
-    'sábado',
+    'sÃ¡bado',
     'domingo',
   ];
 
   static const List<String> _months = <String>[
     'janeiro',
     'fevereiro',
-    'março',
+    'marÃ§o',
     'abril',
     'maio',
     'junho',
@@ -142,7 +142,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
         _PunchRecord(
           type: _PunchType.breakEnd,
           timestamp: startOfDay.add(const Duration(hours: 12, minutes: 58)),
-          detail: 'Retorno validado sem inconsistências',
+          detail: 'Retorno validado sem inconsistÃªncias',
         ),
       );
     }
@@ -152,7 +152,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
         _PunchRecord(
           type: _PunchType.checkOut,
           timestamp: startOfDay.add(const Duration(hours: 18, minutes: 2)),
-          detail: 'Saída registrada para encerramento do turno',
+          detail: 'SaÃ­da registrada para encerramento do turno',
         ),
       );
     }
@@ -182,10 +182,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
     required PunchLocationSnapshot location,
   }) {
     final detail = switch (type) {
-      _PunchType.checkIn => 'Entrada registrada com localização validada',
-      _PunchType.breakStart => 'Pausa iniciada com localização capturada',
-      _PunchType.breakEnd => 'Jornada retomada com localização capturada',
-      _PunchType.checkOut => 'Saída registrada com localização validada',
+      _PunchType.checkIn => 'Entrada registrada com localizaÃ§Ã£o validada',
+      _PunchType.breakStart => 'Pausa iniciada com localizaÃ§Ã£o capturada',
+      _PunchType.breakEnd => 'Jornada retomada com localizaÃ§Ã£o capturada',
+      _PunchType.checkOut => 'SaÃ­da registrada com localizaÃ§Ã£o validada',
     };
 
     setState(() {
@@ -203,7 +203,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$detail. Coordenadas anexadas à auditoria.')),
+      SnackBar(content: Text('$detail. Coordenadas anexadas Ã  auditoria.')),
     );
   }
 
@@ -319,10 +319,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
   String _statusDescription() {
     return switch (_status) {
       _ShiftStatus.checkedOut =>
-        'Nenhuma jornada ativa. O próximo registro deve ser a entrada.',
+        'Nenhuma jornada ativa. O prÃ³ximo registro deve ser a entrada.',
       _ShiftStatus.working => 'Jornada em andamento com dispositivo validado.',
       _ShiftStatus.onBreak =>
-        'Pausa aberta. O próximo registro recomendado é o retorno.',
+        'Pausa aberta. O prÃ³ximo registro recomendado Ã© o retorno.',
     };
   }
 
@@ -336,25 +336,25 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   String _locationStatusLabel() {
     return switch (_locationState.status) {
-      PunchLocationStatus.checking => 'Validando localização',
+      PunchLocationStatus.checking => 'Validando localizaÃ§Ã£o',
       PunchLocationStatus.ready =>
         _lastRegisteredLocation == null
-            ? 'Permissão ativa'
-            : 'Localização pronta',
-      PunchLocationStatus.serviceDisabled => 'Localização desativada',
-      PunchLocationStatus.permissionDenied => 'Permissão negada',
-      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
-      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
-      PunchLocationStatus.error => 'Falha de localização',
+            ? 'PermissÃ£o ativa'
+            : 'LocalizaÃ§Ã£o pronta',
+      PunchLocationStatus.serviceDisabled => 'LocalizaÃ§Ã£o desativada',
+      PunchLocationStatus.permissionDenied => 'PermissÃ£o negada',
+      PunchLocationStatus.permissionDeniedForever => 'PermissÃ£o bloqueada',
+      PunchLocationStatus.unsupported => 'GeolocalizaÃ§Ã£o indisponÃ­vel',
+      PunchLocationStatus.error => 'Falha de localizaÃ§Ã£o',
     };
   }
 
   String _locationActionLabel() {
     return switch (_locationState.status) {
       PunchLocationStatus.checking => 'Atualizando',
-      PunchLocationStatus.ready => 'Atualizar permissão',
+      PunchLocationStatus.ready => 'Atualizar permissÃ£o',
       PunchLocationStatus.serviceDisabled => 'Tentar novamente',
-      PunchLocationStatus.permissionDenied => 'Solicitar permissão',
+      PunchLocationStatus.permissionDenied => 'Solicitar permissÃ£o',
       PunchLocationStatus.permissionDeniedForever => 'Revalidar acesso',
       PunchLocationStatus.unsupported => 'Tentar novamente',
       PunchLocationStatus.error => 'Tentar novamente',
@@ -387,261 +387,83 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   String _locationChipLabel() {
     return switch (_locationState.status) {
-      PunchLocationStatus.ready => 'Geolocalização pronta',
-      PunchLocationStatus.checking => 'Validando permissão',
-      PunchLocationStatus.serviceDisabled => 'Ative a localização',
-      PunchLocationStatus.permissionDenied => 'Permissão pendente',
-      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
-      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
-      PunchLocationStatus.error => 'Falha de localização',
+      PunchLocationStatus.ready => 'GeolocalizaÃ§Ã£o pronta',
+      PunchLocationStatus.checking => 'Validando permissÃ£o',
+      PunchLocationStatus.serviceDisabled => 'Ative a localizaÃ§Ã£o',
+      PunchLocationStatus.permissionDenied => 'PermissÃ£o pendente',
+      PunchLocationStatus.permissionDeniedForever => 'PermissÃ£o bloqueada',
+      PunchLocationStatus.unsupported => 'GeolocalizaÃ§Ã£o indisponÃ­vel',
+      PunchLocationStatus.error => 'Falha de localizaÃ§Ã£o',
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.surface,
-              colorScheme.surfaceContainerHighest.withValues(alpha: 0.84),
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -120,
-              right: -40,
-              child: _AmbientGlow(
-                color: AppTheme.accent.withValues(alpha: 0.22),
-                size: 280,
-              ),
-            ),
-            Positioned(
-              bottom: -120,
-              left: -60,
-              child: _AmbientGlow(
-                color: colorScheme.secondary.withValues(alpha: 0.14),
-                size: 260,
-              ),
-            ),
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isWide = constraints.maxWidth >= 1080;
-
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.74),
-                      border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.6,
-                        ),
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.zero,
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                        child: isWide
-                            ? _buildWideLayout(constraints)
-                            : _buildNarrowLayout(constraints),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWideLayout(BoxConstraints constraints) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 360,
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: _buildSummaryPanel(),
-            ),
-          ),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: _buildWorkspace(isWide: true),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNarrowLayout(BoxConstraints constraints) {
-    return SingleChildScrollView(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: Column(
-          children: [_buildSummaryPanel(), _buildWorkspace(isWide: false)],
-        ),
-      ),
+    return WorkspaceScaffold(
+      sidebar: _buildSummaryPanel(),
+      contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
     );
   }
 
   Widget _buildSummaryPanel() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.accent.withValues(alpha: 0.96),
-            const Color(0xFFE28E00),
-          ],
+    return WorkspaceSidebar(
+      title: 'Ponto digital em tempo real.',
+      description:
+          'Uma tela operacional para registrar entrada, pausa e saÃ­da com localizaÃ§Ã£o vinculada a cada batida.',
+      summaryChildren: <Widget>[
+        WorkspaceSummaryStripe(
+          label: 'Status',
+          value: _statusLabel(),
+          helper: _statusDescription(),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-            ),
-            child: Text(
-              'BUNCHIN',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimary,
-                letterSpacing: 2.4,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 28),
-          Text(
-            'Ponto digital em tempo real.',
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w700,
-              height: 1.02,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Uma tela operacional para registrar entrada, pausa e saída com localização vinculada a cada batida.',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.92),
-              height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 28),
-          _buildSummaryStripe(
-            label: 'Status',
-            value: _statusLabel(),
-            helper: _statusDescription(),
-          ),
-          const SizedBox(height: 16),
-          _buildSummaryStripe(
-            label: 'Funcionário',
-            value: 'Marina Costa',
-            helper: 'Operações · Unidade Paulista',
-          ),
-          const SizedBox(height: 16),
-          _buildSummaryStripe(
-            label: 'Última batida',
-            value: _lastRecord == null
-                ? '--:--'
-                : _formatTime(_lastRecord!.timestamp),
-            helper: _lastRecord?.title ?? 'Nenhum registro no dia',
-          ),
-          const SizedBox(height: 32),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _HighlightChip(label: _locationChipLabel()),
-              const _HighlightChip(label: 'Dispositivo confiável'),
-              const _HighlightChip(label: 'Jornada auditável'),
-            ],
-          ),
-        ],
-      ),
+        const WorkspaceSummaryStripe(
+          label: 'FuncionÃ¡rio',
+          value: 'Marina Costa',
+          helper: 'OperaÃ§Ãµes Â· Unidade Paulista',
+        ),
+        WorkspaceSummaryStripe(
+          label: 'Ãšltima batida',
+          value: _lastRecord == null
+              ? '--:--'
+              : _formatTime(_lastRecord!.timestamp),
+          helper: _lastRecord?.title ?? 'Nenhum registro no dia',
+        ),
+      ],
+      highlightChips: <Widget>[
+        WorkspaceHighlightChip(label: _locationChipLabel()),
+        const WorkspaceHighlightChip(label: 'Dispositivo confiÃ¡vel'),
+        const WorkspaceHighlightChip(label: 'Jornada auditÃ¡vel'),
+      ],
     );
   }
 
   Widget _buildWorkspace({required bool isWide}) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: 12,
-            spacing: 12,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bater ponto',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+        children: <Widget>[
+          WorkspaceHeader(
+            title: 'Bater ponto',
+            description:
+                'Registre sua jornada com um fluxo direto, auditÃ¡vel e com coordenadas anexadas para validaÃ§Ã£o operacional.',
+            maxContentWidth: 520,
+            actions: <Widget>[
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AdminEmployeesPage(),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Registre sua jornada com um fluxo direto, auditável e com coordenadas anexadas para validação operacional.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
+                icon: const Icon(Icons.groups_2_rounded),
+                label: const Text('Administrar equipe'),
               ),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AdminEmployeesPage(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.groups_2_rounded),
-                    label: const Text('Administrar equipe'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    label: const Text('Voltar'),
-                  ),
-                ],
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Voltar'),
               ),
             ],
           ),
@@ -662,7 +484,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -685,7 +507,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _StatusBadge(label: _statusLabel(), tone: _statusColor()),
+                    WorkspaceStatusBadge(
+                      label: _statusLabel(),
+                      tone: _statusColor(),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       _formatClock(_now),
@@ -783,7 +608,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           if (lastLocation != null) ...[
             const SizedBox(height: 10),
             Text(
-              'Última coordenada auditada: ${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)} | precisão ${_formatAccuracy(lastLocation.accuracyMeters)}',
+              'Ãšltima coordenada auditada: ${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)} | precisÃ£o ${_formatAccuracy(lastLocation.accuracyMeters)}',
               style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
             ),
           ],
@@ -845,7 +670,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
       return OutlinedButton.icon(
         onPressed: null,
         icon: const Icon(Icons.logout_rounded),
-        label: const Text('Registrar saída'),
+        label: const Text('Registrar saÃ­da'),
       );
     }
 
@@ -856,7 +681,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
               unawaited(_handlePunch(_PunchType.checkOut));
             },
       icon: const Icon(Icons.logout_rounded),
-      label: const Text('Registrar saída'),
+      label: const Text('Registrar saÃ­da'),
     );
   }
 
@@ -873,7 +698,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           children: [
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Horas hoje',
                 value: _formatDuration(_workedDuration()),
                 helper: 'Tempo acumulado em jornada ativa',
@@ -881,7 +706,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Pausa acumulada',
                 value: _formatDuration(_breakDuration()),
                 helper: 'Tempo total em intervalo no dia',
@@ -889,18 +714,18 @@ class _TimeClockPageState extends State<TimeClockPage> {
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
+              child: WorkspaceMetricCard(
                 label: 'Primeira entrada',
                 value: _firstCheckIn == null
                     ? '--:--'
                     : _formatTime(_firstCheckIn!.timestamp),
-                helper: 'Primeiro registro válido de hoje',
+                helper: 'Primeiro registro vÃ¡lido de hoje',
               ),
             ),
             SizedBox(
               width: width,
-              child: _MetricCard(
-                label: 'Último evento',
+              child: WorkspaceMetricCard(
+                label: 'Ãšltimo evento',
                 value: _lastRecord == null
                     ? '--:--'
                     : _formatTime(_lastRecord!.timestamp),
@@ -917,7 +742,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -929,7 +754,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Histórico cronológico das batidas com contexto suficiente para auditoria operacional.',
+            'HistÃ³rico cronolÃ³gico das batidas com contexto suficiente para auditoria operacional.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -960,70 +785,25 @@ class _TimeClockPageState extends State<TimeClockPage> {
   Widget _buildContextCard() {
     final lastLocation = _lastRegisteredLocation;
 
-    return _SectionCard(
+    return WorkspaceSectionCard(
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
         children: [
-          _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
+          _InfoFlag(label: 'PermissÃ£o', value: _locationStatusLabel()),
           _InfoFlag(
-            label: 'Última coordenada',
+            label: 'Ãšltima coordenada',
             value: lastLocation == null
                 ? 'Aguardando batida'
                 : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
           ),
           _InfoFlag(
-            label: 'Precisão',
+            label: 'PrecisÃ£o',
             value: lastLocation == null
                 ? '--'
                 : _formatAccuracy(lastLocation.accuracyMeters),
           ),
           const _InfoFlag(label: 'Modo', value: 'Presencial rastreado'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryStripe({
-    required String label,
-    required String value,
-    required String helper,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.1),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.9),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            helper,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onPrimary.withValues(alpha: 0.88),
-              height: 1.45,
-            ),
-          ),
         ],
       ),
     );
@@ -1052,7 +832,7 @@ class _PunchRecord {
       _PunchType.checkIn => 'Entrada',
       _PunchType.breakStart => 'Pausa',
       _PunchType.breakEnd => 'Retorno',
-      _PunchType.checkOut => 'Saída',
+      _PunchType.checkOut => 'SaÃ­da',
     };
   }
 
@@ -1063,132 +843,6 @@ class _PunchRecord {
       _PunchType.breakEnd => Icons.play_circle_outline_rounded,
       _PunchType.checkOut => Icons.logout_rounded,
     };
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.56),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    required this.helper,
-  });
-
-  final String label;
-  final String value;
-  final String helper;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.78),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            helper,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HighlightChip extends StatelessWidget {
-  const _HighlightChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, required this.tone});
-
-  final String label;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.14),
-        border: Border.all(color: tone.withValues(alpha: 0.28)),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: tone,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
   }
 }
 
@@ -1247,7 +901,7 @@ class _TimelineTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Precisão estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
+                  'PrecisÃ£o estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -1302,27 +956,6 @@ class _InfoFlag extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AmbientGlow extends StatelessWidget {
-  const _AmbientGlow({required this.color, required this.size});
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
-        ),
       ),
     );
   }
