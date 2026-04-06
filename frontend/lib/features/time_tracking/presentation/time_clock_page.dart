@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -37,10 +38,15 @@ class _TimeClockPageState extends State<TimeClockPage> {
     'dezembro',
   ];
 
+  final PunchLocationService _punchLocationService =
+      const PunchLocationService();
+
   late DateTime _now;
   late List<_PunchRecord> _records;
   late _ShiftStatus _status;
   Timer? _clockTimer;
+  PunchLocationResult _locationState = const PunchLocationResult.checking();
+  bool _isSubmittingPunch = false;
 
   @override
   void initState() {
@@ -53,12 +59,57 @@ class _TimeClockPageState extends State<TimeClockPage> {
         _now = DateTime.now();
       });
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_prepareLocationAccess());
+    });
   }
 
   @override
   void dispose() {
     _clockTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _prepareLocationAccess() async {
+    final result = await _punchLocationService.requestPermission();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _locationState = result;
+    });
+  }
+
+  Future<void> _handlePunch(_PunchType type) async {
+    if (_isSubmittingPunch) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingPunch = true;
+    });
+
+    final locationResult = await _punchLocationService.captureForPunch();
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmittingPunch = false;
+      _locationState = locationResult;
+    });
+
+    final location = locationResult.snapshot;
+    if (location == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(locationResult.message)));
+      return;
+    }
+
+    _registerPunch(type, location: location);
   }
 
   List<_PunchRecord> _buildInitialRecords(DateTime now) {
@@ -125,24 +176,34 @@ class _TimeClockPageState extends State<TimeClockPage> {
     return _ShiftStatus.checkedOut;
   }
 
-  void _registerPunch(_PunchType type) {
+  void _registerPunch(
+    _PunchType type, {
+    required PunchLocationSnapshot location,
+  }) {
     final detail = switch (type) {
-      _PunchType.checkIn => 'Entrada registrada com sucesso',
-      _PunchType.breakStart => 'Pausa iniciada',
-      _PunchType.breakEnd => 'Jornada retomada',
-      _PunchType.checkOut => 'Saída registrada com sucesso',
+      _PunchType.checkIn => 'Entrada registrada com localização validada',
+      _PunchType.breakStart => 'Pausa iniciada com localização capturada',
+      _PunchType.breakEnd => 'Jornada retomada com localização capturada',
+      _PunchType.checkOut => 'Saída registrada com localização validada',
     };
 
     setState(() {
       _now = DateTime.now();
       _records = <_PunchRecord>[
         ..._records,
-        _PunchRecord(type: type, timestamp: _now, detail: detail),
+        _PunchRecord(
+          type: type,
+          timestamp: _now,
+          detail: detail,
+          location: location,
+        ),
       ];
       _status = _deriveStatus(_records);
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(detail)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$detail. Coordenadas anexadas à auditoria.')),
+    );
   }
 
   Duration _workedDuration() {
@@ -205,6 +266,16 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   _PunchRecord? get _lastRecord => _records.isEmpty ? null : _records.last;
 
+  PunchLocationSnapshot? get _lastRegisteredLocation {
+    for (final record in _records.reversed) {
+      final location = record.location;
+      if (location != null) {
+        return location;
+      }
+    }
+    return null;
+  }
+
   String _formatClock(DateTime value) {
     final hh = value.hour.toString().padLeft(2, '0');
     final mm = value.minute.toString().padLeft(2, '0');
@@ -226,6 +297,14 @@ class _TimeClockPageState extends State<TimeClockPage> {
     final hh = value.inHours.toString().padLeft(2, '0');
     final mm = (value.inMinutes % 60).toString().padLeft(2, '0');
     return '${hh}h ${mm}m';
+  }
+
+  String _formatCoordinate(double value) {
+    return value.toStringAsFixed(5);
+  }
+
+  String _formatAccuracy(double value) {
+    return '${value.toStringAsFixed(0)} m';
   }
 
   String _statusLabel() {
@@ -251,6 +330,69 @@ class _TimeClockPageState extends State<TimeClockPage> {
       _ShiftStatus.checkedOut => const Color(0xFF6B6254),
       _ShiftStatus.working => const Color(0xFF2F8F46),
       _ShiftStatus.onBreak => const Color(0xFF8C5D00),
+    };
+  }
+
+  String _locationStatusLabel() {
+    return switch (_locationState.status) {
+      PunchLocationStatus.checking => 'Validando localização',
+      PunchLocationStatus.ready =>
+        _lastRegisteredLocation == null
+            ? 'Permissão ativa'
+            : 'Localização pronta',
+      PunchLocationStatus.serviceDisabled => 'Localização desativada',
+      PunchLocationStatus.permissionDenied => 'Permissão negada',
+      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
+      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
+      PunchLocationStatus.error => 'Falha de localização',
+    };
+  }
+
+  String _locationActionLabel() {
+    return switch (_locationState.status) {
+      PunchLocationStatus.checking => 'Atualizando',
+      PunchLocationStatus.ready => 'Atualizar permissão',
+      PunchLocationStatus.serviceDisabled => 'Tentar novamente',
+      PunchLocationStatus.permissionDenied => 'Solicitar permissão',
+      PunchLocationStatus.permissionDeniedForever => 'Revalidar acesso',
+      PunchLocationStatus.unsupported => 'Tentar novamente',
+      PunchLocationStatus.error => 'Tentar novamente',
+    };
+  }
+
+  Color _locationStatusColor() {
+    return switch (_locationState.status) {
+      PunchLocationStatus.checking => const Color(0xFF6B6254),
+      PunchLocationStatus.ready => const Color(0xFF2F8F46),
+      PunchLocationStatus.serviceDisabled => const Color(0xFF8C5D00),
+      PunchLocationStatus.permissionDenied => const Color(0xFF8C5D00),
+      PunchLocationStatus.permissionDeniedForever => const Color(0xFF8B1E1E),
+      PunchLocationStatus.unsupported => const Color(0xFF6B6254),
+      PunchLocationStatus.error => const Color(0xFF8B1E1E),
+    };
+  }
+
+  IconData _locationStatusIcon() {
+    return switch (_locationState.status) {
+      PunchLocationStatus.checking => Icons.my_location_rounded,
+      PunchLocationStatus.ready => Icons.location_on_rounded,
+      PunchLocationStatus.serviceDisabled => Icons.location_off_rounded,
+      PunchLocationStatus.permissionDenied => Icons.location_disabled_rounded,
+      PunchLocationStatus.permissionDeniedForever => Icons.gpp_maybe_outlined,
+      PunchLocationStatus.unsupported => Icons.device_unknown_rounded,
+      PunchLocationStatus.error => Icons.warning_amber_rounded,
+    };
+  }
+
+  String _locationChipLabel() {
+    return switch (_locationState.status) {
+      PunchLocationStatus.ready => 'Geolocalização pronta',
+      PunchLocationStatus.checking => 'Validando permissão',
+      PunchLocationStatus.serviceDisabled => 'Ative a localização',
+      PunchLocationStatus.permissionDenied => 'Permissão pendente',
+      PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
+      PunchLocationStatus.unsupported => 'Geolocalização indisponível',
+      PunchLocationStatus.error => 'Falha de localização',
     };
   }
 
@@ -401,7 +543,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           ),
           const SizedBox(height: 14),
           Text(
-            'Uma tela operacional para registrar entrada, pausa e saída com leitura instantânea do turno atual.',
+            'Uma tela operacional para registrar entrada, pausa e saída com localização vinculada a cada batida.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: colorScheme.onPrimary.withValues(alpha: 0.92),
               height: 1.55,
@@ -431,10 +573,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: const [
-              _HighlightChip(label: 'Geolocalização ativa'),
-              _HighlightChip(label: 'Dispositivo confiável'),
-              _HighlightChip(label: 'Jornada auditável'),
+            children: [
+              _HighlightChip(label: _locationChipLabel()),
+              const _HighlightChip(label: 'Dispositivo confiável'),
+              const _HighlightChip(label: 'Jornada auditável'),
             ],
           ),
         ],
@@ -469,7 +611,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Registre sua jornada com um fluxo direto, auditável e pronto para integração com RH ou folha.',
+                      'Registre sua jornada com um fluxo direto, auditável e com coordenadas anexadas para validação operacional.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         height: 1.45,
@@ -554,6 +696,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
               height: 1.5,
             ),
           ),
+          const SizedBox(height: 20),
+          _buildLocationBanner(),
           const SizedBox(height: 24),
           Wrap(
             spacing: 12,
@@ -574,10 +718,82 @@ class _TimeClockPageState extends State<TimeClockPage> {
     );
   }
 
+  Widget _buildLocationBanner() {
+    final theme = Theme.of(context);
+    final color = _locationStatusColor();
+    final lastLocation = _lastRegisteredLocation;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        border: Border.all(color: color.withValues(alpha: 0.26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_locationStatusIcon(), color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _locationStatusLabel(),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (_isSubmittingPunch)
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _locationState.message,
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
+          ),
+          if (lastLocation != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              'Última coordenada auditada: ${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)} | precisão ${_formatAccuracy(lastLocation.accuracyMeters)}',
+              style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
+            ),
+          ],
+          if (_locationState.status != PunchLocationStatus.ready) ...[
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: _isSubmittingPunch
+                  ? null
+                  : () {
+                      unawaited(_prepareLocationAccess());
+                    },
+              icon: const Icon(Icons.my_location_rounded),
+              label: Text(_locationActionLabel()),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildPrimaryActionButton() {
     if (_status == _ShiftStatus.checkedOut) {
       return ElevatedButton.icon(
-        onPressed: () => _registerPunch(_PunchType.checkIn),
+        onPressed: _isSubmittingPunch
+            ? null
+            : () {
+                unawaited(_handlePunch(_PunchType.checkIn));
+              },
         icon: const Icon(Icons.login_rounded),
         label: const Text('Registrar entrada'),
       );
@@ -585,14 +801,22 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
     if (_status == _ShiftStatus.working) {
       return ElevatedButton.icon(
-        onPressed: () => _registerPunch(_PunchType.breakStart),
+        onPressed: _isSubmittingPunch
+            ? null
+            : () {
+                unawaited(_handlePunch(_PunchType.breakStart));
+              },
         icon: const Icon(Icons.pause_circle_outline_rounded),
         label: const Text('Iniciar pausa'),
       );
     }
 
     return ElevatedButton.icon(
-      onPressed: () => _registerPunch(_PunchType.breakEnd),
+      onPressed: _isSubmittingPunch
+          ? null
+          : () {
+              unawaited(_handlePunch(_PunchType.breakEnd));
+            },
       icon: const Icon(Icons.play_circle_outline_rounded),
       label: const Text('Retomar jornada'),
     );
@@ -608,7 +832,11 @@ class _TimeClockPageState extends State<TimeClockPage> {
     }
 
     return OutlinedButton.icon(
-      onPressed: () => _registerPunch(_PunchType.checkOut),
+      onPressed: _isSubmittingPunch
+          ? null
+          : () {
+              unawaited(_handlePunch(_PunchType.checkOut));
+            },
       icon: const Icon(Icons.logout_rounded),
       label: const Text('Registrar saída'),
     );
@@ -712,14 +940,27 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildContextCard() {
+    final lastLocation = _lastRegisteredLocation;
+
     return _SectionCard(
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: const [
-          _InfoFlag(label: 'Local', value: 'Unidade Paulista'),
-          _InfoFlag(label: 'Modo', value: 'Presencial'),
-          _InfoFlag(label: 'Confiança', value: 'Dispositivo validado'),
+        children: [
+          _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
+          _InfoFlag(
+            label: 'Última coordenada',
+            value: lastLocation == null
+                ? 'Aguardando batida'
+                : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
+          ),
+          _InfoFlag(
+            label: 'Precisão',
+            value: lastLocation == null
+                ? '--'
+                : _formatAccuracy(lastLocation.accuracyMeters),
+          ),
+          const _InfoFlag(label: 'Modo', value: 'Presencial rastreado'),
         ],
       ),
     );
@@ -780,11 +1021,13 @@ class _PunchRecord {
     required this.type,
     required this.timestamp,
     required this.detail,
+    this.location,
   });
 
   final _PunchType type;
   final DateTime timestamp;
   final String detail;
+  final PunchLocationSnapshot? location;
 
   String get title {
     return switch (type) {
@@ -942,6 +1185,7 @@ class _TimelineTile extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final hh = record.timestamp.hour.toString().padLeft(2, '0');
     final mm = record.timestamp.minute.toString().padLeft(2, '0');
+    final location = record.location;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -974,6 +1218,23 @@ class _TimelineTile extends StatelessWidget {
                   height: 1.45,
                 ),
               ),
+              if (location != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Lat ${location.latitude.toStringAsFixed(5)} | Long ${location.longitude.toStringAsFixed(5)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Precisão estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
