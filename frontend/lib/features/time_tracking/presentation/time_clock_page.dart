@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
 import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -620,10 +621,27 @@ class _TimeClockPageState extends State<TimeClockPage> {
                   ],
                 ),
               ),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Voltar'),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AdminEmployeesPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.groups_2_rounded),
+                    label: const Text('Administrar equipe'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    label: const Text('Voltar'),
+                  ),
+                ],
               ),
             ],
           ),
