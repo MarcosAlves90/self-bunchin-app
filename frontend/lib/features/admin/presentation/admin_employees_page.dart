@@ -1103,6 +1103,12 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 760),
         child: Padding(
@@ -1229,30 +1235,58 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 220,
-                        child: ElevatedButton.icon(
-                          onPressed: _submit,
-                          icon: const Icon(Icons.save_outlined),
-                          label: Text(
-                            _isEditing
-                                ? 'Salvar alterações'
-                                : 'Criar funcionário',
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 600;
+
+                      if (isMobile) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            ElevatedButton.icon(
+                              onPressed: _submit,
+                              icon: const Icon(Icons.save_outlined),
+                              label: Text(
+                                _isEditing
+                                    ? 'Salvar alterações'
+                                    : 'Criar funcionário',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: <Widget>[
+                          SizedBox(
+                            width: 220,
+                            child: ElevatedButton.icon(
+                              onPressed: _submit,
+                              icon: const Icon(Icons.save_outlined),
+                              label: Text(
+                                _isEditing
+                                    ? 'Salvar alterações'
+                                    : 'Criar funcionário',
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 180,
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancelar'),
-                        ),
-                      ),
-                    ],
+                          SizedBox(
+                            width: 180,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
