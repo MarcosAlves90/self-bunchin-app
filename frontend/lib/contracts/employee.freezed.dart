@@ -1,0 +1,612 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'employee.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+/// @nodoc
+mixin _$EmployeeProfile {
+
+ String get id; String get name; String get role; String get department; String get email; String get phone; String get unit; String get expectedShift; EmployeeStatus get status; EmployeeWorkMode get workMode; RoleLevel get roleLevel; bool get requiresLocationOnPunch; bool get trustedDeviceRequired; int get todayWorkedMinutes; int get pendingAdjustments; DateTime? get lastPunchAt; String get notes;
+/// Create a copy of EmployeeProfile
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EmployeeProfileCopyWith<EmployeeProfile> get copyWith => _$EmployeeProfileCopyWithImpl<EmployeeProfile>(this as EmployeeProfile, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.department, department) || other.department == department)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.expectedShift, expectedShift) || other.expectedShift == expectedShift)&&(identical(other.status, status) || other.status == status)&&(identical(other.workMode, workMode) || other.workMode == workMode)&&(identical(other.roleLevel, roleLevel) || other.roleLevel == roleLevel)&&(identical(other.requiresLocationOnPunch, requiresLocationOnPunch) || other.requiresLocationOnPunch == requiresLocationOnPunch)&&(identical(other.trustedDeviceRequired, trustedDeviceRequired) || other.trustedDeviceRequired == trustedDeviceRequired)&&(identical(other.todayWorkedMinutes, todayWorkedMinutes) || other.todayWorkedMinutes == todayWorkedMinutes)&&(identical(other.pendingAdjustments, pendingAdjustments) || other.pendingAdjustments == pendingAdjustments)&&(identical(other.lastPunchAt, lastPunchAt) || other.lastPunchAt == lastPunchAt)&&(identical(other.notes, notes) || other.notes == notes));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,name,role,department,email,phone,unit,expectedShift,status,workMode,roleLevel,requiresLocationOnPunch,trustedDeviceRequired,todayWorkedMinutes,pendingAdjustments,lastPunchAt,notes);
+
+@override
+String toString() {
+  return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EmployeeProfileCopyWith<$Res>  {
+  factory $EmployeeProfileCopyWith(EmployeeProfile value, $Res Function(EmployeeProfile) _then) = _$EmployeeProfileCopyWithImpl;
+@useResult
+$Res call({
+ String id, String name, String role, String department, String email, String phone, String unit, String expectedShift, EmployeeStatus status, EmployeeWorkMode workMode, RoleLevel roleLevel, bool requiresLocationOnPunch, bool trustedDeviceRequired, int todayWorkedMinutes, int pendingAdjustments, DateTime? lastPunchAt, String notes
+});
+
+
+
+
+}
+/// @nodoc
+class _$EmployeeProfileCopyWithImpl<$Res>
+    implements $EmployeeProfileCopyWith<$Res> {
+  _$EmployeeProfileCopyWithImpl(this._self, this._then);
+
+  final EmployeeProfile _self;
+  final $Res Function(EmployeeProfile) _then;
+
+/// Create a copy of EmployeeProfile
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? role = null,Object? department = null,Object? email = null,Object? phone = null,Object? unit = null,Object? expectedShift = null,Object? status = null,Object? workMode = null,Object? roleLevel = null,Object? requiresLocationOnPunch = null,Object? trustedDeviceRequired = null,Object? todayWorkedMinutes = null,Object? pendingAdjustments = null,Object? lastPunchAt = freezed,Object? notes = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,expectedShift: null == expectedShift ? _self.expectedShift : expectedShift // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as EmployeeStatus,workMode: null == workMode ? _self.workMode : workMode // ignore: cast_nullable_to_non_nullable
+as EmployeeWorkMode,roleLevel: null == roleLevel ? _self.roleLevel : roleLevel // ignore: cast_nullable_to_non_nullable
+as RoleLevel,requiresLocationOnPunch: null == requiresLocationOnPunch ? _self.requiresLocationOnPunch : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
+as bool,trustedDeviceRequired: null == trustedDeviceRequired ? _self.trustedDeviceRequired : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
+as bool,todayWorkedMinutes: null == todayWorkedMinutes ? _self.todayWorkedMinutes : todayWorkedMinutes // ignore: cast_nullable_to_non_nullable
+as int,pendingAdjustments: null == pendingAdjustments ? _self.pendingAdjustments : pendingAdjustments // ignore: cast_nullable_to_non_nullable
+as int,lastPunchAt: freezed == lastPunchAt ? _self.lastPunchAt : lastPunchAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [EmployeeProfile].
+extension EmployeeProfilePatterns on EmployeeProfile {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _EmployeeProfile value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _EmployeeProfile() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _EmployeeProfile value)  $default,){
+final _that = this;
+switch (_that) {
+case _EmployeeProfile():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _EmployeeProfile value)?  $default,){
+final _that = this;
+switch (_that) {
+case _EmployeeProfile() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  int todayWorkedMinutes,  int pendingAdjustments,  DateTime? lastPunchAt,  String notes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _EmployeeProfile() when $default != null:
+return $default(_that.id,_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.todayWorkedMinutes,_that.pendingAdjustments,_that.lastPunchAt,_that.notes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  int todayWorkedMinutes,  int pendingAdjustments,  DateTime? lastPunchAt,  String notes)  $default,) {final _that = this;
+switch (_that) {
+case _EmployeeProfile():
+return $default(_that.id,_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.todayWorkedMinutes,_that.pendingAdjustments,_that.lastPunchAt,_that.notes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  int todayWorkedMinutes,  int pendingAdjustments,  DateTime? lastPunchAt,  String notes)?  $default,) {final _that = this;
+switch (_that) {
+case _EmployeeProfile() when $default != null:
+return $default(_that.id,_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.todayWorkedMinutes,_that.pendingAdjustments,_that.lastPunchAt,_that.notes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _EmployeeProfile extends EmployeeProfile {
+  const _EmployeeProfile({required this.id, required this.name, required this.role, required this.department, required this.email, required this.phone, required this.unit, required this.expectedShift, required this.status, required this.workMode, required this.roleLevel, required this.requiresLocationOnPunch, required this.trustedDeviceRequired, required this.todayWorkedMinutes, required this.pendingAdjustments, required this.lastPunchAt, required this.notes}): super._();
+  
+
+@override final  String id;
+@override final  String name;
+@override final  String role;
+@override final  String department;
+@override final  String email;
+@override final  String phone;
+@override final  String unit;
+@override final  String expectedShift;
+@override final  EmployeeStatus status;
+@override final  EmployeeWorkMode workMode;
+@override final  RoleLevel roleLevel;
+@override final  bool requiresLocationOnPunch;
+@override final  bool trustedDeviceRequired;
+@override final  int todayWorkedMinutes;
+@override final  int pendingAdjustments;
+@override final  DateTime? lastPunchAt;
+@override final  String notes;
+
+/// Create a copy of EmployeeProfile
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$EmployeeProfileCopyWith<_EmployeeProfile> get copyWith => __$EmployeeProfileCopyWithImpl<_EmployeeProfile>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.department, department) || other.department == department)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.expectedShift, expectedShift) || other.expectedShift == expectedShift)&&(identical(other.status, status) || other.status == status)&&(identical(other.workMode, workMode) || other.workMode == workMode)&&(identical(other.roleLevel, roleLevel) || other.roleLevel == roleLevel)&&(identical(other.requiresLocationOnPunch, requiresLocationOnPunch) || other.requiresLocationOnPunch == requiresLocationOnPunch)&&(identical(other.trustedDeviceRequired, trustedDeviceRequired) || other.trustedDeviceRequired == trustedDeviceRequired)&&(identical(other.todayWorkedMinutes, todayWorkedMinutes) || other.todayWorkedMinutes == todayWorkedMinutes)&&(identical(other.pendingAdjustments, pendingAdjustments) || other.pendingAdjustments == pendingAdjustments)&&(identical(other.lastPunchAt, lastPunchAt) || other.lastPunchAt == lastPunchAt)&&(identical(other.notes, notes) || other.notes == notes));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,name,role,department,email,phone,unit,expectedShift,status,workMode,roleLevel,requiresLocationOnPunch,trustedDeviceRequired,todayWorkedMinutes,pendingAdjustments,lastPunchAt,notes);
+
+@override
+String toString() {
+  return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$EmployeeProfileCopyWith<$Res> implements $EmployeeProfileCopyWith<$Res> {
+  factory _$EmployeeProfileCopyWith(_EmployeeProfile value, $Res Function(_EmployeeProfile) _then) = __$EmployeeProfileCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, String role, String department, String email, String phone, String unit, String expectedShift, EmployeeStatus status, EmployeeWorkMode workMode, RoleLevel roleLevel, bool requiresLocationOnPunch, bool trustedDeviceRequired, int todayWorkedMinutes, int pendingAdjustments, DateTime? lastPunchAt, String notes
+});
+
+
+
+
+}
+/// @nodoc
+class __$EmployeeProfileCopyWithImpl<$Res>
+    implements _$EmployeeProfileCopyWith<$Res> {
+  __$EmployeeProfileCopyWithImpl(this._self, this._then);
+
+  final _EmployeeProfile _self;
+  final $Res Function(_EmployeeProfile) _then;
+
+/// Create a copy of EmployeeProfile
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? role = null,Object? department = null,Object? email = null,Object? phone = null,Object? unit = null,Object? expectedShift = null,Object? status = null,Object? workMode = null,Object? roleLevel = null,Object? requiresLocationOnPunch = null,Object? trustedDeviceRequired = null,Object? todayWorkedMinutes = null,Object? pendingAdjustments = null,Object? lastPunchAt = freezed,Object? notes = null,}) {
+  return _then(_EmployeeProfile(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,expectedShift: null == expectedShift ? _self.expectedShift : expectedShift // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as EmployeeStatus,workMode: null == workMode ? _self.workMode : workMode // ignore: cast_nullable_to_non_nullable
+as EmployeeWorkMode,roleLevel: null == roleLevel ? _self.roleLevel : roleLevel // ignore: cast_nullable_to_non_nullable
+as RoleLevel,requiresLocationOnPunch: null == requiresLocationOnPunch ? _self.requiresLocationOnPunch : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
+as bool,trustedDeviceRequired: null == trustedDeviceRequired ? _self.trustedDeviceRequired : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
+as bool,todayWorkedMinutes: null == todayWorkedMinutes ? _self.todayWorkedMinutes : todayWorkedMinutes // ignore: cast_nullable_to_non_nullable
+as int,pendingAdjustments: null == pendingAdjustments ? _self.pendingAdjustments : pendingAdjustments // ignore: cast_nullable_to_non_nullable
+as int,lastPunchAt: freezed == lastPunchAt ? _self.lastPunchAt : lastPunchAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+mixin _$EmployeeDraft {
+
+ String get name; String get role; String get department; String get email; String get phone; String get unit; String get expectedShift; EmployeeStatus get status; EmployeeWorkMode get workMode; RoleLevel get roleLevel; bool get requiresLocationOnPunch; bool get trustedDeviceRequired; String get notes;
+/// Create a copy of EmployeeDraft
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$EmployeeDraftCopyWith<EmployeeDraft> get copyWith => _$EmployeeDraftCopyWithImpl<EmployeeDraft>(this as EmployeeDraft, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EmployeeDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.department, department) || other.department == department)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.expectedShift, expectedShift) || other.expectedShift == expectedShift)&&(identical(other.status, status) || other.status == status)&&(identical(other.workMode, workMode) || other.workMode == workMode)&&(identical(other.roleLevel, roleLevel) || other.roleLevel == roleLevel)&&(identical(other.requiresLocationOnPunch, requiresLocationOnPunch) || other.requiresLocationOnPunch == requiresLocationOnPunch)&&(identical(other.trustedDeviceRequired, trustedDeviceRequired) || other.trustedDeviceRequired == trustedDeviceRequired)&&(identical(other.notes, notes) || other.notes == notes));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name,role,department,email,phone,unit,expectedShift,status,workMode,roleLevel,requiresLocationOnPunch,trustedDeviceRequired,notes);
+
+@override
+String toString() {
+  return 'EmployeeDraft(name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, notes: $notes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $EmployeeDraftCopyWith<$Res>  {
+  factory $EmployeeDraftCopyWith(EmployeeDraft value, $Res Function(EmployeeDraft) _then) = _$EmployeeDraftCopyWithImpl;
+@useResult
+$Res call({
+ String name, String role, String department, String email, String phone, String unit, String expectedShift, EmployeeStatus status, EmployeeWorkMode workMode, RoleLevel roleLevel, bool requiresLocationOnPunch, bool trustedDeviceRequired, String notes
+});
+
+
+
+
+}
+/// @nodoc
+class _$EmployeeDraftCopyWithImpl<$Res>
+    implements $EmployeeDraftCopyWith<$Res> {
+  _$EmployeeDraftCopyWithImpl(this._self, this._then);
+
+  final EmployeeDraft _self;
+  final $Res Function(EmployeeDraft) _then;
+
+/// Create a copy of EmployeeDraft
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? role = null,Object? department = null,Object? email = null,Object? phone = null,Object? unit = null,Object? expectedShift = null,Object? status = null,Object? workMode = null,Object? roleLevel = null,Object? requiresLocationOnPunch = null,Object? trustedDeviceRequired = null,Object? notes = null,}) {
+  return _then(_self.copyWith(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,expectedShift: null == expectedShift ? _self.expectedShift : expectedShift // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as EmployeeStatus,workMode: null == workMode ? _self.workMode : workMode // ignore: cast_nullable_to_non_nullable
+as EmployeeWorkMode,roleLevel: null == roleLevel ? _self.roleLevel : roleLevel // ignore: cast_nullable_to_non_nullable
+as RoleLevel,requiresLocationOnPunch: null == requiresLocationOnPunch ? _self.requiresLocationOnPunch : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
+as bool,trustedDeviceRequired: null == trustedDeviceRequired ? _self.trustedDeviceRequired : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
+as bool,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [EmployeeDraft].
+extension EmployeeDraftPatterns on EmployeeDraft {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _EmployeeDraft value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _EmployeeDraft() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _EmployeeDraft value)  $default,){
+final _that = this;
+switch (_that) {
+case _EmployeeDraft():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _EmployeeDraft value)?  $default,){
+final _that = this;
+switch (_that) {
+case _EmployeeDraft() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  String notes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _EmployeeDraft() when $default != null:
+return $default(_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.notes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  String notes)  $default,) {final _that = this;
+switch (_that) {
+case _EmployeeDraft():
+return $default(_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.notes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String role,  String department,  String email,  String phone,  String unit,  String expectedShift,  EmployeeStatus status,  EmployeeWorkMode workMode,  RoleLevel roleLevel,  bool requiresLocationOnPunch,  bool trustedDeviceRequired,  String notes)?  $default,) {final _that = this;
+switch (_that) {
+case _EmployeeDraft() when $default != null:
+return $default(_that.name,_that.role,_that.department,_that.email,_that.phone,_that.unit,_that.expectedShift,_that.status,_that.workMode,_that.roleLevel,_that.requiresLocationOnPunch,_that.trustedDeviceRequired,_that.notes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _EmployeeDraft extends EmployeeDraft {
+  const _EmployeeDraft({required this.name, required this.role, required this.department, required this.email, required this.phone, required this.unit, required this.expectedShift, required this.status, required this.workMode, required this.roleLevel, required this.requiresLocationOnPunch, required this.trustedDeviceRequired, required this.notes}): super._();
+  
+
+@override final  String name;
+@override final  String role;
+@override final  String department;
+@override final  String email;
+@override final  String phone;
+@override final  String unit;
+@override final  String expectedShift;
+@override final  EmployeeStatus status;
+@override final  EmployeeWorkMode workMode;
+@override final  RoleLevel roleLevel;
+@override final  bool requiresLocationOnPunch;
+@override final  bool trustedDeviceRequired;
+@override final  String notes;
+
+/// Create a copy of EmployeeDraft
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$EmployeeDraftCopyWith<_EmployeeDraft> get copyWith => __$EmployeeDraftCopyWithImpl<_EmployeeDraft>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EmployeeDraft&&(identical(other.name, name) || other.name == name)&&(identical(other.role, role) || other.role == role)&&(identical(other.department, department) || other.department == department)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.unit, unit) || other.unit == unit)&&(identical(other.expectedShift, expectedShift) || other.expectedShift == expectedShift)&&(identical(other.status, status) || other.status == status)&&(identical(other.workMode, workMode) || other.workMode == workMode)&&(identical(other.roleLevel, roleLevel) || other.roleLevel == roleLevel)&&(identical(other.requiresLocationOnPunch, requiresLocationOnPunch) || other.requiresLocationOnPunch == requiresLocationOnPunch)&&(identical(other.trustedDeviceRequired, trustedDeviceRequired) || other.trustedDeviceRequired == trustedDeviceRequired)&&(identical(other.notes, notes) || other.notes == notes));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,name,role,department,email,phone,unit,expectedShift,status,workMode,roleLevel,requiresLocationOnPunch,trustedDeviceRequired,notes);
+
+@override
+String toString() {
+  return 'EmployeeDraft(name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, notes: $notes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$EmployeeDraftCopyWith<$Res> implements $EmployeeDraftCopyWith<$Res> {
+  factory _$EmployeeDraftCopyWith(_EmployeeDraft value, $Res Function(_EmployeeDraft) _then) = __$EmployeeDraftCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, String role, String department, String email, String phone, String unit, String expectedShift, EmployeeStatus status, EmployeeWorkMode workMode, RoleLevel roleLevel, bool requiresLocationOnPunch, bool trustedDeviceRequired, String notes
+});
+
+
+
+
+}
+/// @nodoc
+class __$EmployeeDraftCopyWithImpl<$Res>
+    implements _$EmployeeDraftCopyWith<$Res> {
+  __$EmployeeDraftCopyWithImpl(this._self, this._then);
+
+  final _EmployeeDraft _self;
+  final $Res Function(_EmployeeDraft) _then;
+
+/// Create a copy of EmployeeDraft
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? role = null,Object? department = null,Object? email = null,Object? phone = null,Object? unit = null,Object? expectedShift = null,Object? status = null,Object? workMode = null,Object? roleLevel = null,Object? requiresLocationOnPunch = null,Object? trustedDeviceRequired = null,Object? notes = null,}) {
+  return _then(_EmployeeDraft(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
+as String,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
+as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String,phone: null == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String,unit: null == unit ? _self.unit : unit // ignore: cast_nullable_to_non_nullable
+as String,expectedShift: null == expectedShift ? _self.expectedShift : expectedShift // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as EmployeeStatus,workMode: null == workMode ? _self.workMode : workMode // ignore: cast_nullable_to_non_nullable
+as EmployeeWorkMode,roleLevel: null == roleLevel ? _self.roleLevel : roleLevel // ignore: cast_nullable_to_non_nullable
+as RoleLevel,requiresLocationOnPunch: null == requiresLocationOnPunch ? _self.requiresLocationOnPunch : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
+as bool,trustedDeviceRequired: null == trustedDeviceRequired ? _self.trustedDeviceRequired : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
+as bool,notes: null == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+// dart format on

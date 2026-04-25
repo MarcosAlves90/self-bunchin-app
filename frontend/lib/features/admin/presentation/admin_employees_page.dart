@@ -1,3 +1,4 @@
+import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +13,8 @@ class AdminEmployeesPage extends StatefulWidget {
 class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   final TextEditingController _searchController = TextEditingController();
 
-  late List<_EmployeeProfile> _employees;
-  _EmployeeFilter _filter = _EmployeeFilter.all;
+  late List<EmployeeProfile> _employees;
+  EmployeeFilter _filter = EmployeeFilter.all;
   String _searchQuery = '';
   String? _selectedEmployeeId;
 
@@ -30,7 +31,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     super.dispose();
   }
 
-  List<_EmployeeProfile> get _visibleEmployees {
+  List<EmployeeProfile> get _visibleEmployees {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
 
     return _employees.where((employee) {
@@ -40,10 +41,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       }
 
       final matchesFilter = switch (_filter) {
-        _EmployeeFilter.all => true,
-        _EmployeeFilter.active => employee.status == _EmployeeStatus.active,
-        _EmployeeFilter.attention => _needsAttention(employee),
-        _EmployeeFilter.inactive => employee.status == _EmployeeStatus.inactive,
+        EmployeeFilter.all => true,
+        EmployeeFilter.active => employee.status == EmployeeStatus.active,
+        EmployeeFilter.attention => _needsAttention(employee),
+        EmployeeFilter.inactive => employee.status == EmployeeStatus.inactive,
       };
 
       if (!matchesFilter) {
@@ -75,7 +76,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     });
   }
 
-  _EmployeeProfile? get _selectedEmployee {
+  EmployeeProfile? get _selectedEmployee {
     final visibleEmployees = _visibleEmployees;
     if (visibleEmployees.isEmpty) {
       return null;
@@ -92,7 +93,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
   int get _activeEmployees {
     return _employees
-        .where((employee) => employee.status == _EmployeeStatus.active)
+        .where((employee) => employee.status == EmployeeStatus.active)
         .length;
   }
 
@@ -108,19 +109,19 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
   int get _leadershipEmployees {
     return _employees
-        .where((employee) => employee.roleLevel == _RoleLevel.leadership)
+        .where((employee) => employee.roleLevel == RoleLevel.leadership)
         .length;
   }
 
-  bool _needsAttention(_EmployeeProfile employee) {
+  bool _needsAttention(EmployeeProfile employee) {
     return employee.pendingAdjustments > 0 ||
-        employee.status == _EmployeeStatus.onboarding ||
-        employee.status == _EmployeeStatus.onLeave ||
-        employee.status == _EmployeeStatus.inactive;
+        employee.status == EmployeeStatus.onboarding ||
+        employee.status == EmployeeStatus.onLeave ||
+        employee.status == EmployeeStatus.inactive;
   }
 
   Future<void> _openCreateEmployeeDialog() async {
-    final draft = await showDialog<_EmployeeDraft>(
+    final draft = await showDialog<EmployeeDraft>(
       context: context,
       builder: (context) => const _EmployeeEditorDialog(),
     );
@@ -129,13 +130,13 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    final employee = _EmployeeProfile.fromDraft(
+    final employee = EmployeeProfile.fromDraft(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
       draft: draft,
     );
 
     setState(() {
-      _employees = <_EmployeeProfile>[employee, ..._employees];
+      _employees = <EmployeeProfile>[employee, ..._employees];
       _selectedEmployeeId = employee.id;
     });
 
@@ -144,8 +145,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  Future<void> _openEditEmployeeDialog(_EmployeeProfile employee) async {
-    final draft = await showDialog<_EmployeeDraft>(
+  Future<void> _openEditEmployeeDialog(EmployeeProfile employee) async {
+    final draft = await showDialog<EmployeeDraft>(
       context: context,
       builder: (context) => _EmployeeEditorDialog(employee: employee),
     );
@@ -200,46 +201,46 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         .toUpperCase();
   }
 
-  Color _statusColor(_EmployeeStatus status) {
+  Color _statusColor(EmployeeStatus status) {
     return switch (status) {
-      _EmployeeStatus.active => const Color(0xFF2F8F46),
-      _EmployeeStatus.onboarding => const Color(0xFF8C5D00),
-      _EmployeeStatus.onLeave => const Color(0xFF8C5D00),
-      _EmployeeStatus.inactive => const Color(0xFF8B1E1E),
+      EmployeeStatus.active => const Color(0xFF2F8F46),
+      EmployeeStatus.onboarding => const Color(0xFF8C5D00),
+      EmployeeStatus.onLeave => const Color(0xFF8C5D00),
+      EmployeeStatus.inactive => const Color(0xFF8B1E1E),
     };
   }
 
-  Color _workModeColor(_EmployeeWorkMode workMode) {
+  Color _workModeColor(EmployeeWorkMode workMode) {
     return switch (workMode) {
-      _EmployeeWorkMode.onsite => const Color(0xFF1F4E79),
-      _EmployeeWorkMode.hybrid => const Color(0xFF6A4FB3),
-      _EmployeeWorkMode.remote => const Color(0xFF2B6F60),
+      EmployeeWorkMode.onsite => const Color(0xFF1F4E79),
+      EmployeeWorkMode.hybrid => const Color(0xFF6A4FB3),
+      EmployeeWorkMode.remote => const Color(0xFF2B6F60),
     };
   }
 
-  String _statusLabel(_EmployeeStatus status) {
+  String _statusLabel(EmployeeStatus status) {
     return switch (status) {
-      _EmployeeStatus.active => 'Ativo',
-      _EmployeeStatus.onboarding => 'Onboarding',
-      _EmployeeStatus.onLeave => 'Afastado',
-      _EmployeeStatus.inactive => 'Inativo',
+      EmployeeStatus.active => 'Ativo',
+      EmployeeStatus.onboarding => 'Onboarding',
+      EmployeeStatus.onLeave => 'Afastado',
+      EmployeeStatus.inactive => 'Inativo',
     };
   }
 
-  String _workModeLabel(_EmployeeWorkMode workMode) {
+  String _workModeLabel(EmployeeWorkMode workMode) {
     return switch (workMode) {
-      _EmployeeWorkMode.onsite => 'Presencial',
-      _EmployeeWorkMode.hybrid => 'Híbrido',
-      _EmployeeWorkMode.remote => 'Remoto',
+      EmployeeWorkMode.onsite => 'Presencial',
+      EmployeeWorkMode.hybrid => 'Híbrido',
+      EmployeeWorkMode.remote => 'Remoto',
     };
   }
 
-  String _filterLabel(_EmployeeFilter filter) {
+  String _filterLabel(EmployeeFilter filter) {
     return switch (filter) {
-      _EmployeeFilter.all => 'Todos',
-      _EmployeeFilter.active => 'Ativos',
-      _EmployeeFilter.attention => 'Atenção',
-      _EmployeeFilter.inactive => 'Inativos',
+      EmployeeFilter.all => 'Todos',
+      EmployeeFilter.active => 'Ativos',
+      EmployeeFilter.attention => 'Atenção',
+      EmployeeFilter.inactive => 'Inativos',
     };
   }
 
@@ -515,7 +516,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _EmployeeFilter.values.map((filter) {
+            children: EmployeeFilter.values.map((filter) {
               return ChoiceChip(
                 label: Text(_filterLabel(filter)),
                 selected: _filter == filter,
@@ -744,9 +745,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  List<_EmployeeProfile> _buildInitialEmployees() {
-    return <_EmployeeProfile>[
-      _EmployeeProfile(
+  List<EmployeeProfile> _buildInitialEmployees() {
+    return <EmployeeProfile>[
+      EmployeeProfile(
         id: 'emp-01',
         name: 'Marina Costa',
         role: 'Coordenadora de Operações',
@@ -755,9 +756,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         phone: '(11) 99123-1001',
         unit: 'Unidade Paulista',
         expectedShift: '08:00 às 17:00',
-        status: _EmployeeStatus.active,
-        workMode: _EmployeeWorkMode.onsite,
-        roleLevel: _RoleLevel.leadership,
+        status: EmployeeStatus.active,
+        workMode: EmployeeWorkMode.onsite,
+        roleLevel: RoleLevel.leadership,
         requiresLocationOnPunch: true,
         trustedDeviceRequired: true,
         todayWorkedMinutes: 447,
@@ -766,7 +767,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         notes:
             'Responsável pela abertura da operação e pela validação das equipes presenciais.',
       ),
-      _EmployeeProfile(
+      EmployeeProfile(
         id: 'emp-02',
         name: 'Caio Martins',
         role: 'Analista de RH',
@@ -775,9 +776,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         phone: '(11) 98888-2020',
         unit: 'Backoffice Centro',
         expectedShift: '09:00 as 18:00',
-        status: _EmployeeStatus.active,
-        workMode: _EmployeeWorkMode.hybrid,
-        roleLevel: _RoleLevel.specialist,
+        status: EmployeeStatus.active,
+        workMode: EmployeeWorkMode.hybrid,
+        roleLevel: RoleLevel.specialist,
         requiresLocationOnPunch: false,
         trustedDeviceRequired: true,
         todayWorkedMinutes: 392,
@@ -788,7 +789,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         notes:
             'Acompanha admissões, desligamentos e ajustes de cadastro dos funcionários.',
       ),
-      _EmployeeProfile(
+      EmployeeProfile(
         id: 'emp-03',
         name: 'Bianca Nogueira',
         role: 'Fiscal de Loja',
@@ -797,9 +798,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         phone: '(11) 97777-3030',
         unit: 'Loja Santo André',
         expectedShift: '13:40 as 22:00',
-        status: _EmployeeStatus.onLeave,
-        workMode: _EmployeeWorkMode.onsite,
-        roleLevel: _RoleLevel.staff,
+        status: EmployeeStatus.onLeave,
+        workMode: EmployeeWorkMode.onsite,
+        roleLevel: RoleLevel.staff,
         requiresLocationOnPunch: true,
         trustedDeviceRequired: true,
         todayWorkedMinutes: 0,
@@ -808,7 +809,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         notes:
             'Afastada temporariamente. RH precisa revisar escala e substituição da unidade.',
       ),
-      _EmployeeProfile(
+      EmployeeProfile(
         id: 'emp-04',
         name: 'Joao Pedro Lima',
         role: 'Desenvolvedor Flutter',
@@ -817,9 +818,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         phone: '(11) 96666-4040',
         unit: 'Studio Digital',
         expectedShift: '09:00 as 18:00',
-        status: _EmployeeStatus.active,
-        workMode: _EmployeeWorkMode.remote,
-        roleLevel: _RoleLevel.specialist,
+        status: EmployeeStatus.active,
+        workMode: EmployeeWorkMode.remote,
+        roleLevel: RoleLevel.specialist,
         requiresLocationOnPunch: false,
         trustedDeviceRequired: false,
         todayWorkedMinutes: 421,
@@ -828,7 +829,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         notes:
             'Atua no app corporativo e em integrações internas com foco em evolução de produto.',
       ),
-      _EmployeeProfile(
+      EmployeeProfile(
         id: 'emp-05',
         name: 'Larissa Araújo',
         role: 'Assistente Administrativa',
@@ -837,9 +838,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         phone: '(11) 95555-5050',
         unit: 'Backoffice Centro',
         expectedShift: '08:30 às 17:30',
-        status: _EmployeeStatus.onboarding,
-        workMode: _EmployeeWorkMode.hybrid,
-        roleLevel: _RoleLevel.staff,
+        status: EmployeeStatus.onboarding,
+        workMode: EmployeeWorkMode.hybrid,
+        roleLevel: RoleLevel.staff,
         requiresLocationOnPunch: true,
         trustedDeviceRequired: false,
         todayWorkedMinutes: 0,
@@ -852,155 +853,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 }
 
-enum _EmployeeFilter { all, active, attention, inactive }
-
-enum _EmployeeStatus { active, onboarding, onLeave, inactive }
-
-enum _EmployeeWorkMode { onsite, hybrid, remote }
-
-enum _RoleLevel { staff, specialist, leadership }
-
-class _EmployeeProfile {
-  const _EmployeeProfile({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.department,
-    required this.email,
-    required this.phone,
-    required this.unit,
-    required this.expectedShift,
-    required this.status,
-    required this.workMode,
-    required this.roleLevel,
-    required this.requiresLocationOnPunch,
-    required this.trustedDeviceRequired,
-    required this.todayWorkedMinutes,
-    required this.pendingAdjustments,
-    required this.lastPunchAt,
-    required this.notes,
-  });
-
-  factory _EmployeeProfile.fromDraft({
-    required String id,
-    required _EmployeeDraft draft,
-  }) {
-    return _EmployeeProfile(
-      id: id,
-      name: draft.name,
-      role: draft.role,
-      department: draft.department,
-      email: draft.email,
-      phone: draft.phone,
-      unit: draft.unit,
-      expectedShift: draft.expectedShift,
-      status: draft.status,
-      workMode: draft.workMode,
-      roleLevel: draft.roleLevel,
-      requiresLocationOnPunch: draft.requiresLocationOnPunch,
-      trustedDeviceRequired: draft.trustedDeviceRequired,
-      todayWorkedMinutes: 0,
-      pendingAdjustments: draft.status == _EmployeeStatus.onboarding ? 2 : 0,
-      lastPunchAt: null,
-      notes: draft.notes,
-    );
-  }
-
-  final String id;
-  final String name;
-  final String role;
-  final String department;
-  final String email;
-  final String phone;
-  final String unit;
-  final String expectedShift;
-  final _EmployeeStatus status;
-  final _EmployeeWorkMode workMode;
-  final _RoleLevel roleLevel;
-  final bool requiresLocationOnPunch;
-  final bool trustedDeviceRequired;
-  final int todayWorkedMinutes;
-  final int pendingAdjustments;
-  final DateTime? lastPunchAt;
-  final String notes;
-
-  _EmployeeProfile applyDraft(_EmployeeDraft draft) {
-    return _EmployeeProfile(
-      id: id,
-      name: draft.name,
-      role: draft.role,
-      department: draft.department,
-      email: draft.email,
-      phone: draft.phone,
-      unit: draft.unit,
-      expectedShift: draft.expectedShift,
-      status: draft.status,
-      workMode: draft.workMode,
-      roleLevel: draft.roleLevel,
-      requiresLocationOnPunch: draft.requiresLocationOnPunch,
-      trustedDeviceRequired: draft.trustedDeviceRequired,
-      todayWorkedMinutes: todayWorkedMinutes,
-      pendingAdjustments: pendingAdjustments,
-      lastPunchAt: lastPunchAt,
-      notes: draft.notes,
-    );
-  }
-}
-
-class _EmployeeDraft {
-  const _EmployeeDraft({
-    required this.name,
-    required this.role,
-    required this.department,
-    required this.email,
-    required this.phone,
-    required this.unit,
-    required this.expectedShift,
-    required this.status,
-    required this.workMode,
-    required this.roleLevel,
-    required this.requiresLocationOnPunch,
-    required this.trustedDeviceRequired,
-    required this.notes,
-  });
-
-  factory _EmployeeDraft.fromEmployee(_EmployeeProfile employee) {
-    return _EmployeeDraft(
-      name: employee.name,
-      role: employee.role,
-      department: employee.department,
-      email: employee.email,
-      phone: employee.phone,
-      unit: employee.unit,
-      expectedShift: employee.expectedShift,
-      status: employee.status,
-      workMode: employee.workMode,
-      roleLevel: employee.roleLevel,
-      requiresLocationOnPunch: employee.requiresLocationOnPunch,
-      trustedDeviceRequired: employee.trustedDeviceRequired,
-      notes: employee.notes,
-    );
-  }
-
-  final String name;
-  final String role;
-  final String department;
-  final String email;
-  final String phone;
-  final String unit;
-  final String expectedShift;
-  final _EmployeeStatus status;
-  final _EmployeeWorkMode workMode;
-  final _RoleLevel roleLevel;
-  final bool requiresLocationOnPunch;
-  final bool trustedDeviceRequired;
-  final String notes;
-}
-
 class _EmployeeEditorDialog extends StatefulWidget {
   const _EmployeeEditorDialog({this.employee});
 
-  final _EmployeeProfile? employee;
+  final EmployeeProfile? employee;
 
   @override
   State<_EmployeeEditorDialog> createState() => _EmployeeEditorDialogState();
@@ -1018,9 +874,9 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   late final TextEditingController _expectedShiftController;
   late final TextEditingController _notesController;
 
-  late _EmployeeStatus _status;
-  late _EmployeeWorkMode _workMode;
-  late _RoleLevel _roleLevel;
+  late EmployeeStatus _status;
+  late EmployeeWorkMode _workMode;
+  late RoleLevel _roleLevel;
   late bool _requiresLocationOnPunch;
   late bool _trustedDeviceRequired;
 
@@ -1030,7 +886,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   void initState() {
     super.initState();
     final draft = widget.employee == null
-        ? const _EmployeeDraft(
+      ? const EmployeeDraft(
             name: '',
             role: '',
             department: '',
@@ -1038,14 +894,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
             phone: '',
             unit: '',
             expectedShift: '',
-            status: _EmployeeStatus.active,
-            workMode: _EmployeeWorkMode.onsite,
-            roleLevel: _RoleLevel.staff,
+        status: EmployeeStatus.active,
+        workMode: EmployeeWorkMode.onsite,
+        roleLevel: RoleLevel.staff,
             requiresLocationOnPunch: true,
             trustedDeviceRequired: true,
             notes: '',
           )
-        : _EmployeeDraft.fromEmployee(widget.employee!);
+      : EmployeeDraft.fromEmployee(widget.employee!);
 
     _nameController = TextEditingController(text: draft.name);
     _roleController = TextEditingController(text: draft.role);
@@ -1081,7 +937,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     }
 
     Navigator.of(context).pop(
-      _EmployeeDraft(
+      EmployeeDraft(
         name: _nameController.text.trim(),
         role: _roleController.text.trim(),
         department: _departmentController.text.trim(),
@@ -1316,14 +1172,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   }
 
   Widget _buildStatusDropdown() {
-    return DropdownButtonFormField<_EmployeeStatus>(
+    return DropdownButtonFormField<EmployeeStatus>(
       initialValue: _status,
       decoration: const InputDecoration(
         labelText: 'Status do colaborador',
         prefixIcon: Icon(Icons.flag_outlined),
       ),
-      items: _EmployeeStatus.values.map((status) {
-        return DropdownMenuItem<_EmployeeStatus>(
+      items: EmployeeStatus.values.map((status) {
+        return DropdownMenuItem<EmployeeStatus>(
           value: status,
           child: Text(_statusLabelForForm(status)),
         );
@@ -1341,14 +1197,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   }
 
   Widget _buildWorkModeDropdown() {
-    return DropdownButtonFormField<_EmployeeWorkMode>(
+    return DropdownButtonFormField<EmployeeWorkMode>(
       initialValue: _workMode,
       decoration: const InputDecoration(
         labelText: 'Modo de trabalho',
         prefixIcon: Icon(Icons.work_outline_rounded),
       ),
-      items: _EmployeeWorkMode.values.map((workMode) {
-        return DropdownMenuItem<_EmployeeWorkMode>(
+      items: EmployeeWorkMode.values.map((workMode) {
+        return DropdownMenuItem<EmployeeWorkMode>(
           value: workMode,
           child: Text(_workModeLabelForForm(workMode)),
         );
@@ -1366,14 +1222,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   }
 
   Widget _buildRoleDropdown() {
-    return DropdownButtonFormField<_RoleLevel>(
+    return DropdownButtonFormField<RoleLevel>(
       initialValue: _roleLevel,
       decoration: const InputDecoration(
         labelText: 'Nivel de acesso',
         prefixIcon: Icon(Icons.shield_outlined),
       ),
-      items: _RoleLevel.values.map((roleLevel) {
-        return DropdownMenuItem<_RoleLevel>(
+      items: RoleLevel.values.map((roleLevel) {
+        return DropdownMenuItem<RoleLevel>(
           value: roleLevel,
           child: Text(_roleLevelLabel(roleLevel)),
         );
@@ -1391,28 +1247,28 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   }
 }
 
-String _statusLabelForForm(_EmployeeStatus status) {
+String _statusLabelForForm(EmployeeStatus status) {
   return switch (status) {
-    _EmployeeStatus.active => 'Ativo',
-    _EmployeeStatus.onboarding => 'Onboarding',
-    _EmployeeStatus.onLeave => 'Afastado',
-    _EmployeeStatus.inactive => 'Inativo',
+    EmployeeStatus.active => 'Ativo',
+    EmployeeStatus.onboarding => 'Onboarding',
+    EmployeeStatus.onLeave => 'Afastado',
+    EmployeeStatus.inactive => 'Inativo',
   };
 }
 
-String _workModeLabelForForm(_EmployeeWorkMode workMode) {
+String _workModeLabelForForm(EmployeeWorkMode workMode) {
   return switch (workMode) {
-    _EmployeeWorkMode.onsite => 'Presencial',
-    _EmployeeWorkMode.hybrid => 'Hibrido',
-    _EmployeeWorkMode.remote => 'Remoto',
+    EmployeeWorkMode.onsite => 'Presencial',
+    EmployeeWorkMode.hybrid => 'Hibrido',
+    EmployeeWorkMode.remote => 'Remoto',
   };
 }
 
-String _roleLevelLabel(_RoleLevel roleLevel) {
+String _roleLevelLabel(RoleLevel roleLevel) {
   return switch (roleLevel) {
-    _RoleLevel.staff => 'Operacional',
-    _RoleLevel.specialist => 'Especialista',
-    _RoleLevel.leadership => 'Lideranca',
+    RoleLevel.staff => 'Operacional',
+    RoleLevel.specialist => 'Especialista',
+    RoleLevel.leadership => 'Lideranca',
   };
 }
 
@@ -1432,7 +1288,7 @@ class _EmployeeListTile extends StatelessWidget {
     required this.onEdit,
   });
 
-  final _EmployeeProfile employee;
+  final EmployeeProfile employee;
   final bool selected;
   final Color statusColor;
   final Color workModeColor;

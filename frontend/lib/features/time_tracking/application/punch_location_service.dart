@@ -1,105 +1,10 @@
 import 'dart:async';
 
+import 'package:bunchin_flutter/contracts/location.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
-enum PunchLocationStatus {
-  checking,
-  ready,
-  serviceDisabled,
-  permissionDenied,
-  permissionDeniedForever,
-  unsupported,
-  error,
-}
-
-class PunchLocationSnapshot {
-  const PunchLocationSnapshot({
-    required this.latitude,
-    required this.longitude,
-    required this.accuracyMeters,
-    required this.capturedAt,
-  });
-
-  factory PunchLocationSnapshot.fromPosition(Position position) {
-    return PunchLocationSnapshot(
-      latitude: position.latitude,
-      longitude: position.longitude,
-      accuracyMeters: position.accuracy,
-      capturedAt: position.timestamp,
-    );
-  }
-
-  final double latitude;
-  final double longitude;
-  final double accuracyMeters;
-  final DateTime capturedAt;
-}
-
-class PunchLocationResult {
-  const PunchLocationResult._({
-    required this.status,
-    required this.message,
-    this.snapshot,
-  });
-
-  const PunchLocationResult.checking()
-    : this._(
-        status: PunchLocationStatus.checking,
-        message: 'Validando permissao de localizacao.',
-      );
-
-  const PunchLocationResult.ready({
-    String message =
-        'Permissao concedida. A localizacao sera anexada nas proximas batidas.',
-    PunchLocationSnapshot? snapshot,
-  }) : this._(
-         status: PunchLocationStatus.ready,
-         message: message,
-         snapshot: snapshot,
-       );
-
-  const PunchLocationResult.serviceDisabled()
-    : this._(
-        status: PunchLocationStatus.serviceDisabled,
-        message:
-            'Os servicos de localizacao estao desativados. Ative-os para registrar o ponto.',
-      );
-
-  const PunchLocationResult.permissionDenied()
-    : this._(
-        status: PunchLocationStatus.permissionDenied,
-        message:
-            'A permissao de localizacao foi negada. Sem ela, a batida nao e registrada.',
-      );
-
-  const PunchLocationResult.permissionDeniedForever({
-    String message =
-        'A permissao de localizacao foi bloqueada. Reabilite o acesso nas configuracoes do dispositivo ou do navegador.',
-  }) : this._(
-         status: PunchLocationStatus.permissionDeniedForever,
-         message: message,
-       );
-
-  const PunchLocationResult.unsupported({
-    String message = 'Este ambiente nao oferece suporte a geolocalizacao.',
-  }) : this._(status: PunchLocationStatus.unsupported, message: message);
-
-  const PunchLocationResult.error({
-    required String message,
-    PunchLocationSnapshot? snapshot,
-  }) : this._(
-         status: PunchLocationStatus.error,
-         message: message,
-         snapshot: snapshot,
-       );
-
-  final PunchLocationStatus status;
-  final String message;
-  final PunchLocationSnapshot? snapshot;
-
-  bool get isReady => status == PunchLocationStatus.ready;
-}
+export 'package:bunchin_flutter/contracts/location.dart';
 
 class PunchLocationService {
   const PunchLocationService();

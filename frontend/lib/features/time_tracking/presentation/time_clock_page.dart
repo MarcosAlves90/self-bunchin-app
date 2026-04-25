@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
+import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -43,8 +43,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
       const PunchLocationService();
 
   late DateTime _now;
-  late List<_PunchRecord> _records;
-  late _ShiftStatus _status;
+  late List<PunchRecord> _records;
+  late ShiftStatus _status;
   Timer? _clockTimer;
   PunchLocationResult _locationState = const PunchLocationResult.checking();
   bool _isSubmittingPunch = false;
@@ -83,7 +83,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
     });
   }
 
-  Future<void> _handlePunch(_PunchType type) async {
+  Future<void> _handlePunch(PunchType type) async {
     if (_isSubmittingPunch) {
       return;
     }
@@ -113,14 +113,14 @@ class _TimeClockPageState extends State<TimeClockPage> {
     _registerPunch(type, location: location);
   }
 
-  List<_PunchRecord> _buildInitialRecords(DateTime now) {
+  List<PunchRecord> _buildInitialRecords(DateTime now) {
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final records = <_PunchRecord>[];
+    final records = <PunchRecord>[];
 
     if (now.isAfter(startOfDay.add(const Duration(hours: 8, minutes: 5)))) {
       records.add(
-        _PunchRecord(
-          type: _PunchType.checkIn,
+        PunchRecord(
+          type: PunchType.checkIn,
           timestamp: startOfDay.add(const Duration(hours: 8, minutes: 5)),
           detail: 'Entrada confirmada no dispositivo principal',
         ),
@@ -129,8 +129,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
     if (now.isAfter(startOfDay.add(const Duration(hours: 12, minutes: 4)))) {
       records.add(
-        _PunchRecord(
-          type: _PunchType.breakStart,
+        PunchRecord(
+          type: PunchType.breakStart,
           timestamp: startOfDay.add(const Duration(hours: 12, minutes: 4)),
           detail: 'Pausa iniciada para intervalo',
         ),
@@ -139,8 +139,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
     if (now.isAfter(startOfDay.add(const Duration(hours: 12, minutes: 58)))) {
       records.add(
-        _PunchRecord(
-          type: _PunchType.breakEnd,
+        PunchRecord(
+          type: PunchType.breakEnd,
           timestamp: startOfDay.add(const Duration(hours: 12, minutes: 58)),
           detail: 'Retorno validado sem inconsistências',
         ),
@@ -149,8 +149,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
     if (now.isAfter(startOfDay.add(const Duration(hours: 18, minutes: 2)))) {
       records.add(
-        _PunchRecord(
-          type: _PunchType.checkOut,
+        PunchRecord(
+          type: PunchType.checkOut,
           timestamp: startOfDay.add(const Duration(hours: 18, minutes: 2)),
           detail: 'Saída registrada para encerramento do turno',
         ),
@@ -160,39 +160,39 @@ class _TimeClockPageState extends State<TimeClockPage> {
     return records;
   }
 
-  _ShiftStatus _deriveStatus(List<_PunchRecord> records) {
+  ShiftStatus _deriveStatus(List<PunchRecord> records) {
     if (records.isEmpty) {
-      return _ShiftStatus.checkedOut;
+      return ShiftStatus.checkedOut;
     }
 
     final lastType = records.last.type;
-    if (lastType == _PunchType.checkIn || lastType == _PunchType.breakEnd) {
-      return _ShiftStatus.working;
+    if (lastType == PunchType.checkIn || lastType == PunchType.breakEnd) {
+      return ShiftStatus.working;
     }
 
-    if (lastType == _PunchType.breakStart) {
-      return _ShiftStatus.onBreak;
+    if (lastType == PunchType.breakStart) {
+      return ShiftStatus.onBreak;
     }
 
-    return _ShiftStatus.checkedOut;
+    return ShiftStatus.checkedOut;
   }
 
   void _registerPunch(
-    _PunchType type, {
+    PunchType type, {
     required PunchLocationSnapshot location,
   }) {
     final detail = switch (type) {
-      _PunchType.checkIn => 'Entrada registrada com localização validada',
-      _PunchType.breakStart => 'Pausa iniciada com localização capturada',
-      _PunchType.breakEnd => 'Jornada retomada com localização capturada',
-      _PunchType.checkOut => 'Saída registrada com localização validada',
+      PunchType.checkIn => 'Entrada registrada com localização validada',
+      PunchType.breakStart => 'Pausa iniciada com localização capturada',
+      PunchType.breakEnd => 'Jornada retomada com localização capturada',
+      PunchType.checkOut => 'Saída registrada com localização validada',
     };
 
     setState(() {
       _now = DateTime.now();
-      _records = <_PunchRecord>[
+      _records = <PunchRecord>[
         ..._records,
-        _PunchRecord(
+        PunchRecord(
           type: type,
           timestamp: _now,
           detail: detail,
@@ -212,20 +212,20 @@ class _TimeClockPageState extends State<TimeClockPage> {
     DateTime? start;
 
     for (final record in _records) {
-      if (record.type == _PunchType.checkIn ||
-          record.type == _PunchType.breakEnd) {
+      if (record.type == PunchType.checkIn ||
+          record.type == PunchType.breakEnd) {
         start ??= record.timestamp;
       }
 
-      if ((record.type == _PunchType.breakStart ||
-              record.type == _PunchType.checkOut) &&
+      if ((record.type == PunchType.breakStart ||
+              record.type == PunchType.checkOut) &&
           start != null) {
         total += record.timestamp.difference(start);
         start = null;
       }
     }
 
-    if (_status == _ShiftStatus.working && start != null) {
+    if (_status == ShiftStatus.working && start != null) {
       total += _now.difference(start);
     }
 
@@ -237,35 +237,35 @@ class _TimeClockPageState extends State<TimeClockPage> {
     DateTime? start;
 
     for (final record in _records) {
-      if (record.type == _PunchType.breakStart) {
+      if (record.type == PunchType.breakStart) {
         start = record.timestamp;
       }
 
-      if ((record.type == _PunchType.breakEnd ||
-              record.type == _PunchType.checkOut) &&
+      if ((record.type == PunchType.breakEnd ||
+              record.type == PunchType.checkOut) &&
           start != null) {
         total += record.timestamp.difference(start);
         start = null;
       }
     }
 
-    if (_status == _ShiftStatus.onBreak && start != null) {
+    if (_status == ShiftStatus.onBreak && start != null) {
       total += _now.difference(start);
     }
 
     return total;
   }
 
-  _PunchRecord? get _firstCheckIn {
+  PunchRecord? get _firstCheckIn {
     for (final record in _records) {
-      if (record.type == _PunchType.checkIn) {
+      if (record.type == PunchType.checkIn) {
         return record;
       }
     }
     return null;
   }
 
-  _PunchRecord? get _lastRecord => _records.isEmpty ? null : _records.last;
+  PunchRecord? get _lastRecord => _records.isEmpty ? null : _records.last;
 
   PunchLocationSnapshot? get _lastRegisteredLocation {
     for (final record in _records.reversed) {
@@ -310,27 +310,27 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   String _statusLabel() {
     return switch (_status) {
-      _ShiftStatus.checkedOut => 'Fora do turno',
-      _ShiftStatus.working => 'Em jornada',
-      _ShiftStatus.onBreak => 'Em pausa',
+      ShiftStatus.checkedOut => 'Fora do turno',
+      ShiftStatus.working => 'Em jornada',
+      ShiftStatus.onBreak => 'Em pausa',
     };
   }
 
   String _statusDescription() {
     return switch (_status) {
-      _ShiftStatus.checkedOut =>
+      ShiftStatus.checkedOut =>
         'Nenhuma jornada ativa. O próximo registro deve ser a entrada.',
-      _ShiftStatus.working => 'Jornada em andamento com dispositivo validado.',
-      _ShiftStatus.onBreak =>
+      ShiftStatus.working => 'Jornada em andamento com dispositivo validado.',
+      ShiftStatus.onBreak =>
         'Pausa aberta. O próximo registro recomendado é o retorno.',
     };
   }
 
   Color _statusColor() {
     return switch (_status) {
-      _ShiftStatus.checkedOut => const Color(0xFF6B6254),
-      _ShiftStatus.working => const Color(0xFF2F8F46),
-      _ShiftStatus.onBreak => const Color(0xFF8C5D00),
+      ShiftStatus.checkedOut => const Color(0xFF6B6254),
+      ShiftStatus.working => const Color(0xFF2F8F46),
+      ShiftStatus.onBreak => const Color(0xFF8C5D00),
     };
   }
 
@@ -612,24 +612,24 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildPrimaryActionButton() {
-    if (_status == _ShiftStatus.checkedOut) {
+    if (_status == ShiftStatus.checkedOut) {
       return ElevatedButton.icon(
         onPressed: _isSubmittingPunch
             ? null
             : () {
-                unawaited(_handlePunch(_PunchType.checkIn));
+                unawaited(_handlePunch(PunchType.checkIn));
               },
         icon: const Icon(Icons.login_rounded),
         label: const Text('Registrar entrada'),
       );
     }
 
-    if (_status == _ShiftStatus.working) {
+    if (_status == ShiftStatus.working) {
       return ElevatedButton.icon(
         onPressed: _isSubmittingPunch
             ? null
             : () {
-                unawaited(_handlePunch(_PunchType.breakStart));
+                unawaited(_handlePunch(PunchType.breakStart));
               },
         icon: const Icon(Icons.pause_circle_outline_rounded),
         label: const Text('Iniciar pausa'),
@@ -640,7 +640,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
       onPressed: _isSubmittingPunch
           ? null
           : () {
-              unawaited(_handlePunch(_PunchType.breakEnd));
+              unawaited(_handlePunch(PunchType.breakEnd));
             },
       icon: const Icon(Icons.play_circle_outline_rounded),
       label: const Text('Retomar jornada'),
@@ -648,7 +648,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildSecondaryActionButton() {
-    if (_status == _ShiftStatus.checkedOut) {
+    if (_status == ShiftStatus.checkedOut) {
       return OutlinedButton.icon(
         onPressed: null,
         icon: const Icon(Icons.logout_rounded),
@@ -660,7 +660,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
       onPressed: _isSubmittingPunch
           ? null
           : () {
-              unawaited(_handlePunch(_PunchType.checkOut));
+              unawaited(_handlePunch(PunchType.checkOut));
             },
       icon: const Icon(Icons.logout_rounded),
       label: const Text('Registrar saída'),
@@ -792,46 +792,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 }
 
-enum _ShiftStatus { checkedOut, working, onBreak }
-
-enum _PunchType { checkIn, breakStart, breakEnd, checkOut }
-
-class _PunchRecord {
-  const _PunchRecord({
-    required this.type,
-    required this.timestamp,
-    required this.detail,
-    this.location,
-  });
-
-  final _PunchType type;
-  final DateTime timestamp;
-  final String detail;
-  final PunchLocationSnapshot? location;
-
-  String get title {
-    return switch (type) {
-      _PunchType.checkIn => 'Entrada',
-      _PunchType.breakStart => 'Pausa',
-      _PunchType.breakEnd => 'Retorno',
-      _PunchType.checkOut => 'Saída',
-    };
-  }
-
-  IconData get icon {
-    return switch (type) {
-      _PunchType.checkIn => Icons.login_rounded,
-      _PunchType.breakStart => Icons.pause_circle_outline_rounded,
-      _PunchType.breakEnd => Icons.play_circle_outline_rounded,
-      _PunchType.checkOut => Icons.logout_rounded,
-    };
-  }
-}
-
 class _TimelineTile extends StatelessWidget {
   const _TimelineTile({required this.record});
 
-  final _PunchRecord record;
+  final PunchRecord record;
 
   @override
   Widget build(BuildContext context) {

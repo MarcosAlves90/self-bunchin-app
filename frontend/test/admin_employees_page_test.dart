@@ -8,8 +8,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Administrar equipe'), findsOneWidget);
-    expect(find.text('Novo funcionario'), findsOneWidget);
-    expect(find.text('Marina Costa'), findsNWidgets(2));
-    expect(find.text('Funcionarios da empresa'), findsOneWidget);
+    expect(find.text('Novo funcionário'), findsOneWidget);
+    expect(find.text('Bianca Nogueira'), findsNWidgets(2));
+    expect(find.text('Funcionários da empresa'), findsOneWidget);
   });
 }
