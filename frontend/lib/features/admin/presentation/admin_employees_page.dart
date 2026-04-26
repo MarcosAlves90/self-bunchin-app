@@ -302,14 +302,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     };
   }
 
-  Color _workModeColor(EmployeeWorkMode workMode) {
-    return switch (workMode) {
-      EmployeeWorkMode.onsite => const Color(0xFF1F4E79),
-      EmployeeWorkMode.hybrid => const Color(0xFF6A4FB3),
-      EmployeeWorkMode.remote => const Color(0xFF2B6F60),
-    };
-  }
-
   String _statusLabel(EmployeeStatus status) {
     return switch (status) {
       EmployeeStatus.active => 'Ativo',
@@ -333,14 +325,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       EmployeeStatus.onboarding => Icons.rocket_launch_rounded,
       EmployeeStatus.onLeave => Icons.pause_circle_rounded,
       EmployeeStatus.inactive => Icons.do_not_disturb_on_rounded,
-    };
-  }
-
-  IconData _workModeIcon(EmployeeWorkMode workMode) {
-    return switch (workMode) {
-      EmployeeWorkMode.onsite => Icons.business_rounded,
-      EmployeeWorkMode.hybrid => Icons.home_work_rounded,
-      EmployeeWorkMode.remote => Icons.laptop_mac_rounded,
     };
   }
 
@@ -722,18 +706,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     employee: employee,
                     selected: selected,
                     statusColor: _statusColor(employee.status),
-                    workModeColor: _workModeColor(employee.workMode),
                     statusIcon: _statusIcon(employee.status),
-                    workModeIcon: _workModeIcon(employee.workMode),
                     statusLabel: _statusLabel(employee.status),
-                    workModeLabel: _workModeLabel(employee.workMode),
                     needsAttention: _needsAttention(employee),
-                    formattedLastPunch: employee.lastPunchAt == null
-                        ? 'Sem batida recente'
-                        : _formatDateTime(employee.lastPunchAt!),
-                    formattedTodayHours: _formatHours(
-                      employee.todayWorkedMinutes,
-                    ),
                     onTap: () => _selectEmployee(employee.id),
                   ),
                 );
@@ -1366,28 +1341,18 @@ class _EmployeeListTile extends StatelessWidget {
     required this.employee,
     required this.selected,
     required this.statusColor,
-    required this.workModeColor,
     required this.statusIcon,
-    required this.workModeIcon,
     required this.statusLabel,
-    required this.workModeLabel,
     required this.needsAttention,
-    required this.formattedLastPunch,
-    required this.formattedTodayHours,
     required this.onTap,
   });
 
   final EmployeeProfile employee;
   final bool selected;
   final Color statusColor;
-  final Color workModeColor;
   final IconData statusIcon;
-  final IconData workModeIcon;
   final String statusLabel;
-  final String workModeLabel;
   final bool needsAttention;
-  final String formattedLastPunch;
-  final String formattedTodayHours;
   final VoidCallback onTap;
 
   @override
@@ -1401,7 +1366,7 @@ class _EmployeeListTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: selected
                 ? AppTheme.accent.withValues(alpha: 0.08)
@@ -1413,7 +1378,12 @@ class _EmployeeListTile extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isCompact = constraints.maxWidth < 560;
-              return _buildContent(theme, colorScheme, isCompact: isCompact);
+              return _buildContent(
+                context,
+                theme,
+                colorScheme,
+                isCompact: isCompact,
+              );
             },
           ),
         ),
@@ -1422,16 +1392,45 @@ class _EmployeeListTile extends StatelessWidget {
   }
 
   Widget _buildContent(
+    BuildContext context,
     ThemeData theme,
     ColorScheme colorScheme, {
     required bool isCompact,
   }) {
+    final hasSignals =
+        employee.status != EmployeeStatus.active || needsAttention;
+    final showLeadingIcon = MediaQuery.sizeOf(context).width >= 560;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            if (showLeadingIcon) ...<Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppTheme.accent.withValues(alpha: 0.16)
+                      : colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.72,
+                        ),
+                  border: Border.all(
+                    color: selected
+                        ? AppTheme.accent.withValues(alpha: 0.36)
+                        : colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Icon(
+                  Icons.badge_rounded,
+                  size: 24,
+                  color: selected ? AppTheme.accent : colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 14),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1459,31 +1458,10 @@ class _EmployeeListTile extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        _buildBadgeWrap(),
-        const SizedBox(height: 10),
-        Row(
-          children: <Widget>[
-            Icon(
-              Icons.alternate_email_rounded,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                employee.email,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _buildMetaSection(isCompact: isCompact),
+        if (hasSignals) ...<Widget>[
+          const SizedBox(height: 12),
+          _buildBadgeWrap(),
+        ],
       ],
     );
   }
@@ -1493,21 +1471,11 @@ class _EmployeeListTile extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: <Widget>[
-        _InlinePill(
-          label: statusLabel,
-          tone: statusColor,
-          icon: statusIcon,
-        ),
-        _InlinePill(
-          label: workModeLabel,
-          tone: workModeColor,
-          icon: workModeIcon,
-        ),
-        if (employee.requiresLocationOnPunch)
-          const _InlinePill(
-            label: 'Local obrigatório',
-            tone: Color(0xFF1F4E79),
-            icon: Icons.location_on_rounded,
+        if (employee.status != EmployeeStatus.active)
+          _InlinePill(
+            label: statusLabel,
+            tone: statusColor,
+            icon: statusIcon,
           ),
         if (needsAttention)
           const _InlinePill(
@@ -1516,103 +1484,6 @@ class _EmployeeListTile extends StatelessWidget {
             icon: Icons.warning_amber_rounded,
           ),
       ],
-    );
-  }
-
-  Widget _buildMetaSection({required bool isCompact}) {
-    if (isCompact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _EmployeeMetaChip(
-            icon: Icons.schedule_rounded,
-            label: 'Hoje',
-            value: formattedTodayHours,
-            fullWidth: true,
-          ),
-          const SizedBox(height: 8),
-          _EmployeeMetaChip(
-            icon: Icons.access_time_rounded,
-            label: 'Última batida',
-            value: formattedLastPunch,
-            fullWidth: true,
-          ),
-        ],
-      );
-    }
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: <Widget>[
-        _EmployeeMetaChip(
-          icon: Icons.schedule_rounded,
-          label: 'Hoje',
-          value: formattedTodayHours,
-        ),
-        _EmployeeMetaChip(
-          icon: Icons.access_time_rounded,
-          label: 'Última batida',
-          value: formattedLastPunch,
-        ),
-      ],
-    );
-  }
-}
-
-class _EmployeeMetaChip extends StatelessWidget {
-  const _EmployeeMetaChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.fullWidth = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool fullWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.72),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
-          if (fullWidth)
-            Expanded(
-              child: Text(
-                '$label: $value',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            )
-          else
-            Text(
-              '$label: $value',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

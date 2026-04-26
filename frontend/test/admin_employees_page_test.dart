@@ -21,6 +21,11 @@ void main() {
     expect(find.text('Novo funcionário'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
     expect(find.byTooltip('Editar funcionário'), findsNothing);
+    expect(find.text('renata.souza@bunchin.com'), findsOneWidget);
+    expect(find.text('Sem batida recente'), findsNothing);
+    expect(find.textContaining('Hoje:'), findsNothing);
+    expect(find.text('Ativo'), findsOneWidget);
+    expect(find.byIcon(Icons.badge_rounded), findsOneWidget);
 
     final createButtonFinder = find.widgetWithText(
       ElevatedButton,
@@ -44,6 +49,7 @@ void main() {
 
     expect(find.text('Novo funcionário'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
+    expect(find.byIcon(Icons.badge_rounded), findsNothing);
   });
 
   testWidgets('renders company data from auth context in the sidebar',
