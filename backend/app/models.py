@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import uuid4
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db import Base, utcnow
+
+
+def generate_id() -> str:
+    return str(uuid4())
+
+
+class Company(Base):
+    __tablename__ = "companies"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    legal_name_ciphertext: Mapped[str] = mapped_column(Text)
+    trade_name_ciphertext: Mapped[str] = mapped_column(Text)
+    cnpj_ciphertext: Mapped[str] = mapped_column(Text)
+    cnpj_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    contact_email_ciphertext: Mapped[str] = mapped_column(Text)
+    contact_email_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    contact_phone_ciphertext: Mapped[str] = mapped_column(Text)
+    consented_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Sao_Paulo")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+    users: Mapped[list["UserAccount"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+    employees: Mapped[list["Employee"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+    punches: Mapped[list["Punch"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
+
+
+class Employee(Base):
+    __tablename__ = "employees"
+    __table_args__ = (
+        UniqueConstraint("company_id", "email_hash", name="uq_employee_email_per_company"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    name_ciphertext: Mapped[str] = mapped_column(Text)
+    role_ciphertext: Mapped[str] = mapped_column(Text)
+    department_ciphertext: Mapped[str] = mapped_column(Text)
+    email_ciphertext: Mapped[str] = mapped_column(Text)
+    email_hash: Mapped[str] = mapped_column(String(64), index=True)
+    phone_ciphertext: Mapped[str] = mapped_column(Text)
+    unit_ciphertext: Mapped[str] = mapped_column(Text)
+    expected_shift_ciphertext: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32))
+    work_mode: Mapped[str] = mapped_column(String(32))
+    role_level: Mapped[str] = mapped_column(String(32))
+    requires_location_on_punch: Mapped[bool] = mapped_column(Boolean, default=False)
+    trusted_device_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    pending_adjustments: Mapped[int] = mapped_column(Integer, default=0)
+    notes_ciphertext: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+    company: Mapped[Company] = relationship(back_populates="employees")
+    account: Mapped["UserAccount | None"] = relationship(back_populates="employee")
+    punches: Mapped[list["Punch"]] = relationship(
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )
+
+
+class UserAccount(Base):
+    __tablename__ = "user_accounts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    employee_id: Mapped[str | None] = mapped_column(
+        ForeignKey("employees.id"),
+        nullable=True,
+        unique=True,
+    )
+    email_ciphertext: Mapped[str] = mapped_column(Text)
+    email_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(512))
+    role: Mapped[str] = mapped_column(String(32), default="employee")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+    company: Mapped[Company] = relationship(back_populates="users")
+    employee: Mapped[Employee | None] = relationship(back_populates="account")
+    sessions: Mapped[list["AuthSession"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class Punch(Base):
+    __tablename__ = "punches"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), index=True)
+    type: Mapped[str] = mapped_column(String(32))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    detail_ciphertext: Mapped[str] = mapped_column(Text)
+    location_payload_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    company: Mapped[Company] = relationship(back_populates="punches")
+    employee: Mapped[Employee] = relationship(back_populates="punches")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("user_accounts.id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped[UserAccount] = relationship(back_populates="sessions")

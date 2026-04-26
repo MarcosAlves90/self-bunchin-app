@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+from datetime import datetime
+from enum import Enum
+
+from pydantic import Field, field_validator
+
+from app.schemas.base import CamelModel
+
+
+class ShiftStatus(str, Enum):
+    checked_out = "checkedOut"
+    working = "working"
+    on_break = "onBreak"
+
+
+class PunchType(str, Enum):
+    check_in = "checkIn"
+    break_start = "breakStart"
+    break_end = "breakEnd"
+    check_out = "checkOut"
+
+
+class PunchLocationSnapshotPayload(CamelModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    accuracy_meters: float = Field(gt=0)
+    captured_at: datetime
+
+
+class PunchRecordResponse(CamelModel):
+    type: PunchType
+    timestamp: datetime
+    detail: str
+    location: PunchLocationSnapshotPayload | None = None
+
+
+class CreatePunchRequest(CamelModel):
+    type: PunchType
+    location: PunchLocationSnapshotPayload | None = None
+
+    @field_validator("location")
+    @classmethod
+    def validate_location_snapshot(
+        cls,
+        value: PunchLocationSnapshotPayload | None,
+    ) -> PunchLocationSnapshotPayload | None:
+        return value
+
+
+class TimeClockEmployeeSummary(CamelModel):
+    id: str
+    name: str
+    unit: str
+    status: str
+    work_mode: str
+    requires_location_on_punch: bool
+    trusted_device_required: bool
+
+
+class TimeClockStateResponse(CamelModel):
+    employee: TimeClockEmployeeSummary
+    current_status: ShiftStatus
+    today_worked_minutes: int
+    today_break_minutes: int
+    first_check_in_at: datetime | None
+    last_punch_at: datetime | None
+    records: list[PunchRecordResponse]
