@@ -23,6 +23,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   late final BunchinApi _api;
   late List<EmployeeProfile> _employees;
   AuthContext? _authContext;
+  _EmployeeDetailTab _detailTab = _EmployeeDetailTab.registration;
   EmployeeFilter _filter = EmployeeFilter.all;
   String _searchQuery = '';
   String? _selectedEmployeeId;
@@ -747,142 +748,186 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }
 
     final hasNotes = employee.notes.trim().isNotEmpty;
+    final lastPunchLabel = employee.lastPunchAt == null
+        ? 'Sem registro'
+        : _formatDateTime(employee.lastPunchAt!);
 
     return WorkspaceSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final useTwoColumns = constraints.maxWidth >= 520;
+          final overviewItemWidth = useTwoColumns
+              ? (constraints.maxWidth - 12) / 2
+              : constraints.maxWidth;
+          final activeTab = hasNotes || _detailTab != _EmployeeDetailTab.notes
+              ? _detailTab
+              : _EmployeeDetailTab.registration;
+
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    WorkspaceStatusBadge(
-                      label: _statusLabel(employee.status),
-                      tone: _statusColor(employee.status),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      employee.name,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '${employee.role} | ${employee.department}',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              _EmployeeDetailHero(
+                employee: employee,
+                statusLabel: _statusLabel(employee.status),
+                statusColor: _statusColor(employee.status),
+                statusIcon: _statusIcon(employee.status),
+                workModeLabel: _workModeLabel(employee.workMode),
+                workModeIcon: _workModeSummaryIcon(employee.workMode),
+                needsAttention: _needsAttention(employee),
+                onEdit: () => _openEditEmployeeDialog(employee),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Resumo rápido',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 132,
-                child: OutlinedButton.icon(
-                  onPressed: () => _openEditEmployeeDialog(employee),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Editar'),
-                ),
-              ),
-            ],
-          ),
-          if (hasNotes) ...<Widget>[
-            const SizedBox(height: 14),
-            Text(
-              employee.notes,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.45,
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              _InfoFlag(label: 'E-mail', value: employee.email),
-              _InfoFlag(label: 'Telefone', value: employee.phone),
-              _InfoFlag(label: 'Unidade', value: employee.unit),
-              _InfoFlag(label: 'Jornada', value: employee.expectedShift),
-              _InfoFlag(
-                label: 'Modo',
-                value: _workModeLabel(employee.workMode),
-              ),
-              _InfoFlag(
-                label: 'Última batida',
-                value: employee.lastPunchAt == null
-                    ? 'Sem registro'
-                    : _formatDateTime(employee.lastPunchAt!),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.82),
-              border: Border.all(color: colorScheme.outlineVariant),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Políticas',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: <Widget>[
+                  SizedBox(
+                    width: overviewItemWidth,
+                    child: _EmployeeOverviewCard(
+                      icon: Icons.schedule_rounded,
+                      label: 'Jornada',
+                      value: employee.expectedShift,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                  SizedBox(
+                    width: overviewItemWidth,
+                    child: _EmployeeOverviewCard(
+                      icon: Icons.av_timer_rounded,
+                      label: 'Horas de hoje',
+                      value: _formatHours(employee.todayWorkedMinutes),
+                    ),
+                  ),
+                  SizedBox(
+                    width: overviewItemWidth,
+                    child: _EmployeeOverviewCard(
+                      icon: Icons.history_toggle_off_rounded,
+                      label: 'Última batida',
+                      value: lastPunchLabel,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SegmentedButton<_EmployeeDetailTab>(
+                segments: <ButtonSegment<_EmployeeDetailTab>>[
+                  const ButtonSegment<_EmployeeDetailTab>(
+                    value: _EmployeeDetailTab.registration,
+                    icon: Icon(Icons.badge_outlined),
+                    label: Text('Cadastro'),
+                  ),
+                  const ButtonSegment<_EmployeeDetailTab>(
+                    value: _EmployeeDetailTab.policies,
+                    icon: Icon(Icons.policy_outlined),
+                    label: Text('Políticas'),
+                  ),
+                  if (hasNotes)
+                    const ButtonSegment<_EmployeeDetailTab>(
+                      value: _EmployeeDetailTab.notes,
+                      icon: Icon(Icons.notes_rounded),
+                      label: Text('Notas'),
+                    ),
+                ],
+                selected: <_EmployeeDetailTab>{activeTab},
+                showSelectedIcon: false,
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _detailTab = selection.first;
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+              if (activeTab == _EmployeeDetailTab.registration)
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface.withValues(alpha: 0.82),
+                    border: Border.all(color: colorScheme.outlineVariant),
+                  ),
+                  child: Column(
+                    children: <Widget>[
+                      _EmployeeDetailRow(
+                        icon: Icons.alternate_email_rounded,
+                        label: 'E-mail',
+                        value: employee.email,
+                      ),
+                      Divider(color: colorScheme.outlineVariant, height: 1),
+                      _EmployeeDetailRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Telefone',
+                        value: employee.phone,
+                      ),
+                    ],
+                  ),
+                )
+              else if (activeTab == _EmployeeDetailTab.policies)
+                Column(
                   children: <Widget>[
-                    _PolicyChip(
-                      label: employee.requiresLocationOnPunch
-                          ? 'Localização obrigatória'
-                          : 'Sem geolocalização obrigatória',
+                    _EmployeePolicyRow(
+                      icon: Icons.location_searching_rounded,
+                      title: 'Validação de localização',
+                      value: employee.requiresLocationOnPunch
+                          ? 'Obrigatória nas batidas'
+                          : 'Flexível para a operação',
                       tone: employee.requiresLocationOnPunch
                           ? const Color(0xFF1F4E79)
                           : const Color(0xFF6B6254),
                     ),
-                    _PolicyChip(
-                      label: employee.trustedDeviceRequired
-                          ? 'Dispositivo confiável exigido'
-                          : 'Dispositivo livre',
+                    const SizedBox(height: 10),
+                    _EmployeePolicyRow(
+                      icon: Icons.verified_user_outlined,
+                      title: 'Dispositivo confiável',
+                      value: employee.trustedDeviceRequired
+                          ? 'Exigido para registrar ponto'
+                          : 'Sem restrição ativa',
                       tone: employee.trustedDeviceRequired
                           ? const Color(0xFF2F8F46)
                           : const Color(0xFF6B6254),
                     ),
-                    _PolicyChip(
-                      label: '${employee.pendingAdjustments} ajustes pendentes',
+                    const SizedBox(height: 10),
+                    _EmployeePolicyRow(
+                      icon: employee.pendingAdjustments > 0
+                          ? Icons.warning_amber_rounded
+                          : Icons.task_alt_rounded,
+                      title: 'Ajustes pendentes',
+                      value: employee.pendingAdjustments > 0
+                          ? '${employee.pendingAdjustments} aguardando revisão'
+                          : 'Nenhum ajuste em aberto',
                       tone: employee.pendingAdjustments > 0
                           ? const Color(0xFF8C5D00)
                           : const Color(0xFF2F8F46),
                     ),
                   ],
+                )
+              else
+                _EmployeeNarrativeCard(
+                  icon: Icons.sticky_note_2_outlined,
+                  label: 'Notas da gestão',
+                  value: employee.notes,
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  'Horas trabalhadas hoje: ${_formatHours(employee.todayWorkedMinutes)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
+
+  IconData _workModeSummaryIcon(EmployeeWorkMode workMode) {
+    return switch (workMode) {
+      EmployeeWorkMode.onsite => Icons.business_center_rounded,
+      EmployeeWorkMode.hybrid => Icons.sync_alt_rounded,
+      EmployeeWorkMode.remote => Icons.laptop_mac_rounded,
+    };
+  }
 }
+
+enum _EmployeeDetailTab { registration, policies, notes }
 
 class _EmployeeEditorDialog extends StatefulWidget {
   const _EmployeeEditorDialog({this.employee});
@@ -1538,64 +1583,6 @@ class _AdminMetricItem extends StatelessWidget {
   }
 }
 
-class _InfoFlag extends StatelessWidget {
-  const _InfoFlag({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PolicyChip extends StatelessWidget {
-  const _PolicyChip({required this.label, required this.tone});
-
-  final String label;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.12),
-        border: Border.all(color: tone.withValues(alpha: 0.22)),
-      ),
-      child: Text(label),
-    );
-  }
-}
-
 class _InlinePill extends StatelessWidget {
   const _InlinePill({
     required this.label,
@@ -1629,6 +1616,409 @@ class _InlinePill extends StatelessWidget {
             style: theme.textTheme.labelMedium?.copyWith(
               color: tone,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeDetailHero extends StatelessWidget {
+  const _EmployeeDetailHero({
+    required this.employee,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.statusIcon,
+    required this.workModeLabel,
+    required this.workModeIcon,
+    required this.needsAttention,
+    required this.onEdit,
+  });
+
+  final EmployeeProfile employee;
+  final String statusLabel;
+  final Color statusColor;
+  final IconData statusIcon;
+  final String workModeLabel;
+  final IconData workModeIcon;
+  final bool needsAttention;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.82),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 620;
+          final identityBlock = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  border:
+                      Border.all(color: statusColor.withValues(alpha: 0.28)),
+                ),
+                child: Icon(
+                  Icons.manage_accounts_rounded,
+                  size: 28,
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Perfil selecionado',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        _InlinePill(
+                          label: statusLabel,
+                          tone: statusColor,
+                          icon: statusIcon,
+                        ),
+                        _InlinePill(
+                          label: workModeLabel,
+                          tone: colorScheme.onSurfaceVariant,
+                          icon: workModeIcon,
+                        ),
+                        if (needsAttention)
+                          const _InlinePill(
+                            label: 'Atenção operacional',
+                            tone: Color(0xFF8C5D00),
+                            icon: Icons.priority_high_rounded,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      employee.name,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${employee.role} | ${employee.department}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.apartment_rounded,
+                          size: 15,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            employee.unit,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                identityBlock,
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Editar'),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: identityBlock),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 128,
+                child: OutlinedButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Editar'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _EmployeeNarrativeCard extends StatelessWidget {
+  const _EmployeeNarrativeCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.54),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeOverviewCard extends StatelessWidget {
+  const _EmployeeOverviewCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.82),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color:
+                  colorScheme.surfaceContainerHighest.withValues(alpha: 0.88),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeDetailRow extends StatelessWidget {
+  const _EmployeeDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeePolicyRow extends StatelessWidget {
+  const _EmployeePolicyRow({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.tone,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final Color tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.82),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: tone.withValues(alpha: 0.12),
+              border: Border.all(color: tone.withValues(alpha: 0.22)),
+            ),
+            child: Icon(icon, size: 18, color: tone),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

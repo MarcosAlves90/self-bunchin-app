@@ -26,6 +26,10 @@ void main() {
     expect(find.textContaining('Hoje:'), findsNothing);
     expect(find.text('Ativo'), findsOneWidget);
     expect(find.byIcon(Icons.badge_rounded), findsOneWidget);
+    expect(find.text('Resumo rápido'), findsOneWidget);
+    expect(find.text('Cadastro'), findsOneWidget);
+    expect(find.text('Políticas'), findsOneWidget);
+    expect(find.text('Notas'), findsOneWidget);
 
     final createButtonFinder = find.widgetWithText(
       ElevatedButton,
