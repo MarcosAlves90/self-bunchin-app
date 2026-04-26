@@ -298,6 +298,23 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     };
   }
 
+  IconData _statusIcon(EmployeeStatus status) {
+    return switch (status) {
+      EmployeeStatus.active => Icons.check_circle_rounded,
+      EmployeeStatus.onboarding => Icons.rocket_launch_rounded,
+      EmployeeStatus.onLeave => Icons.pause_circle_rounded,
+      EmployeeStatus.inactive => Icons.do_not_disturb_on_rounded,
+    };
+  }
+
+  IconData _workModeIcon(EmployeeWorkMode workMode) {
+    return switch (workMode) {
+      EmployeeWorkMode.onsite => Icons.business_rounded,
+      EmployeeWorkMode.hybrid => Icons.home_work_rounded,
+      EmployeeWorkMode.remote => Icons.laptop_mac_rounded,
+    };
+  }
+
   String _filterLabel(EmployeeFilter filter) {
     return switch (filter) {
       EmployeeFilter.all => 'Todos',
@@ -668,6 +685,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     selected: selected,
                     statusColor: _statusColor(employee.status),
                     workModeColor: _workModeColor(employee.workMode),
+                    statusIcon: _statusIcon(employee.status),
+                    workModeIcon: _workModeIcon(employee.workMode),
                     statusLabel: _statusLabel(employee.status),
                     workModeLabel: _workModeLabel(employee.workMode),
                     needsAttention: _needsAttention(employee),
@@ -1296,6 +1315,8 @@ class _EmployeeListTile extends StatelessWidget {
     required this.selected,
     required this.statusColor,
     required this.workModeColor,
+    required this.statusIcon,
+    required this.workModeIcon,
     required this.statusLabel,
     required this.workModeLabel,
     required this.needsAttention,
@@ -1309,6 +1330,8 @@ class _EmployeeListTile extends StatelessWidget {
   final bool selected;
   final Color statusColor;
   final Color workModeColor;
+  final IconData statusIcon;
+  final IconData workModeIcon;
   final String statusLabel;
   final String workModeLabel;
   final bool needsAttention;
@@ -1428,17 +1451,27 @@ class _EmployeeListTile extends StatelessWidget {
       spacing: 6,
       runSpacing: 6,
       children: <Widget>[
-        _InlinePill(label: statusLabel, tone: statusColor),
-        _InlinePill(label: workModeLabel, tone: workModeColor),
+        _InlinePill(
+          label: statusLabel,
+          tone: statusColor,
+          icon: statusIcon,
+        ),
+        _InlinePill(
+          label: workModeLabel,
+          tone: workModeColor,
+          icon: workModeIcon,
+        ),
         if (employee.requiresLocationOnPunch)
           const _InlinePill(
             label: 'Local obrigatório',
             tone: Color(0xFF1F4E79),
+            icon: Icons.location_on_rounded,
           ),
         if (needsAttention)
           const _InlinePill(
             label: 'Acompanhamento',
             tone: Color(0xFF8C5D00),
+            icon: Icons.warning_amber_rounded,
           ),
       ],
     );
@@ -1601,10 +1634,15 @@ class _PolicyChip extends StatelessWidget {
 }
 
 class _InlinePill extends StatelessWidget {
-  const _InlinePill({required this.label, required this.tone});
+  const _InlinePill({
+    required this.label,
+    required this.tone,
+    this.icon,
+  });
 
   final String label;
   final Color tone;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1616,12 +1654,21 @@ class _InlinePill extends StatelessWidget {
         color: tone.withValues(alpha: 0.12),
         border: Border.all(color: tone.withValues(alpha: 0.22)),
       ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: tone,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (icon != null) ...<Widget>[
+            Icon(icon, size: 14, color: tone),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: tone,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
