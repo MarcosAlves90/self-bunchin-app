@@ -992,6 +992,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _nameController,
                     label: 'Nome completo',
+                    hintText: 'Ex.: Maria da Silva',
                     icon: Icons.person_outline_rounded,
                     validatorMessage: 'Informe o nome do funcionário.',
                   ),
@@ -999,6 +1000,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _roleController,
                     label: 'Cargo',
+                    hintText: 'Ex.: Analista Financeira',
                     icon: Icons.badge_outlined,
                     validatorMessage: 'Informe o cargo principal.',
                   ),
@@ -1006,6 +1008,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _departmentController,
                     label: 'Departamento',
+                    hintText: 'Ex.: Financeiro',
                     icon: Icons.apartment_rounded,
                     validatorMessage: 'Informe o departamento.',
                   ),
@@ -1015,6 +1018,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
                       labelText: 'E-mail corporativo',
+                      hintText: 'Ex.: maria@empresa.com.br',
                       prefixIcon: Icon(Icons.alternate_email_rounded),
                     ),
                     validator: (value) {
@@ -1031,6 +1035,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _phoneController,
                     label: 'Telefone',
+                    hintText: 'Ex.: (11) 99999-0000',
                     icon: Icons.phone_outlined,
                     validatorMessage: 'Informe um telefone com DDD.',
                     keyboardType: TextInputType.phone,
@@ -1050,6 +1055,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _unitController,
                     label: 'Unidade',
+                    hintText: 'Ex.: Matriz Paulista',
                     icon: Icons.location_city_outlined,
                     validatorMessage: 'Informe a unidade de referência.',
                   ),
@@ -1057,6 +1063,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   _buildTextField(
                     controller: _expectedShiftController,
                     label: 'Jornada prevista',
+                    hintText: 'Ex.: 08:00 às 17:00',
                     icon: Icons.schedule_rounded,
                     validatorMessage: 'Informe a jornada prevista.',
                   ),
@@ -1096,6 +1103,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     maxLines: 5,
                     decoration: const InputDecoration(
                       labelText: 'Contexto administrativo',
+                      hintText: 'Ex.: Responsável pela operação da unidade.',
                       alignLabelWithHint: true,
                       prefixIcon: Icon(Icons.notes_rounded),
                     ),
@@ -1166,6 +1174,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    String? hintText,
     required IconData icon,
     required String validatorMessage,
     TextInputType? keyboardType,
@@ -1176,7 +1185,11 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        prefixIcon: Icon(icon),
+      ),
       validator: validator ??
           (value) {
             if (value == null || value.trim().length < 3) {
