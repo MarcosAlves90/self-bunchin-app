@@ -471,47 +471,63 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   Widget _buildMetricGrid(bool isWide) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width =
-            isWide ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth;
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
+        final useSingleRow = isWide && constraints.maxWidth >= 980;
+        final useTwoColumns = !useSingleRow && constraints.maxWidth >= 500;
+        final itemWidth = useTwoColumns
+            ? (constraints.maxWidth - 8) / 2
+            : constraints.maxWidth;
+        final metricItems = <Widget>[
+          _AdminMetricItem(
+            icon: Icons.groups_2_rounded,
+            label: 'Colaboradores',
+            value: _employees.length.toString(),
+          ),
+          _AdminMetricItem(
+            icon: Icons.verified_user_rounded,
+            label: 'Ativos',
+            value: _activeEmployees.toString(),
+          ),
+          _AdminMetricItem(
+            icon: Icons.location_on_rounded,
+            label: 'Com geolocalização',
+            value: _locationTrackedEmployees.toString(),
+          ),
+          _AdminMetricItem(
+            icon: Icons.warning_amber_rounded,
+            label: 'Em atenção',
+            value: _attentionEmployees.toString(),
+          ),
+        ];
 
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: <Widget>[
-            SizedBox(
-              width: width,
-              child: WorkspaceMetricCard(
-                label: 'Total de colaboradores',
-                value: _employees.length.toString(),
-                helper: 'Base administrada pela empresa neste momento',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: WorkspaceMetricCard(
-                label: 'Funcionários ativos',
-                value: _activeEmployees.toString(),
-                helper: 'Pessoas em jornada regular e com acesso liberado',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: WorkspaceMetricCard(
-                label: 'Geolocalização exigida',
-                value: _locationTrackedEmployees.toString(),
-                helper: 'Perfis com validação de local no registro de ponto',
-              ),
-            ),
-            SizedBox(
-              width: width,
-              child: WorkspaceMetricCard(
-                label: 'Itens em atenção',
-                value: _attentionEmployees.toString(),
-                helper: 'Ajustes, onboarding ou perfis com risco operacional',
-              ),
-            ),
-          ],
-        );
+        return useSingleRow
+            ? Row(
+                children: metricItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  return Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        right: index == metricItems.length - 1 ? 0 : 8,
+                      ),
+                      child: item,
+                    ),
+                  );
+                }).toList(),
+              )
+            : Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: metricItems
+                    .map(
+                      (item) => SizedBox(
+                        width: itemWidth,
+                        child: item,
+                      ),
+                    )
+                    .toList(),
+              );
       },
     );
   }
@@ -1569,6 +1585,56 @@ class _EmployeeMetaChip extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminMetricItem extends StatelessWidget {
+  const _AdminMetricItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.58),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
