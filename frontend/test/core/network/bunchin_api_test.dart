@@ -73,6 +73,47 @@ void main() {
     });
   });
 
+  test('logout calls backend endpoint and clears local token', () async {
+    final client = _FakeApiClient(
+      postResponses: {
+        '/auth/logout': null,
+      },
+    );
+    final tokenStorage = _InMemoryTokenStorage()..savedToken = 'token-123';
+    final api = BunchinApi(client: client, tokenStorage: tokenStorage);
+
+    await api.logout();
+
+    expect(client.lastPath, '/auth/logout');
+    expect(client.lastWithAuth, isTrue);
+    expect(tokenStorage.clearCalled, isTrue);
+    expect(tokenStorage.savedToken, isNull);
+  });
+
+  test('logout clears local token even when backend logout fails', () async {
+    final client = _FakeApiClient(
+      postErrors: {
+        '/auth/logout':
+            ApiException('Falha ao encerrar sessao.', statusCode: 500),
+      },
+    );
+    final tokenStorage = _InMemoryTokenStorage()..savedToken = 'token-123';
+    final api = BunchinApi(client: client, tokenStorage: tokenStorage);
+
+    await expectLater(
+      api.logout(),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'Falha ao encerrar sessao.',
+        ),
+      ),
+    );
+    expect(tokenStorage.clearCalled, isTrue);
+    expect(tokenStorage.savedToken, isNull);
+  });
+
   test('listEmployees parses backend payload through employee contract',
       () async {
     final client = _FakeApiClient(
@@ -326,11 +367,13 @@ class _FakeApiClient extends ApiClient {
   _FakeApiClient({
     this.getResponses = const <String, dynamic>{},
     this.postResponses = const <String, dynamic>{},
+    this.postErrors = const <String, Object>{},
     this.putResponses = const <String, dynamic>{},
   });
 
   final Map<String, dynamic> getResponses;
   final Map<String, dynamic> postResponses;
+  final Map<String, Object> postErrors;
   final Map<String, dynamic> putResponses;
 
   String? lastPath;
@@ -356,6 +399,9 @@ class _FakeApiClient extends ApiClient {
     lastPath = path;
     lastBody = body;
     lastWithAuth = withAuth;
+    if (postErrors.containsKey(path)) {
+      throw postErrors[path]!;
+    }
     if (!postResponses.containsKey(path)) {
       throw StateError('No fake POST response registered for $path');
     }
@@ -380,9 +426,21 @@ class _FakeApiClient extends ApiClient {
 
 class _InMemoryTokenStorage extends TokenStorage {
   String? savedToken;
+  bool clearCalled = false;
 
   @override
   Future<void> saveAccessToken(String token) async {
     savedToken = token;
+  }
+
+  @override
+  Future<String?> readAccessToken() async {
+    return savedToken;
+  }
+
+  @override
+  Future<void> clearAccessToken() async {
+    clearCalled = true;
+    savedToken = null;
   }
 }

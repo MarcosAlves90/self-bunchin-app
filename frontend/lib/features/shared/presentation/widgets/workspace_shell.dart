@@ -1,9 +1,12 @@
 import 'dart:ui';
 
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
+import 'package:bunchin_flutter/features/auth/presentation/logout_navigation.dart';
 import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+
+typedef WorkspaceLogoutHandler = Future<void> Function(BuildContext context);
 
 class WorkspaceScaffold extends StatelessWidget {
   const WorkspaceScaffold({
@@ -12,19 +15,21 @@ class WorkspaceScaffold extends StatelessWidget {
     required this.contentBuilder,
     this.wideBreakpoint = 1080,
     this.sidebarWidth = 360,
+    this.onLogoutRequested = logoutFromWorkspace,
   });
 
   final Widget sidebar;
   final Widget Function(BuildContext context, bool isWide) contentBuilder;
   final double wideBreakpoint;
   final double sidebarWidth;
+  final WorkspaceLogoutHandler onLogoutRequested;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      drawer: _AppNavigationDrawer(),
+      drawer: _AppNavigationDrawer(onLogoutRequested: onLogoutRequested),
       body: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -124,7 +129,9 @@ class WorkspaceScaffold extends StatelessWidget {
 }
 
 class _AppNavigationDrawer extends StatelessWidget {
-  const _AppNavigationDrawer();
+  const _AppNavigationDrawer({required this.onLogoutRequested});
+
+  final WorkspaceLogoutHandler onLogoutRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +220,9 @@ class _AppNavigationDrawer extends StatelessWidget {
             icon: Icons.logout_rounded,
             label: 'Sair do Sistema',
             color: colorScheme.error,
-            onTap: () => Navigator.of(context).maybePop(),
+            onTap: () async {
+              await onLogoutRequested(context);
+            },
           ),
           const SizedBox(height: 16),
         ],
@@ -245,11 +254,15 @@ class _AppNavigationDrawer extends StatelessWidget {
               children: [
                 Icon(icon, size: 24, color: finalColor),
                 const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: finalColor,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: finalColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
