@@ -1,3 +1,4 @@
+import 'package:bunchin_flutter/contracts/contract_parsing.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -24,6 +25,15 @@ abstract class PunchLocationSnapshot with _$PunchLocationSnapshot {
     required DateTime capturedAt,
   }) = _PunchLocationSnapshot;
 
+  factory PunchLocationSnapshot.fromJson(JsonMap json) {
+    return PunchLocationSnapshot(
+      latitude: requireDouble(json, 'latitude'),
+      longitude: requireDouble(json, 'longitude'),
+      accuracyMeters: requireDouble(json, 'accuracyMeters'),
+      capturedAt: requireDateTime(json, 'capturedAt'),
+    );
+  }
+
   factory PunchLocationSnapshot.fromPosition(Position position) {
     return PunchLocationSnapshot(
       latitude: position.latitude,
@@ -31,6 +41,15 @@ abstract class PunchLocationSnapshot with _$PunchLocationSnapshot {
       accuracyMeters: position.accuracy,
       capturedAt: position.timestamp,
     );
+  }
+
+  JsonMap toApiJson() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'accuracyMeters': accuracyMeters,
+      'capturedAt': capturedAt.toUtc().toIso8601String(),
+    };
   }
 }
 
@@ -41,7 +60,8 @@ abstract class PunchLocationResult with _$PunchLocationResult {
   const factory PunchLocationResult.checking() = _PunchLocationChecking;
 
   const factory PunchLocationResult.ready({
-    @Default('Permissao concedida. A localizacao sera anexada nas proximas batidas.')
+    @Default(
+        'Permissao concedida. A localizacao sera anexada nas proximas batidas.')
     String message,
     PunchLocationSnapshot? snapshot,
   }) = _PunchLocationReady;
@@ -53,7 +73,8 @@ abstract class PunchLocationResult with _$PunchLocationResult {
       _PunchLocationPermissionDenied;
 
   const factory PunchLocationResult.permissionDeniedForever({
-    @Default('A permissao de localizacao foi bloqueada. Reabilite o acesso nas configuracoes do dispositivo ou do navegador.')
+    @Default(
+        'A permissao de localizacao foi bloqueada. Reabilite o acesso nas configuracoes do dispositivo ou do navegador.')
     String message,
   }) = _PunchLocationPermissionDeniedForever;
 
@@ -68,36 +89,37 @@ abstract class PunchLocationResult with _$PunchLocationResult {
   }) = _PunchLocationError;
 
   PunchLocationStatus get status => when(
-    checking: () => PunchLocationStatus.checking,
-    ready: (_, snapshot) => PunchLocationStatus.ready,
-    serviceDisabled: () => PunchLocationStatus.serviceDisabled,
-    permissionDenied: () => PunchLocationStatus.permissionDenied,
-    permissionDeniedForever: (_) => PunchLocationStatus.permissionDeniedForever,
-    unsupported: (_) => PunchLocationStatus.unsupported,
-    error: (_, snapshot) => PunchLocationStatus.error,
-  );
+        checking: () => PunchLocationStatus.checking,
+        ready: (_, snapshot) => PunchLocationStatus.ready,
+        serviceDisabled: () => PunchLocationStatus.serviceDisabled,
+        permissionDenied: () => PunchLocationStatus.permissionDenied,
+        permissionDeniedForever: (_) =>
+            PunchLocationStatus.permissionDeniedForever,
+        unsupported: (_) => PunchLocationStatus.unsupported,
+        error: (_, snapshot) => PunchLocationStatus.error,
+      );
 
   String get message => when(
-    checking: () => 'Validando permissao de localizacao.',
-    ready: (message, _) => message,
-    serviceDisabled: () =>
-        'Os servicos de localizacao estao desativados. Ative-os para registrar o ponto.',
-    permissionDenied: () =>
-        'A permissao de localizacao foi negada. Sem ela, a batida nao e registrada.',
-    permissionDeniedForever: (message) => message,
-    unsupported: (message) => message,
-    error: (message, _) => message,
-  );
+        checking: () => 'Validando permissao de localizacao.',
+        ready: (message, _) => message,
+        serviceDisabled: () =>
+            'Os servicos de localizacao estao desativados. Ative-os para registrar o ponto.',
+        permissionDenied: () =>
+            'A permissao de localizacao foi negada. Sem ela, a batida nao e registrada.',
+        permissionDeniedForever: (message) => message,
+        unsupported: (message) => message,
+        error: (message, _) => message,
+      );
 
   PunchLocationSnapshot? get snapshot => when(
-    checking: () => null,
-    ready: (_, snapshot) => snapshot,
-    serviceDisabled: () => null,
-    permissionDenied: () => null,
-    permissionDeniedForever: (_) => null,
-    unsupported: (_) => null,
-    error: (_, snapshot) => snapshot,
-  );
+        checking: () => null,
+        ready: (_, snapshot) => snapshot,
+        serviceDisabled: () => null,
+        permissionDenied: () => null,
+        permissionDeniedForever: (_) => null,
+        unsupported: (_) => null,
+        error: (_, snapshot) => snapshot,
+      );
 
   bool get isReady => status == PunchLocationStatus.ready;
 }

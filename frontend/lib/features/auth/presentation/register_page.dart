@@ -1,3 +1,7 @@
+import 'package:bunchin_flutter/contracts/auth.dart';
+import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_session_navigation.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
@@ -10,6 +14,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _companyNameController = TextEditingController();
   final _tradeNameController = TextEditingController();
@@ -22,6 +27,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -35,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) {
@@ -51,11 +57,62 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cadastro empresarial validado. Integre o backend aqui.'),
-      ),
-    );
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final session = await _api.registerCompany(
+        draft: CompanyRegistrationDraft(
+          companyName: _companyNameController.text.trim(),
+          tradeName: _tradeNameController.text.trim(),
+          cnpj: _cnpjController.text.trim(),
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          password: _passwordController.text,
+          acceptTerms: _acceptTerms,
+        ),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Empresa cadastrada com sucesso.'),
+        ),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        buildAuthenticatedWorkspaceRoute(session),
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nao foi possivel concluir o cadastro da empresa.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -349,8 +406,14 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _submit,
-              child: const Text('Cadastrar empresa'),
+              onPressed: _isSubmitting ? null : _submit,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Cadastrar empresa'),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(

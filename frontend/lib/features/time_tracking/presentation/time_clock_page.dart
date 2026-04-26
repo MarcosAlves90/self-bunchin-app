@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bunchin_flutter/contracts/punch.dart';
+import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
@@ -95,8 +96,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
       }
 
       setState(() {
-        _employeeName = state.employeeName;
-        _employeeUnit = state.employeeUnit;
+        _employeeName = state.employee.name;
+        _employeeUnit = state.employee.unit;
         _status = state.currentStatus;
         _todayWorkedMinutes = state.todayWorkedMinutes;
         _todayBreakMinutes = state.todayBreakMinutes;
@@ -170,7 +171,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
     required PunchLocationSnapshot location,
   }) async {
     try {
-      final punch = await _api.createPunch(type: type, location: location);
+      final punch = await _api.createPunch(
+        request: CreatePunchRequest(type: type, location: location),
+      );
       await _loadTimeClockState();
       if (!mounted) {
         return;
@@ -270,10 +273,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
   String _locationStatusLabel() {
     return switch (_locationState.status) {
       PunchLocationStatus.checking => 'Validando localização',
-      PunchLocationStatus.ready =>
-        _lastRegisteredLocation == null
-            ? 'Permissão ativa'
-            : 'Localização pronta',
+      PunchLocationStatus.ready => _lastRegisteredLocation == null
+          ? 'Permissão ativa'
+          : 'Localização pronta',
       PunchLocationStatus.serviceDisabled => 'Localização desativada',
       PunchLocationStatus.permissionDenied => 'Permissão negada',
       PunchLocationStatus.permissionDeniedForever => 'Permissão bloqueada',
@@ -630,9 +632,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
   Widget _buildMetricGrid(bool isWide) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = isWide
-            ? (constraints.maxWidth - 12) / 2
-            : constraints.maxWidth;
+        final width =
+            isWide ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth;
 
         return Wrap(
           spacing: 12,

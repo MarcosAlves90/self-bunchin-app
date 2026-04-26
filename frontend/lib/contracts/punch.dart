@@ -1,3 +1,4 @@
+import 'package:bunchin_flutter/contracts/contract_parsing.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:bunchin_flutter/contracts/location.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,38 @@ part 'punch.freezed.dart';
 enum ShiftStatus { checkedOut, working, onBreak }
 
 enum PunchType { checkIn, breakStart, breakEnd, checkOut }
+
+ShiftStatus shiftStatusFromApi(String value) {
+  return switch (value) {
+    'checkedOut' => ShiftStatus.checkedOut,
+    'working' => ShiftStatus.working,
+    'onBreak' => ShiftStatus.onBreak,
+    _ => throw ContractParsingException(
+        'Unsupported shift status value: $value',
+      ),
+  };
+}
+
+PunchType punchTypeFromApi(String value) {
+  return switch (value) {
+    'checkIn' => PunchType.checkIn,
+    'breakStart' => PunchType.breakStart,
+    'breakEnd' => PunchType.breakEnd,
+    'checkOut' => PunchType.checkOut,
+    _ => throw ContractParsingException(
+        'Unsupported punch type value: $value',
+      ),
+  };
+}
+
+String punchTypeToApi(PunchType value) {
+  return switch (value) {
+    PunchType.checkIn => 'checkIn',
+    PunchType.breakStart => 'breakStart',
+    PunchType.breakEnd => 'breakEnd',
+    PunchType.checkOut => 'checkOut',
+  };
+}
 
 @freezed
 abstract class PunchRecord with _$PunchRecord {
@@ -18,6 +51,21 @@ abstract class PunchRecord with _$PunchRecord {
     required String detail,
     PunchLocationSnapshot? location,
   }) = _PunchRecord;
+
+  factory PunchRecord.fromJson(JsonMap json) {
+    final rawLocation = json['location'];
+
+    return PunchRecord(
+      type: punchTypeFromApi(requireString(json, 'type')),
+      timestamp: requireDateTime(json, 'timestamp'),
+      detail: requireString(json, 'detail'),
+      location: rawLocation == null
+          ? null
+          : PunchLocationSnapshot.fromJson(
+              requireJsonMap(rawLocation, 'location'),
+            ),
+    );
+  }
 
   String get title {
     return switch (type) {

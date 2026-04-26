@@ -1,8 +1,9 @@
+import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_session_navigation.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
-import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,10 +42,12 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await _api.login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        keepConnected: _keepConnected,
+      final session = await _api.login(
+        credentials: LoginCredentials(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          keepConnected: _keepConnected,
+        ),
       );
 
       if (!mounted) {
@@ -52,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
       }
 
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const TimeClockPage()),
+        buildAuthenticatedWorkspaceRoute(session),
       );
     } on ApiException catch (error) {
       if (!mounted) {
@@ -181,8 +184,8 @@ class _LoginPageState extends State<LoginPage> {
                   return 'Informe sua senha.';
                 }
 
-                if (value.length < 6) {
-                  return 'A senha precisa ter ao menos 6 caracteres.';
+                if (value.length < 8) {
+                  return 'A senha precisa ter ao menos 8 caracteres.';
                 }
 
                 return null;
