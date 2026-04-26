@@ -67,7 +67,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
       setState(() {
         _isLoading = false;
-        _loadError = 'Nao foi possivel carregar os funcionarios.';
+        _loadError = 'Não foi possível carregar os funcionários.';
       });
     }
   }
@@ -190,7 +190,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${employee.name} foi adicionado a empresa.')),
+        SnackBar(content: Text('${employee.name} foi adicionado à empresa.')),
       );
     } on ApiException catch (error) {
       if (!mounted) {
@@ -329,22 +329,22 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     return WorkspaceSidebar(
       title: 'Painel administrativo da empresa.',
       description:
-          'Centralize equipe, onboarding e politicas operacionais em uma visao unica de gestao.',
+          'Centralize equipe, onboarding e políticas operacionais em uma visão única de gestão.',
       summaryChildren: <Widget>[
         const WorkspaceSummaryStripe(
           label: 'Empresa',
-          value: 'Bunchin Servicos Digitais',
-          helper: '4 unidades e operacao com RH centralizado',
+          value: 'Bunchin Serviços Digitais',
+          helper: '4 unidades e operação com RH centralizado',
         ),
         WorkspaceSummaryStripe(
           label: 'Headcount',
-          value: '${_employees.length} funcionarios',
+          value: '${_employees.length} funcionários',
           helper:
-              '$_activeEmployees ativos e $_leadershipEmployees liderancas cadastradas',
+              '$_activeEmployees ativos e $_leadershipEmployees lideranças cadastradas',
         ),
         WorkspaceSummaryStripe(
-          label: 'Pendencias',
-          value: '$_attentionEmployees em atencao',
+          label: 'Pendências',
+          value: '$_attentionEmployees em atenção',
           helper: 'Onboarding, afastamentos e ajustes de ponto',
         ),
       ],
@@ -780,7 +780,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 value: _workModeLabel(employee.workMode),
               ),
               _InfoFlag(
-                label: 'Ultima batida',
+                label: 'Última batida',
                 value: employee.lastPunchAt == null
                     ? 'Sem registro'
                     : _formatDateTime(employee.lastPunchAt!),
@@ -799,7 +799,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Politicas e conformidade',
+                  'Políticas e conformidade',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -811,15 +811,15 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                   children: <Widget>[
                     _PolicyChip(
                       label: employee.requiresLocationOnPunch
-                          ? 'Localizacao obrigatoria'
-                          : 'Sem geolocalizacao obrigatoria',
+                          ? 'Localização obrigatória'
+                          : 'Sem geolocalização obrigatória',
                       tone: employee.requiresLocationOnPunch
                           ? const Color(0xFF1F4E79)
                           : const Color(0xFF6B6254),
                     ),
                     _PolicyChip(
                       label: employee.trustedDeviceRequired
-                          ? 'Dispositivo confiavel exigido'
+                          ? 'Dispositivo confiável exigido'
                           : 'Dispositivo livre',
                       tone: employee.trustedDeviceRequired
                           ? const Color(0xFF2F8F46)
@@ -1241,7 +1241,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     return DropdownButtonFormField<RoleLevel>(
       initialValue: _roleLevel,
       decoration: const InputDecoration(
-        labelText: 'Nivel de acesso',
+        labelText: 'Nível de acesso',
         prefixIcon: Icon(Icons.shield_outlined),
       ),
       items: RoleLevel.values.map((roleLevel) {
@@ -1275,7 +1275,7 @@ String _statusLabelForForm(EmployeeStatus status) {
 String _workModeLabelForForm(EmployeeWorkMode workMode) {
   return switch (workMode) {
     EmployeeWorkMode.onsite => 'Presencial',
-    EmployeeWorkMode.hybrid => 'Hibrido',
+    EmployeeWorkMode.hybrid => 'Híbrido',
     EmployeeWorkMode.remote => 'Remoto',
   };
 }
@@ -1284,7 +1284,7 @@ String _roleLevelLabel(RoleLevel roleLevel) {
   return switch (roleLevel) {
     RoleLevel.staff => 'Operacional',
     RoleLevel.specialist => 'Especialista',
-    RoleLevel.leadership => 'Lideranca',
+    RoleLevel.leadership => 'Liderança',
   };
 }
 
@@ -1385,7 +1385,7 @@ class _EmployeeListTile extends StatelessWidget {
                         _InlinePill(label: workModeLabel, tone: workModeColor),
                         if (employee.requiresLocationOnPunch)
                           const _InlinePill(
-                            label: 'Local obrigatorio',
+                            label: 'Local obrigatório',
                             tone: Color(0xFF1F4E79),
                           ),
                         if (needsAttention)
