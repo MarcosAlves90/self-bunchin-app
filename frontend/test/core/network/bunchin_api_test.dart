@@ -114,6 +114,24 @@ void main() {
     expect(tokenStorage.savedToken, isNull);
   });
 
+  test('getAuthContext parses masked company summary', () async {
+    final client = _FakeApiClient(
+      getResponses: {
+        '/auth/me': _authContextResponse(),
+      },
+    );
+    final api =
+        BunchinApi(client: client, tokenStorage: _InMemoryTokenStorage());
+
+    final context = await api.getAuthContext();
+
+    expect(context.company.tradeName, 'Bunchin');
+    expect(context.company.cnpjMasked, '12.***.***/****-90');
+    expect(context.user.isAdmin, isTrue);
+    expect(client.lastPath, '/auth/me');
+    expect(client.lastWithAuth, isTrue);
+  });
+
   test('listEmployees parses backend payload through employee contract',
       () async {
     final client = _FakeApiClient(
@@ -346,6 +364,25 @@ Map<String, dynamic> _authSessionResponse() {
     'accessToken': 'token-123',
     'tokenType': 'bearer',
     'expiresAt': '2026-04-26T18:00:00Z',
+    'company': {
+      'id': 'cmp-01',
+      'legalName': 'Bunchin Tecnologia LTDA',
+      'tradeName': 'Bunchin',
+      'cnpjMasked': '12.***.***/****-90',
+      'emailMasked': 'co*****@bunchin.com',
+      'phoneMasked': '11*****0000',
+    },
+    'user': {
+      'id': 'usr-01',
+      'email': 'marina.costa@bunchin.com',
+      'role': 'admin',
+      'employeeId': null,
+    },
+  };
+}
+
+Map<String, dynamic> _authContextResponse() {
+  return <String, dynamic>{
     'company': {
       'id': 'cmp-01',
       'legalName': 'Bunchin Tecnologia LTDA',

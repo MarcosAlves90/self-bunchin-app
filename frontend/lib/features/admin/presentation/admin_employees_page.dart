@@ -1,3 +1,4 @@
+import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
@@ -8,17 +9,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AdminEmployeesPage extends StatefulWidget {
-  const AdminEmployeesPage({super.key});
+  const AdminEmployeesPage({super.key, this.api});
+
+  final BunchinApi? api;
 
   @override
   State<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
 }
 
 class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
-  final BunchinApi _api = BunchinApi();
   final TextEditingController _searchController = TextEditingController();
 
+  late final BunchinApi _api;
   late List<EmployeeProfile> _employees;
+  AuthContext? _authContext;
   EmployeeFilter _filter = EmployeeFilter.all;
   String _searchQuery = '';
   String? _selectedEmployeeId;
@@ -28,6 +32,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   @override
   void initState() {
     super.initState();
+    _api = widget.api ?? BunchinApi();
     _employees = <EmployeeProfile>[];
     _loadEmployees();
   }
@@ -39,13 +44,17 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     });
 
     try {
-      final employees = await _api.listEmployees();
+      final employeesFuture = _api.listEmployees();
+      final authContextFuture = _loadAuthContextSafely();
+      final employees = await employeesFuture;
+      final authContext = await authContextFuture;
       if (!mounted) {
         return;
       }
 
       setState(() {
         _employees = employees;
+        _authContext = authContext;
         if (_selectedEmployeeId == null && _employees.isNotEmpty) {
           _selectedEmployeeId = _employees.first.id;
         }
@@ -72,6 +81,16 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }
   }
 
+  Future<AuthContext?> _loadAuthContextSafely() async {
+    try {
+      return await _api.getAuthContext();
+    } on ApiException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -80,10 +99,20 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
   List<EmployeeProfile> get _visibleEmployees {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
+    final currentUserEmail = _authContext?.user.email.trim().toLowerCase();
+    final currentUserEmployeeId = _authContext?.user.employeeId;
 
     return _employees.where((employee) {
-      // Don't show the current user in the admin list
-      if (employee.name == 'Marina Costa') {
+      // Avoid showing the current user's own profile in the admin list.
+      if (currentUserEmployeeId != null &&
+          currentUserEmployeeId.isNotEmpty &&
+          employee.id == currentUserEmployeeId) {
+        return false;
+      }
+
+      if (currentUserEmail != null &&
+          currentUserEmail.isNotEmpty &&
+          employee.email.trim().toLowerCase() == currentUserEmail) {
         return false;
       }
 
@@ -333,34 +362,71 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Widget _buildSummaryPanel() {
+    final company = _authContext?.company;
+    final companyName = _companyDisplayName(company);
+    final companyIdentity = _companyIdentitySummary(company);
+
     return WorkspaceSidebar(
       title: 'Painel administrativo da empresa.',
       description:
-          'Centralize equipe, onboarding e políticas operacionais em uma visão única de gestão.',
+          'Acompanhe equipe, pendências e regras operacionais em um só lugar.',
       summaryChildren: <Widget>[
-        const WorkspaceSummaryStripe(
+        WorkspaceSummaryStripe(
           label: 'Empresa',
-          value: 'Bunchin Serviços Digitais',
-          helper: '4 unidades e operação com RH centralizado',
+          value: companyName,
+          helper: companyIdentity,
         ),
         WorkspaceSummaryStripe(
           label: 'Headcount',
           value: '${_employees.length} funcionários',
-          helper:
-              '$_activeEmployees ativos e $_leadershipEmployees lideranças cadastradas',
+          helper: '$_activeEmployees ativos e $_leadershipEmployees lideranças',
         ),
         WorkspaceSummaryStripe(
           label: 'Pendências',
           value: '$_attentionEmployees em atenção',
-          helper: 'Onboarding, afastamentos e ajustes de ponto',
+          helper: 'Onboarding, afastamentos e ajustes',
         ),
       ],
-      highlightChips: const <Widget>[
-        WorkspaceHighlightChip(label: 'Cadastro auditável'),
-        WorkspaceHighlightChip(label: 'Políticas por equipe'),
-        WorkspaceHighlightChip(label: 'Pronto para RH'),
-      ],
+      highlightChips: _buildSidebarHighlightChips(),
     );
+  }
+
+  List<Widget> _buildSidebarHighlightChips() {
+    final isAdmin = _authContext?.user.isAdmin ?? false;
+    return <Widget>[
+      WorkspaceHighlightChip(
+        label: isAdmin ? 'Perfil administrador' : 'Acesso autenticado',
+      ),
+      const WorkspaceHighlightChip(label: 'Dados mascarados'),
+    ];
+  }
+
+  String _companyDisplayName(AuthCompanySummary? company) {
+    if (company == null) {
+      return 'Cadastro empresarial indisponível';
+    }
+
+    final tradeName = company.tradeName.trim();
+    if (tradeName.isNotEmpty) {
+      return tradeName;
+    }
+
+    return company.legalName.trim();
+  }
+
+  String _companyIdentitySummary(AuthCompanySummary? company) {
+    if (company == null) {
+      return 'Não foi possível carregar os dados cadastrais da empresa.';
+    }
+
+    final legalName = company.legalName.trim();
+    final displayName = _companyDisplayName(company);
+
+    if (legalName.isNotEmpty && legalName != displayName) {
+      return legalName;
+    }
+
+    return 'Dados cadastrais confirmados.';
   }
 
   Widget _buildWorkspace({required bool isWide}) {
@@ -369,15 +435,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          WorkspaceHeader(
-            title: 'Administrar equipe',
-            description:
-                'Visualize funcionários, revise pendências operacionais e ajuste cadastros sem sair do contexto do produto.',
-            maxContentWidth: 620,
-          ),
-          const SizedBox(height: 28),
-          _buildHeroCard(isWide),
-          const SizedBox(height: 20),
+          _buildWorkspaceHeader(isWide),
+          const SizedBox(height: 16),
           _buildMetricGrid(isWide),
           const SizedBox(height: 20),
           _buildEmployeesSection(isWide),
@@ -386,86 +445,49 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  Widget _buildHeroCard(bool isWide) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  Widget _buildWorkspaceHeader(bool isWide) {
+    if (!isWide) {
+      return WorkspaceHeader(
+        title: 'Administrar equipe',
+        description: '',
+        maxContentWidth: 620,
+        actions: _buildHeaderActions(false),
+      );
+    }
 
-    return WorkspaceSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.16),
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.28),
-                  ),
-                ),
-                child: const Icon(Icons.groups_2_rounded),
+    final theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Text(
+              'Administrar equipe',
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const WorkspaceStatusBadge(
-                      label: 'Administração ativa',
-                      tone: Color(0xFF1F4E79),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Equipe operacional sob controle.',
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 0.98,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '$_attentionEmployees colaboradores exigem revisão. O restante segue dentro das políticas configuradas.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              SizedBox(
-                width: isWide ? 240 : double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _openCreateEmployeeDialog,
-                  icon: const Icon(Icons.person_add_alt_1_rounded),
-                  label: const Text('Novo funcionário'),
-                ),
-              ),
-              SizedBox(
-                width: isWide ? 240 : double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _selectedEmployee == null
-                      ? null
-                      : () => _openEditEmployeeDialog(_selectedEmployee!),
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Editar selecionado'),
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
+        const SizedBox(width: 12),
+        ..._buildHeaderActions(true),
+      ],
+    );
+  }
+
+  List<Widget> _buildHeaderActions(bool isWide) {
+    final createButton = SizedBox(
+      width: isWide ? 210 : double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _openCreateEmployeeDialog,
+        icon: const Icon(Icons.person_add_alt_1_rounded),
+        label: const Text('Novo funcionário'),
       ),
     );
+
+    return <Widget>[createButton];
   }
 
   Widget _buildMetricGrid(bool isWide) {
@@ -570,14 +592,14 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Funcionários da empresa',
+            'Equipe',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
           Text(
-            'Busque, filtre e selecione perfis para editar dados mestres e políticas operacionais.',
+            'Busque e selecione perfis para editar dados principais.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -592,7 +614,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             },
             decoration: InputDecoration(
               labelText: 'Buscar funcionário',
-              hintText: 'Nome, cargo, unidade ou e-mail',
+              hintText: 'Nome, cargo ou unidade',
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _searchQuery.isEmpty
                   ? null
@@ -713,7 +735,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                       employee.todayWorkedMinutes,
                     ),
                     onTap: () => _selectEmployee(employee.id),
-                    onEdit: () => _openEditEmployeeDialog(employee),
                   ),
                 );
               }).toList(),
@@ -730,14 +751,27 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
     if (employee == null) {
       return WorkspaceSectionCard(
-        child: Text(
-          'Selecione um funcionário para ver o detalhe do cadastro.',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Icons.touch_app_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Selecione um funcionário para ver os detalhes.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
+
+    final hasNotes = employee.notes.trim().isNotEmpty;
 
     return WorkspaceSectionCard(
       child: Column(
@@ -754,14 +788,14 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                       label: _statusLabel(employee.status),
                       tone: _statusColor(employee.status),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     Text(
                       employee.name,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       '${employee.role} | ${employee.department}',
                       style: theme.textTheme.bodyLarge?.copyWith(
@@ -773,7 +807,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               ),
               const SizedBox(width: 12),
               SizedBox(
-                width: 148,
+                width: 132,
                 child: OutlinedButton.icon(
                   onPressed: () => _openEditEmployeeDialog(employee),
                   icon: const Icon(Icons.edit_outlined),
@@ -782,14 +816,16 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Text(
-            employee.notes,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.5,
+          if (hasNotes) ...<Widget>[
+            const SizedBox(height: 14),
+            Text(
+              employee.notes,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.45,
+              ),
             ),
-          ),
+          ],
           const SizedBox(height: 20),
           Wrap(
             spacing: 12,
@@ -811,10 +847,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: colorScheme.surface.withValues(alpha: 0.82),
               border: Border.all(color: colorScheme.outlineVariant),
@@ -823,12 +859,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Políticas e conformidade',
+                  'Políticas',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -860,7 +896,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 const SizedBox(height: 14),
                 Text(
                   'Horas trabalhadas hoje: ${_formatHours(employee.todayWorkedMinutes)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -1339,7 +1375,6 @@ class _EmployeeListTile extends StatelessWidget {
     required this.formattedLastPunch,
     required this.formattedTodayHours,
     required this.onTap,
-    required this.onEdit,
   });
 
   final EmployeeProfile employee;
@@ -1354,7 +1389,6 @@ class _EmployeeListTile extends StatelessWidget {
   final String formattedLastPunch;
   final String formattedTodayHours;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1422,14 +1456,6 @@ class _EmployeeListTile extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: onEdit,
-              visualDensity: VisualDensity.compact,
-              splashRadius: 20,
-              tooltip: 'Editar funcionário',
-              icon: const Icon(Icons.edit_outlined),
             ),
           ],
         ),
