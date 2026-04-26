@@ -1,7 +1,8 @@
 import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
+import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -12,12 +13,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _keepConnected = true;
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -26,25 +29,56 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-
-    if (kDebugMode) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute<void>(builder: (_) => const TimeClockPage()));
-      return;
-    }
 
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Login validado. Conecte a autenticação real aqui.'),
-      ),
-    );
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await _api.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        keepConnected: _keepConnected,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const TimeClockPage()),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Nao foi possivel concluir o login.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -122,7 +156,9 @@ class _LoginPageState extends State<LoginPage> {
               controller: _passwordController,
               obscureText: _obscurePassword,
               textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) => _submit(),
+              onFieldSubmitted: (_) {
+                _submit();
+              },
               decoration: InputDecoration(
                 labelText: 'Senha',
                 hintText: 'Digite sua senha',
@@ -182,7 +218,20 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _submit, child: const Text('Entrar')),
+            ElevatedButton(
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      _submit();
+                    },
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Entrar'),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () {},

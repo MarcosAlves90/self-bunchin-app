@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:bunchin_flutter/contracts/punch.dart';
+import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -14,6 +16,7 @@ class TimeClockPage extends StatefulWidget {
 }
 
 class _TimeClockPageState extends State<TimeClockPage> {
+  final BunchinApi _api = BunchinApi();
   static const List<String> _weekdays = <String>[
     'segunda-feira',
     'terça-feira',
@@ -48,13 +51,19 @@ class _TimeClockPageState extends State<TimeClockPage> {
   Timer? _clockTimer;
   PunchLocationResult _locationState = const PunchLocationResult.checking();
   bool _isSubmittingPunch = false;
+  bool _isLoadingState = true;
+  String? _loadError;
+  String _employeeName = 'Funcionario';
+  String _employeeUnit = '-';
+  int _todayWorkedMinutes = 0;
+  int _todayBreakMinutes = 0;
 
   @override
   void initState() {
     super.initState();
     _now = DateTime.now();
-    _records = _buildInitialRecords(_now);
-    _status = _deriveStatus(_records);
+    _records = <PunchRecord>[];
+    _status = ShiftStatus.checkedOut;
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         _now = DateTime.now();
@@ -63,6 +72,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_prepareLocationAccess());
+      unawaited(_loadTimeClockState());
     });
   }
 
@@ -70,6 +80,48 @@ class _TimeClockPageState extends State<TimeClockPage> {
   void dispose() {
     _clockTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadTimeClockState() async {
+    setState(() {
+      _isLoadingState = true;
+      _loadError = null;
+    });
+
+    try {
+      final state = await _api.getMyTimeClockState();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _employeeName = state.employeeName;
+        _employeeUnit = state.employeeUnit;
+        _status = state.currentStatus;
+        _todayWorkedMinutes = state.todayWorkedMinutes;
+        _todayBreakMinutes = state.todayBreakMinutes;
+        _records = state.records;
+        _isLoadingState = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoadingState = false;
+        _loadError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoadingState = false;
+        _loadError = 'Nao foi possivel carregar o estado de ponto.';
+      });
+    }
   }
 
   Future<void> _prepareLocationAccess() async {
@@ -110,150 +162,31 @@ class _TimeClockPageState extends State<TimeClockPage> {
       return;
     }
 
-    _registerPunch(type, location: location);
+    await _registerPunch(type, location: location);
   }
 
-  List<PunchRecord> _buildInitialRecords(DateTime now) {
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final records = <PunchRecord>[];
-
-    if (now.isAfter(startOfDay.add(const Duration(hours: 8, minutes: 5)))) {
-      records.add(
-        PunchRecord(
-          type: PunchType.checkIn,
-          timestamp: startOfDay.add(const Duration(hours: 8, minutes: 5)),
-          detail: 'Entrada confirmada no dispositivo principal',
-        ),
-      );
-    }
-
-    if (now.isAfter(startOfDay.add(const Duration(hours: 12, minutes: 4)))) {
-      records.add(
-        PunchRecord(
-          type: PunchType.breakStart,
-          timestamp: startOfDay.add(const Duration(hours: 12, minutes: 4)),
-          detail: 'Pausa iniciada para intervalo',
-        ),
-      );
-    }
-
-    if (now.isAfter(startOfDay.add(const Duration(hours: 12, minutes: 58)))) {
-      records.add(
-        PunchRecord(
-          type: PunchType.breakEnd,
-          timestamp: startOfDay.add(const Duration(hours: 12, minutes: 58)),
-          detail: 'Retorno validado sem inconsistências',
-        ),
-      );
-    }
-
-    if (now.isAfter(startOfDay.add(const Duration(hours: 18, minutes: 2)))) {
-      records.add(
-        PunchRecord(
-          type: PunchType.checkOut,
-          timestamp: startOfDay.add(const Duration(hours: 18, minutes: 2)),
-          detail: 'Saída registrada para encerramento do turno',
-        ),
-      );
-    }
-
-    return records;
-  }
-
-  ShiftStatus _deriveStatus(List<PunchRecord> records) {
-    if (records.isEmpty) {
-      return ShiftStatus.checkedOut;
-    }
-
-    final lastType = records.last.type;
-    if (lastType == PunchType.checkIn || lastType == PunchType.breakEnd) {
-      return ShiftStatus.working;
-    }
-
-    if (lastType == PunchType.breakStart) {
-      return ShiftStatus.onBreak;
-    }
-
-    return ShiftStatus.checkedOut;
-  }
-
-  void _registerPunch(
+  Future<void> _registerPunch(
     PunchType type, {
     required PunchLocationSnapshot location,
-  }) {
-    final detail = switch (type) {
-      PunchType.checkIn => 'Entrada registrada com localização validada',
-      PunchType.breakStart => 'Pausa iniciada com localização capturada',
-      PunchType.breakEnd => 'Jornada retomada com localização capturada',
-      PunchType.checkOut => 'Saída registrada com localização validada',
-    };
-
-    setState(() {
-      _now = DateTime.now();
-      _records = <PunchRecord>[
-        ..._records,
-        PunchRecord(
-          type: type,
-          timestamp: _now,
-          detail: detail,
-          location: location,
-        ),
-      ];
-      _status = _deriveStatus(_records);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$detail. Coordenadas anexadas à auditoria.')),
-    );
-  }
-
-  Duration _workedDuration() {
-    var total = Duration.zero;
-    DateTime? start;
-
-    for (final record in _records) {
-      if (record.type == PunchType.checkIn ||
-          record.type == PunchType.breakEnd) {
-        start ??= record.timestamp;
+  }) async {
+    try {
+      final punch = await _api.createPunch(type: type, location: location);
+      await _loadTimeClockState();
+      if (!mounted) {
+        return;
       }
 
-      if ((record.type == PunchType.breakStart ||
-              record.type == PunchType.checkOut) &&
-          start != null) {
-        total += record.timestamp.difference(start);
-        start = null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${punch.title} registrado com sucesso.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
     }
-
-    if (_status == ShiftStatus.working && start != null) {
-      total += _now.difference(start);
-    }
-
-    return total;
-  }
-
-  Duration _breakDuration() {
-    var total = Duration.zero;
-    DateTime? start;
-
-    for (final record in _records) {
-      if (record.type == PunchType.breakStart) {
-        start = record.timestamp;
-      }
-
-      if ((record.type == PunchType.breakEnd ||
-              record.type == PunchType.checkOut) &&
-          start != null) {
-        total += record.timestamp.difference(start);
-        start = null;
-      }
-    }
-
-    if (_status == ShiftStatus.onBreak && start != null) {
-      total += _now.difference(start);
-    }
-
-    return total;
   }
 
   PunchRecord? get _firstCheckIn {
@@ -416,10 +349,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
           value: _statusLabel(),
           helper: _statusDescription(),
         ),
-        const WorkspaceSummaryStripe(
+        WorkspaceSummaryStripe(
           label: 'Funcionário',
-          value: 'Marina Costa',
-          helper: 'Operações · Unidade Paulista',
+          value: _employeeName,
+          helper: _employeeUnit,
         ),
         WorkspaceSummaryStripe(
           label: 'Última batida',
@@ -438,6 +371,33 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildWorkspace({required bool isWide}) {
+    if (_isLoadingState) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: WorkspaceSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_loadError!),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _loadTimeClockState,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Recarregar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
@@ -682,7 +642,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
               width: width,
               child: WorkspaceMetricCard(
                 label: 'Horas hoje',
-                value: _formatDuration(_workedDuration()),
+                value: _formatDuration(
+                  Duration(minutes: _todayWorkedMinutes),
+                ),
                 helper: 'Tempo acumulado em jornada ativa',
               ),
             ),
@@ -690,7 +652,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
               width: width,
               child: WorkspaceMetricCard(
                 label: 'Pausa acumulada',
-                value: _formatDuration(_breakDuration()),
+                value: _formatDuration(
+                  Duration(minutes: _todayBreakMinutes),
+                ),
                 helper: 'Tempo total em intervalo no dia',
               ),
             ),

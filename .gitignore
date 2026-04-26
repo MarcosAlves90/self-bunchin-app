@@ -58,6 +58,11 @@ frontend/app.*.map.json
 # Monorepo: Backend (Python)
 backend/.venv/
 backend/venv/
+backend/*.db
+backend/*.db-shm
+backend/*.db-wal
+backend/*.sqlite
+backend/*.sqlite3
 backend/**/__pycache__/
 backend/**/*.py[cod]
 backend/.pytest_cache/

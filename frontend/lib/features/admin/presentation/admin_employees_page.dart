@@ -1,4 +1,6 @@
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -11,19 +13,62 @@ class AdminEmployeesPage extends StatefulWidget {
 }
 
 class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
+  final BunchinApi _api = BunchinApi();
   final TextEditingController _searchController = TextEditingController();
 
   late List<EmployeeProfile> _employees;
   EmployeeFilter _filter = EmployeeFilter.all;
   String _searchQuery = '';
   String? _selectedEmployeeId;
+  bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _employees = _buildInitialEmployees();
-    _selectedEmployeeId = _employees.first.id;
+    _employees = <EmployeeProfile>[];
+    _loadEmployees();
   }
+  Future<void> _loadEmployees() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+
+    try {
+      final employees = await _api.listEmployees();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _employees = employees;
+        if (_selectedEmployeeId == null && _employees.isNotEmpty) {
+          _selectedEmployeeId = _employees.first.id;
+        }
+        _isLoading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _loadError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+        _loadError = 'Nao foi possivel carregar os funcionarios.';
+      });
+    }
+  }
+
 
   @override
   void dispose() {
@@ -130,19 +175,29 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    final employee = EmployeeProfile.fromDraft(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      draft: draft,
-    );
+    try {
+      final employee = await _api.createEmployee(draft);
+      if (!mounted) {
+        return;
+      }
 
-    setState(() {
-      _employees = <EmployeeProfile>[employee, ..._employees];
-      _selectedEmployeeId = employee.id;
-    });
+      setState(() {
+        _employees = <EmployeeProfile>[employee, ..._employees];
+        _selectedEmployeeId = employee.id;
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${employee.name} foi adicionado à empresa.')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${employee.name} foi adicionado a empresa.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   Future<void> _openEditEmployeeDialog(EmployeeProfile employee) async {
@@ -155,20 +210,35 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    setState(() {
-      _employees = _employees.map((currentEmployee) {
-        if (currentEmployee.id != employee.id) {
-          return currentEmployee;
-        }
+    try {
+      final updated = await _api.updateEmployee(employee.id, draft);
+      if (!mounted) {
+        return;
+      }
 
-        return currentEmployee.applyDraft(draft);
-      }).toList();
-      _selectedEmployeeId = employee.id;
-    });
+      setState(() {
+        _employees = _employees.map((currentEmployee) {
+          if (currentEmployee.id != employee.id) {
+            return currentEmployee;
+          }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${draft.name} foi atualizado com sucesso.')),
-    );
+          return updated;
+        }).toList();
+        _selectedEmployeeId = employee.id;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${draft.name} foi atualizado com sucesso.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   void _selectEmployee(String employeeId) {
@@ -529,7 +599,38 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             }).toList(),
           ),
           const SizedBox(height: 20),
-          if (visibleEmployees.isEmpty)
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_loadError != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withValues(alpha: 0.8),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _loadError!,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: _loadEmployees,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Tentar novamente'),
+                  ),
+                ],
+              ),
+            )
+          else if (visibleEmployees.isEmpty)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -745,112 +846,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  List<EmployeeProfile> _buildInitialEmployees() {
-    return <EmployeeProfile>[
-      EmployeeProfile(
-        id: 'emp-01',
-        name: 'Marina Costa',
-        role: 'Coordenadora de Operações',
-        department: 'Operações',
-        email: 'marina.costa@bunchin.com',
-        phone: '(11) 99123-1001',
-        unit: 'Unidade Paulista',
-        expectedShift: '08:00 às 17:00',
-        status: EmployeeStatus.active,
-        workMode: EmployeeWorkMode.onsite,
-        roleLevel: RoleLevel.leadership,
-        requiresLocationOnPunch: true,
-        trustedDeviceRequired: true,
-        todayWorkedMinutes: 447,
-        pendingAdjustments: 0,
-        lastPunchAt: DateTime.now().subtract(const Duration(minutes: 12)),
-        notes:
-            'Responsável pela abertura da operação e pela validação das equipes presenciais.',
-      ),
-      EmployeeProfile(
-        id: 'emp-02',
-        name: 'Caio Martins',
-        role: 'Analista de RH',
-        department: 'People Ops',
-        email: 'caio.martins@bunchin.com',
-        phone: '(11) 98888-2020',
-        unit: 'Backoffice Centro',
-        expectedShift: '09:00 as 18:00',
-        status: EmployeeStatus.active,
-        workMode: EmployeeWorkMode.hybrid,
-        roleLevel: RoleLevel.specialist,
-        requiresLocationOnPunch: false,
-        trustedDeviceRequired: true,
-        todayWorkedMinutes: 392,
-        pendingAdjustments: 2,
-        lastPunchAt: DateTime.now().subtract(
-          const Duration(hours: 1, minutes: 8),
-        ),
-        notes:
-            'Acompanha admissões, desligamentos e ajustes de cadastro dos funcionários.',
-      ),
-      EmployeeProfile(
-        id: 'emp-03',
-        name: 'Bianca Nogueira',
-        role: 'Fiscal de Loja',
-        department: 'Campo',
-        email: 'bianca.nogueira@bunchin.com',
-        phone: '(11) 97777-3030',
-        unit: 'Loja Santo André',
-        expectedShift: '13:40 as 22:00',
-        status: EmployeeStatus.onLeave,
-        workMode: EmployeeWorkMode.onsite,
-        roleLevel: RoleLevel.staff,
-        requiresLocationOnPunch: true,
-        trustedDeviceRequired: true,
-        todayWorkedMinutes: 0,
-        pendingAdjustments: 1,
-        lastPunchAt: DateTime.now().subtract(const Duration(days: 3, hours: 2)),
-        notes:
-            'Afastada temporariamente. RH precisa revisar escala e substituição da unidade.',
-      ),
-      EmployeeProfile(
-        id: 'emp-04',
-        name: 'Joao Pedro Lima',
-        role: 'Desenvolvedor Flutter',
-        department: 'Produto',
-        email: 'joao.lima@bunchin.com',
-        phone: '(11) 96666-4040',
-        unit: 'Studio Digital',
-        expectedShift: '09:00 as 18:00',
-        status: EmployeeStatus.active,
-        workMode: EmployeeWorkMode.remote,
-        roleLevel: RoleLevel.specialist,
-        requiresLocationOnPunch: false,
-        trustedDeviceRequired: false,
-        todayWorkedMinutes: 421,
-        pendingAdjustments: 0,
-        lastPunchAt: DateTime.now().subtract(const Duration(minutes: 34)),
-        notes:
-            'Atua no app corporativo e em integrações internas com foco em evolução de produto.',
-      ),
-      EmployeeProfile(
-        id: 'emp-05',
-        name: 'Larissa Araújo',
-        role: 'Assistente Administrativa',
-        department: 'Financeiro',
-        email: 'larissa.araujo@bunchin.com',
-        phone: '(11) 95555-5050',
-        unit: 'Backoffice Centro',
-        expectedShift: '08:30 às 17:30',
-        status: EmployeeStatus.onboarding,
-        workMode: EmployeeWorkMode.hybrid,
-        roleLevel: RoleLevel.staff,
-        requiresLocationOnPunch: true,
-        trustedDeviceRequired: false,
-        todayWorkedMinutes: 0,
-        pendingAdjustments: 3,
-        lastPunchAt: null,
-        notes:
-            'Admissão em andamento. Falta concluir política de localização e dispositivo confiável.',
-      ),
-    ];
-  }
 }
 
 class _EmployeeEditorDialog extends StatefulWidget {
