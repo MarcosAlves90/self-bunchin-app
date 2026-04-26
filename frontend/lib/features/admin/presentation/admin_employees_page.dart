@@ -815,32 +815,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              SegmentedButton<_EmployeeDetailTab>(
-                segments: <ButtonSegment<_EmployeeDetailTab>>[
-                  const ButtonSegment<_EmployeeDetailTab>(
-                    value: _EmployeeDetailTab.registration,
-                    icon: Icon(Icons.badge_outlined),
-                    label: Text('Cadastro'),
-                  ),
-                  const ButtonSegment<_EmployeeDetailTab>(
-                    value: _EmployeeDetailTab.policies,
-                    icon: Icon(Icons.policy_outlined),
-                    label: Text('Políticas'),
-                  ),
-                  if (hasNotes)
-                    const ButtonSegment<_EmployeeDetailTab>(
-                      value: _EmployeeDetailTab.notes,
-                      icon: Icon(Icons.notes_rounded),
-                      label: Text('Notas'),
-                    ),
-                ],
-                selected: <_EmployeeDetailTab>{activeTab},
-                showSelectedIcon: false,
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _detailTab = selection.first;
-                  });
-                },
+              _buildDetailTabSelector(
+                activeTab: activeTab,
+                hasNotes: hasNotes,
+                useVerticalLayout: constraints.maxWidth < 360,
               ),
               const SizedBox(height: 12),
               if (activeTab == _EmployeeDetailTab.registration)
@@ -915,6 +893,109 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildDetailTabSelector({
+    required _EmployeeDetailTab activeTab,
+    required bool hasNotes,
+    required bool useVerticalLayout,
+  }) {
+    const tabItems = <({
+      _EmployeeDetailTab value,
+      IconData icon,
+      String label,
+    })>[
+      (
+        value: _EmployeeDetailTab.registration,
+        icon: Icons.badge_outlined,
+        label: 'Cadastro',
+      ),
+      (
+        value: _EmployeeDetailTab.policies,
+        icon: Icons.policy_outlined,
+        label: 'Políticas',
+      ),
+      (
+        value: _EmployeeDetailTab.notes,
+        icon: Icons.notes_rounded,
+        label: 'Notas',
+      ),
+    ];
+    final colorScheme = Theme.of(context).colorScheme;
+    final visibleItems = tabItems
+        .where((item) => hasNotes || item.value != _EmployeeDetailTab.notes)
+        .toList();
+
+    if (!useVerticalLayout) {
+      return SegmentedButton<_EmployeeDetailTab>(
+        segments: visibleItems
+            .map(
+              (item) => ButtonSegment<_EmployeeDetailTab>(
+                value: item.value,
+                icon: Icon(item.icon),
+                label: Text(item.label),
+              ),
+            )
+            .toList(),
+        selected: <_EmployeeDetailTab>{activeTab},
+        showSelectedIcon: false,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppTheme.accent;
+            }
+
+            return null;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.onPrimary;
+            }
+
+            return null;
+          }),
+          side:
+              const WidgetStatePropertyAll(BorderSide(color: AppTheme.accent)),
+          shape: const WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          ),
+        ),
+        onSelectionChanged: (selection) {
+          setState(() {
+            _detailTab = selection.first;
+          });
+        },
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: visibleItems.map((item) {
+        final selected = item.value == activeTab;
+        return Padding(
+          padding: EdgeInsets.only(bottom: item == visibleItems.last ? 0 : 8),
+          child: OutlinedButton.icon(
+            onPressed: () {
+              setState(() {
+                _detailTab = item.value;
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              backgroundColor: selected ? AppTheme.accent : null,
+              foregroundColor:
+                  selected ? colorScheme.onPrimary : colorScheme.onSurface,
+              side: const BorderSide(color: AppTheme.accent),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+            ),
+            icon: Icon(item.icon),
+            label: Text(item.label),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1649,6 +1730,7 @@ class _EmployeeDetailHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final showIdentityIcon = MediaQuery.sizeOf(context).width >= 560;
 
     return Container(
       width: double.infinity,
@@ -1663,21 +1745,23 @@ class _EmployeeDetailHero extends StatelessWidget {
           final identityBlock = Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  border:
-                      Border.all(color: statusColor.withValues(alpha: 0.28)),
+              if (showIdentityIcon) ...<Widget>[
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    border:
+                        Border.all(color: statusColor.withValues(alpha: 0.28)),
+                  ),
+                  child: Icon(
+                    Icons.manage_accounts_rounded,
+                    size: 28,
+                    color: statusColor,
+                  ),
                 ),
-                child: Icon(
-                  Icons.manage_accounts_rounded,
-                  size: 28,
-                  color: statusColor,
-                ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
