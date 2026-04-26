@@ -264,16 +264,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     return '$day/$month $hour:$minute';
   }
 
-  String _initialsFor(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.length == 1) {
-      return parts.first.substring(0, 1).toUpperCase();
-    }
-
-    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
-        .toUpperCase();
-  }
-
   Color _statusColor(EmployeeStatus status) {
     return switch (status) {
       EmployeeStatus.active => const Color(0xFF2F8F46),
@@ -680,7 +670,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     workModeColor: _workModeColor(employee.workMode),
                     statusLabel: _statusLabel(employee.status),
                     workModeLabel: _workModeLabel(employee.workMode),
-                    initials: _initialsFor(employee.name),
                     needsAttention: _needsAttention(employee),
                     formattedLastPunch: employee.lastPunchAt == null
                         ? 'Sem batida recente'
@@ -1309,7 +1298,6 @@ class _EmployeeListTile extends StatelessWidget {
     required this.workModeColor,
     required this.statusLabel,
     required this.workModeLabel,
-    required this.initials,
     required this.needsAttention,
     required this.formattedLastPunch,
     required this.formattedTodayHours,
@@ -1323,7 +1311,6 @@ class _EmployeeListTile extends StatelessWidget {
   final Color workModeColor;
   final String statusLabel;
   final String workModeLabel;
-  final String initials;
   final bool needsAttention;
   final String formattedLastPunch;
   final String formattedTodayHours;
@@ -1350,102 +1337,206 @@ class _EmployeeListTile extends StatelessWidget {
               color: selected ? AppTheme.accent : colorScheme.outlineVariant,
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.14),
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.26),
-                  ),
-                ),
-                child: Text(
-                  initials,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      employee.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${employee.role} | ${employee.department}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: <Widget>[
-                        _InlinePill(label: statusLabel, tone: statusColor),
-                        _InlinePill(label: workModeLabel, tone: workModeColor),
-                        if (employee.requiresLocationOnPunch)
-                          const _InlinePill(
-                            label: 'Local obrigatório',
-                            tone: Color(0xFF1F4E79),
-                          ),
-                        if (needsAttention)
-                          const _InlinePill(
-                            label: 'Acompanhamento',
-                            tone: Color(0xFF8C5D00),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      employee.email,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 560;
+              return _buildContent(theme, colorScheme, isCompact: isCompact);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    ThemeData theme,
+    ColorScheme colorScheme, {
+    required bool isCompact,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  IconButton(
-                    onPressed: onEdit,
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                  const SizedBox(height: 6),
                   Text(
-                    formattedTodayHours,
+                    employee.name,
+                    maxLines: isCompact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    formattedLastPunch,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    '${employee.role} | ${employee.department}',
+                    maxLines: isCompact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                      height: 1.35,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onEdit,
+              visualDensity: VisualDensity.compact,
+              splashRadius: 20,
+              tooltip: 'Editar funcionário',
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+        _buildBadgeWrap(),
+        const SizedBox(height: 10),
+        Row(
+          children: <Widget>[
+            Icon(
+              Icons.alternate_email_rounded,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                employee.email,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildMetaSection(isCompact: isCompact),
+      ],
+    );
+  }
+
+  Widget _buildBadgeWrap() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: <Widget>[
+        _InlinePill(label: statusLabel, tone: statusColor),
+        _InlinePill(label: workModeLabel, tone: workModeColor),
+        if (employee.requiresLocationOnPunch)
+          const _InlinePill(
+            label: 'Local obrigatório',
+            tone: Color(0xFF1F4E79),
+          ),
+        if (needsAttention)
+          const _InlinePill(
+            label: 'Acompanhamento',
+            tone: Color(0xFF8C5D00),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMetaSection({required bool isCompact}) {
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _EmployeeMetaChip(
+            icon: Icons.schedule_rounded,
+            label: 'Hoje',
+            value: formattedTodayHours,
+            fullWidth: true,
+          ),
+          const SizedBox(height: 8),
+          _EmployeeMetaChip(
+            icon: Icons.access_time_rounded,
+            label: 'Última batida',
+            value: formattedLastPunch,
+            fullWidth: true,
+          ),
+        ],
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: <Widget>[
+        _EmployeeMetaChip(
+          icon: Icons.schedule_rounded,
+          label: 'Hoje',
+          value: formattedTodayHours,
+        ),
+        _EmployeeMetaChip(
+          icon: Icons.access_time_rounded,
+          label: 'Última batida',
+          value: formattedLastPunch,
+        ),
+      ],
+    );
+  }
+}
+
+class _EmployeeMetaChip extends StatelessWidget {
+  const _EmployeeMetaChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.fullWidth = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.72),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          if (fullWidth)
+            Expanded(
+              child: Text(
+                '$label: $value',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Text(
+              '$label: $value',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+        ],
       ),
     );
   }
