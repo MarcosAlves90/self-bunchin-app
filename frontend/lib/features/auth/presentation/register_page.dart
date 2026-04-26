@@ -1,5 +1,6 @@
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -191,19 +192,20 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _cnpjController,
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.next,
+              inputFormatters: [BrInputMasks.cnpjFormatter],
               decoration: const InputDecoration(
                 labelText: 'CNPJ',
                 hintText: '00.000.000/0000-00',
                 prefixIcon: Icon(Icons.badge_outlined),
               ),
               validator: (value) {
-                final digits = _digitsOnly(value);
+                final digits = BrInputMasks.digitsOnly(value ?? '');
 
                 if (digits.isEmpty) {
                   return 'Informe o CNPJ.';
                 }
 
-                if (digits.length != 14) {
+                if (!BrInputMasks.hasValidCnpjDigits(value ?? '')) {
                   return 'Digite um CNPJ com 14 dígitos.';
                 }
 
@@ -237,19 +239,20 @@ class _RegisterPageState extends State<RegisterPage> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
+              inputFormatters: [BrInputMasks.phoneFormatter],
               decoration: const InputDecoration(
                 labelText: 'Telefone comercial',
                 hintText: '(11) 99999-0000',
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
               validator: (value) {
-                final digits = _digitsOnly(value);
+                final digits = BrInputMasks.digitsOnly(value ?? '');
 
                 if (digits.isEmpty) {
                   return 'Informe um telefone para contato.';
                 }
 
-                if (digits.length < 10 || digits.length > 11) {
+                if (!BrInputMasks.hasValidPhoneDigits(value ?? '')) {
                   return 'Use um telefone com DDD.';
                 }
 
@@ -369,9 +372,5 @@ class _RegisterPageState extends State<RegisterPage> {
         ),
       ),
     );
-  }
-
-  String _digitsOnly(String? value) {
-    return (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');
   }
 }

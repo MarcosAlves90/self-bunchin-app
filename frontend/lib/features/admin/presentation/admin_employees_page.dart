@@ -1,9 +1,11 @@
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AdminEmployeesPage extends StatefulWidget {
   const AdminEmployeesPage({super.key});
@@ -29,6 +31,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     _employees = <EmployeeProfile>[];
     _loadEmployees();
   }
+
   Future<void> _loadEmployees() async {
     setState(() {
       _isLoading = true;
@@ -69,7 +72,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }
   }
 
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -109,16 +111,17 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ].join(' ').toLowerCase();
 
       return haystack.contains(normalizedQuery);
-    }).toList()..sort((left, right) {
-      final leftPriority = _needsAttention(left) ? 0 : 1;
-      final rightPriority = _needsAttention(right) ? 0 : 1;
+    }).toList()
+      ..sort((left, right) {
+        final leftPriority = _needsAttention(left) ? 0 : 1;
+        final rightPriority = _needsAttention(right) ? 0 : 1;
 
-      if (leftPriority != rightPriority) {
-        return leftPriority.compareTo(rightPriority);
-      }
+        if (leftPriority != rightPriority) {
+          return leftPriority.compareTo(rightPriority);
+        }
 
-      return left.name.compareTo(right.name);
-    });
+        return left.name.compareTo(right.name);
+      });
   }
 
   EmployeeProfile? get _selectedEmployee {
@@ -461,9 +464,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   Widget _buildMetricGrid(bool isWide) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = isWide
-            ? (constraints.maxWidth - 12) / 2
-            : constraints.maxWidth;
+        final width =
+            isWide ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth;
 
         return Wrap(
           spacing: 12,
@@ -845,7 +847,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ),
     );
   }
-
 }
 
 class _EmployeeEditorDialog extends StatefulWidget {
@@ -881,7 +882,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   void initState() {
     super.initState();
     final draft = widget.employee == null
-      ? const EmployeeDraft(
+        ? const EmployeeDraft(
             name: '',
             role: '',
             department: '',
@@ -889,20 +890,22 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
             phone: '',
             unit: '',
             expectedShift: '',
-        status: EmployeeStatus.active,
-        workMode: EmployeeWorkMode.onsite,
-        roleLevel: RoleLevel.staff,
+            status: EmployeeStatus.active,
+            workMode: EmployeeWorkMode.onsite,
+            roleLevel: RoleLevel.staff,
             requiresLocationOnPunch: true,
             trustedDeviceRequired: true,
             notes: '',
           )
-      : EmployeeDraft.fromEmployee(widget.employee!);
+        : EmployeeDraft.fromEmployee(widget.employee!);
 
     _nameController = TextEditingController(text: draft.name);
     _roleController = TextEditingController(text: draft.role);
     _departmentController = TextEditingController(text: draft.department);
     _emailController = TextEditingController(text: draft.email);
-    _phoneController = TextEditingController(text: draft.phone);
+    _phoneController = TextEditingController(
+      text: BrInputMasks.formatPhone(draft.phone),
+    );
     _unitController = TextEditingController(text: draft.unit);
     _expectedShiftController = TextEditingController(text: draft.expectedShift);
     _notesController = TextEditingController(text: draft.notes);
@@ -974,16 +977,16 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   Text(
                     _isEditing ? 'Editar funcionário' : 'Novo funcionário',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Atualize dados mestres, políticas de ponto e contexto operacional do colaborador.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      height: 1.45,
-                    ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          height: 1.45,
+                        ),
                   ),
                   const SizedBox(height: 24),
                   _buildTextField(
@@ -1030,6 +1033,18 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     label: 'Telefone',
                     icon: Icons.phone_outlined,
                     validatorMessage: 'Informe um telefone com DDD.',
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [BrInputMasks.phoneFormatter],
+                    validator: (value) {
+                      final trimmedValue = value?.trim() ?? '';
+                      if (trimmedValue.isEmpty) {
+                        return 'Informe um telefone com DDD.';
+                      }
+                      if (!BrInputMasks.hasValidPhoneDigits(trimmedValue)) {
+                        return 'Use um telefone com 10 ou 11 dígitos.';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -1153,16 +1168,22 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     required String label,
     required IconData icon,
     required String validatorMessage,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String? value)? validator,
   }) {
     return TextFormField(
       controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
-      validator: (value) {
-        if (value == null || value.trim().length < 3) {
-          return validatorMessage;
-        }
-        return null;
-      },
+      validator: validator ??
+          (value) {
+            if (value == null || value.trim().length < 3) {
+              return validatorMessage;
+            }
+            return null;
+          },
     );
   }
 
