@@ -23,15 +23,17 @@ def _is_brevo_enabled(settings: Settings) -> bool:
 
 
 def _welcome_subject(display_name: str) -> str:
-    return f"Bem-vindo ao Bunchin, {display_name}"
+    return "Confirmação de cadastro — Bunchin"
 
 
 def _welcome_text(display_name: str, recipient_email: str) -> str:
     return (
-        f"Ola, {display_name}.\n\n"
-        "Seu cadastro no Bunchin foi concluido com sucesso.\n"
-        f"Use o e-mail {recipient_email} para acessar a plataforma.\n\n"
-        "Se voce nao reconhece este cadastro, responda este e-mail.\n"
+        f"Prezado(a) {display_name},\n\n"
+        "Seu cadastro na plataforma Bunchin foi concluído com sucesso.\n"
+        f"Você poderá acessar sua conta utilizando o endereço de e-mail: {recipient_email}.\n\n"
+        "Caso não reconheça esta ação, por favor responda a esta mensagem ou entre em contato com nossa equipe de suporte.\n\n"
+        "Atenciosamente,\n"
+        "Equipe Bunchin\n"
     )
 
 
@@ -39,16 +41,12 @@ def _welcome_html(display_name: str, recipient_email: str) -> str:
     safe_display_name = escape(display_name)
     safe_email = escape(recipient_email)
     return (
-        "<p>Ola, "
-        f"{safe_display_name}."
-        "</p>"
-        "<p>Seu cadastro no <strong>Bunchin</strong> foi concluido com sucesso.</p>"
-        "<p>"
-        "Use o e-mail "
-        f"<strong>{safe_email}</strong> "
-        "para acessar a plataforma."
-        "</p>"
-        "<p>Se voce nao reconhece este cadastro, responda este e-mail.</p>"
+        f"<p>Prezado(a) {safe_display_name},</p>"
+        "<p>Seu cadastro na plataforma <strong>Bunchin</strong> foi concluído com sucesso.</p>"
+        "<p>Você poderá acessar sua conta utilizando o endereço de e-mail: "
+        f"<strong>{safe_email}</strong>.</p>"
+        "<p>Caso não reconheça esta ação, por favor responda a esta mensagem ou entre em contato com nossa equipe de suporte.</p>"
+        "<p>Atenciosamente,<br>Equipe Bunchin</p>"
     )
 
 
