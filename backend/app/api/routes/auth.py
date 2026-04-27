@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_context, get_db
@@ -11,7 +11,14 @@ from app.schemas.auth import (
     LoginRequest,
 )
 from app.schemas.base import MessageResponse
-from app.services.auth import AuthenticatedContext, get_auth_context, login, logout, register_company
+from app.services.auth import (
+    AuthenticatedContext,
+    get_auth_context,
+    login,
+    logout,
+    register_company,
+)
+from app.services.brevo import send_company_welcome_email
 
 
 router = APIRouter()
@@ -24,9 +31,17 @@ router = APIRouter()
 )
 def register_company_route(
     payload: CompanyRegisterRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> AuthSessionResponse:
-    return register_company(db, payload)
+    response = register_company(db, payload)
+    background_tasks.add_task(
+        send_company_welcome_email,
+        recipient_email=str(payload.email).strip(),
+        company_name=payload.company_name,
+        trade_name=payload.trade_name,
+    )
+    return response
 
 
 @router.post("/login", response_model=AuthSessionResponse)

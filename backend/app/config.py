@@ -58,6 +58,16 @@ class Settings:
             "BUNCHIN_SEED_ADMIN_PASSWORD",
             "Bunchin@123",
         )
+        self.brevo_api_key = os.getenv("BUNCHIN_BREVO_API_KEY")
+        self.brevo_sender_email = os.getenv("BUNCHIN_BREVO_SENDER_EMAIL")
+        self.brevo_sender_name = os.getenv(
+            "BUNCHIN_BREVO_SENDER_NAME",
+            self.app_name,
+        )
+        self.brevo_welcome_enabled = _parse_bool(
+            os.getenv("BUNCHIN_BREVO_WELCOME_ENABLED"),
+            default=True,
+        )
 
         missing = [
             name

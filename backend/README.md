@@ -59,3 +59,5 @@ Esse seed replica os perfis e estados usados hoje nas telas do frontend.
 
 - O campo `trustedDeviceRequired` e persistido, mas ainda nao e bloqueado no backend porque o frontend atual nao envia um contrato de dispositivo confiavel. Mantive o design simples e sem overengineering ate existir esse sinal.
 - O backend devolve campos em `camelCase` para bater com os contratos atuais do Flutter.
+- A integracao Brevo atual e propositalmente minima: envia um e-mail transacional de boas-vindas apos `POST /api/v1/auth/register-company` quando `BUNCHIN_BREVO_API_KEY` e `BUNCHIN_BREVO_SENDER_EMAIL` estiverem configurados.
+- Falha no envio do e-mail nao bloqueia o cadastro da empresa. O backend evita logar payload sensivel e so registra um aviso tecnico generico.

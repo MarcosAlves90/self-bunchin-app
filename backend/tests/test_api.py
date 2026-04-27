@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from app.api.routes import auth as auth_routes
 from app.db import SessionLocal
 from app.models import Employee
 
@@ -125,3 +126,49 @@ def test_pii_is_not_stored_in_plain_text(client):
         assert employee is not None
         assert employee.email_ciphertext != "marina.costa@bunchin.com"
         assert "@bunchin.com" not in employee.email_ciphertext
+
+
+def test_register_company_triggers_welcome_email_task(client, monkeypatch):
+    calls: list[dict[str, str]] = []
+
+    def fake_send_company_welcome_email(
+        *,
+        recipient_email: str,
+        company_name: str,
+        trade_name: str,
+    ) -> None:
+        calls.append(
+            {
+                "recipient_email": recipient_email,
+                "company_name": company_name,
+                "trade_name": trade_name,
+            },
+        )
+
+    monkeypatch.setattr(
+        auth_routes,
+        "send_company_welcome_email",
+        fake_send_company_welcome_email,
+    )
+
+    response = client.post(
+        "/api/v1/auth/register-company",
+        json={
+            "companyName": "Acme Tecnologia Ltda",
+            "tradeName": "Acme Tech",
+            "cnpj": "98.765.432/0001-10",
+            "email": "contato@acmetech.com",
+            "phone": "(11) 99888-7766",
+            "password": "Acme@1234",
+            "acceptTerms": True,
+        },
+    )
+
+    assert response.status_code == 201
+    assert calls == [
+        {
+            "recipient_email": "contato@acmetech.com",
+            "company_name": "Acme Tecnologia Ltda",
+            "trade_name": "Acme Tech",
+        },
+    ]
