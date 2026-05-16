@@ -8,7 +8,8 @@ Thumbs.db
 .history
 .svn/
 .swiftpm/
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 .idea/
 *.iml
 *.ipr

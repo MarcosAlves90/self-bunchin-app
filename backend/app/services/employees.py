@@ -58,7 +58,7 @@ def list_employees(db: Session, *, company_id: str, timezone_name: str) -> list[
     employees = db.scalars(
         select(Employee)
         .where(Employee.company_id == company_id)
-        .order_by(Employee.created_at.desc()),
+        .order_by(Employee.created_at.desc(), Employee.id.desc()),
     ).all()
 
     today_records_by_employee = group_today_records(
