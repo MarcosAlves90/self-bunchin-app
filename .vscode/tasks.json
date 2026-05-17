@@ -2,16 +2,16 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "backend",
+      "label": "🚀 backend",
       "type": "shell",
-      "command": "uvicorn app.main:app --reload",
+      "command": "rm -rf .venv && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --reload",
       "options": {
         "cwd": "${workspaceFolder}/backend"
       },
       "problemMatcher": []
     },
     {
-      "label": "frontend-web-server",
+      "label": "🌐 frontend",
       "type": "shell",
       "command": "flutter run -d web-server",
       "options": {
@@ -20,10 +20,10 @@
       "problemMatcher": []
     },
     {
-      "label": "start-all",
+      "label": "▶️ start-all",
       "dependsOn": [
-        "backend",
-        "frontend-web-server"
+        "🚀 backend",
+        "🌐 frontend-web-server"
       ],
       "dependsOrder": "parallel",
       "problemMatcher": []
