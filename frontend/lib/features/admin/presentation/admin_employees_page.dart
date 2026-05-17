@@ -274,6 +274,66 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }
   }
 
+  Future<void> _removeSelectedEmployee() async {
+    final employee = _selectedEmployee;
+    if (employee == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Remover funcionário'),
+          content: Text(
+            'Deseja remover ${employee.name}? Esta ação não pode ser desfeita.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Remover'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      await _api.deleteEmployee(employee.id);
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _employees = _employees
+            .where((currentEmployee) => currentEmployee.id != employee.id)
+            .toList();
+        final fallbackSelection =
+            _visibleEmployees.isEmpty ? null : _visibleEmployees.first.id;
+        _selectedEmployeeId = fallbackSelection;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${employee.name} foi removido da empresa.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
+  }
+
   void _selectEmployee(String employeeId) {
     setState(() {
       _selectedEmployeeId = employeeId;
@@ -463,6 +523,16 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   List<Widget> _buildHeaderActions(bool isWide) {
+    final selectedEmployee = _selectedEmployee;
+    final removeButton = SizedBox(
+      width: isWide ? 210 : double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: selectedEmployee == null ? null : _removeSelectedEmployee,
+        icon: const Icon(Icons.person_remove_alt_1_rounded),
+        label: const Text('Remover selecionado'),
+        style: _removeButtonStyle(),
+      ),
+    );
     final createButton = SizedBox(
       width: isWide ? 210 : double.infinity,
       child: ElevatedButton.icon(
@@ -472,7 +542,36 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ),
     );
 
-    return <Widget>[createButton];
+    if (!isWide) {
+      return <Widget>[createButton, removeButton];
+    }
+
+    return <Widget>[removeButton, const SizedBox(width: 8), createButton];
+  }
+
+  ButtonStyle _removeButtonStyle() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final criticalColor = colorScheme.error;
+    return OutlinedButton.styleFrom(
+      foregroundColor: criticalColor,
+      side: BorderSide(color: criticalColor.withValues(alpha: 0.45)),
+    ).copyWith(
+      overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return criticalColor.withValues(alpha: 0.18);
+        }
+        if (states.contains(WidgetState.hovered)) {
+          return criticalColor.withValues(alpha: 0.1);
+        }
+        return null;
+      }),
+      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(WidgetState.disabled)) {
+          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.42);
+        }
+        return criticalColor.withValues(alpha: 0.04);
+      }),
+    );
   }
 
   Widget _buildMetricGrid(bool isWide) {
@@ -793,7 +892,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     child: _EmployeeOverviewCard(
                       icon: Icons.schedule_rounded,
                       label: 'Jornada',
-                      value: employee.expectedShift,
+                      value: employee.expectedShiftLabel,
                     ),
                   ),
                   SizedBox(
@@ -1028,7 +1127,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
   late final TextEditingController _unitController;
-  late final TextEditingController _expectedShiftController;
+  late final TextEditingController _expectedShiftStartController;
+  late final TextEditingController _expectedShiftEndController;
   late final TextEditingController _notesController;
 
   late EmployeeStatus _status;
@@ -1050,7 +1150,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
             email: '',
             phone: '',
             unit: '',
-            expectedShift: '',
+            expectedShiftStart: TimeOfDay(hour: 8, minute: 0),
+            expectedShiftEnd: TimeOfDay(hour: 17, minute: 0),
             status: EmployeeStatus.active,
             workMode: EmployeeWorkMode.onsite,
             roleLevel: RoleLevel.staff,
@@ -1068,7 +1169,12 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
       text: BrInputMasks.formatPhone(draft.phone),
     );
     _unitController = TextEditingController(text: draft.unit);
-    _expectedShiftController = TextEditingController(text: draft.expectedShift);
+    _expectedShiftStartController = TextEditingController(
+      text: _formatTimeOfDay(draft.expectedShiftStart),
+    );
+    _expectedShiftEndController = TextEditingController(
+      text: _formatTimeOfDay(draft.expectedShiftEnd),
+    );
     _notesController = TextEditingController(text: draft.notes);
     _status = draft.status;
     _workMode = draft.workMode;
@@ -1085,7 +1191,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     _emailController.dispose();
     _phoneController.dispose();
     _unitController.dispose();
-    _expectedShiftController.dispose();
+    _expectedShiftStartController.dispose();
+    _expectedShiftEndController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -1103,7 +1210,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         unit: _unitController.text.trim(),
-        expectedShift: _expectedShiftController.text.trim(),
+        expectedShiftStart: _parseTimeOfDay(_expectedShiftStartController.text),
+        expectedShiftEnd: _parseTimeOfDay(_expectedShiftEndController.text),
         status: _status,
         workMode: _workMode,
         roleLevel: _roleLevel,
@@ -1221,12 +1329,28 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     validatorMessage: 'Informe a unidade de referência.',
                   ),
                   const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _expectedShiftController,
-                    label: 'Jornada prevista',
-                    hintText: 'Ex.: 08:00 às 17:00',
-                    icon: Icons.schedule_rounded,
-                    validatorMessage: 'Informe a jornada prevista.',
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _buildShiftTimeField(
+                          controller: _expectedShiftStartController,
+                          label: 'Entrada prevista',
+                          onTap: () => _pickShiftTime(
+                            controller: _expectedShiftStartController,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildShiftTimeField(
+                          controller: _expectedShiftEndController,
+                          label: 'Saída prevista',
+                          onTap: () => _pickShiftTime(
+                            controller: _expectedShiftEndController,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   _buildStatusDropdown(),
@@ -1358,6 +1482,70 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
             }
             return null;
           },
+    );
+  }
+
+  Widget _buildShiftTimeField({
+    required TextEditingController controller,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      onTap: onTap,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'HH:mm',
+        prefixIcon: const Icon(Icons.schedule_rounded),
+      ),
+      validator: (value) {
+        final trimmedValue = value?.trim() ?? '';
+        if (trimmedValue.isEmpty) {
+          return 'Informe um horário válido.';
+        }
+        final match = RegExp(r'^\d{2}:\d{2}$').hasMatch(trimmedValue);
+        if (!match) {
+          return 'Use o formato HH:mm.';
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _pickShiftTime({
+    required TextEditingController controller,
+  }) async {
+    final initialTime = controller.text.trim().isEmpty
+        ? const TimeOfDay(hour: 8, minute: 0)
+        : _parseTimeOfDay(controller.text);
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (selectedTime == null) {
+      return;
+    }
+    controller.text = _formatTimeOfDay(selectedTime);
+  }
+
+  String _formatTimeOfDay(TimeOfDay value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  TimeOfDay _parseTimeOfDay(String value) {
+    final parts = value.trim().split(':');
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
     );
   }
 

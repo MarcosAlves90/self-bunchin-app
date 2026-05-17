@@ -1,7 +1,5 @@
 import 'package:bunchin_flutter/contracts/contract_parsing.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'employee.freezed.dart';
+import 'package:flutter/material.dart';
 
 enum EmployeeFilter { all, active, attention, inactive }
 
@@ -70,29 +68,72 @@ String roleLevelToApi(RoleLevel value) {
   };
 }
 
-@freezed
-abstract class EmployeeProfile with _$EmployeeProfile {
-  const EmployeeProfile._();
+TimeOfDay _parseTimeOfDayFromApi(JsonMap json, String key) {
+  final raw = requireString(json, key);
+  final match = RegExp(r'^(\d{2}):(\d{2})(?::\d{2})?$').firstMatch(raw);
+  if (match == null) {
+    throw ContractParsingException('$key must be a valid HH:mm time.');
+  }
+  final hour = int.parse(match.group(1)!);
+  final minute = int.parse(match.group(2)!);
+  if (hour > 23 || minute > 59) {
+    throw ContractParsingException('$key must be a valid HH:mm time.');
+  }
+  return TimeOfDay(hour: hour, minute: minute);
+}
 
-  const factory EmployeeProfile({
-    required String id,
-    required String name,
-    required String role,
-    required String department,
-    required String email,
-    required String phone,
-    required String unit,
-    required String expectedShift,
-    required EmployeeStatus status,
-    required EmployeeWorkMode workMode,
-    required RoleLevel roleLevel,
-    required bool requiresLocationOnPunch,
-    required bool trustedDeviceRequired,
-    required int todayWorkedMinutes,
-    required int pendingAdjustments,
-    required DateTime? lastPunchAt,
-    required String notes,
-  }) = _EmployeeProfile;
+String _timeOfDayToApi(TimeOfDay value) {
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+String _timeOfDayLabel(TimeOfDay value) {
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+class EmployeeProfile {
+  const EmployeeProfile({
+    required this.id,
+    required this.name,
+    required this.role,
+    required this.department,
+    required this.email,
+    required this.phone,
+    required this.unit,
+    required this.expectedShiftStart,
+    required this.expectedShiftEnd,
+    required this.status,
+    required this.workMode,
+    required this.roleLevel,
+    required this.requiresLocationOnPunch,
+    required this.trustedDeviceRequired,
+    required this.todayWorkedMinutes,
+    required this.pendingAdjustments,
+    required this.lastPunchAt,
+    required this.notes,
+  });
+
+  final String id;
+  final String name;
+  final String role;
+  final String department;
+  final String email;
+  final String phone;
+  final String unit;
+  final TimeOfDay expectedShiftStart;
+  final TimeOfDay expectedShiftEnd;
+  final EmployeeStatus status;
+  final EmployeeWorkMode workMode;
+  final RoleLevel roleLevel;
+  final bool requiresLocationOnPunch;
+  final bool trustedDeviceRequired;
+  final int todayWorkedMinutes;
+  final int pendingAdjustments;
+  final DateTime? lastPunchAt;
+  final String notes;
 
   factory EmployeeProfile.fromJson(JsonMap json) {
     return EmployeeProfile(
@@ -103,7 +144,8 @@ abstract class EmployeeProfile with _$EmployeeProfile {
       email: requireString(json, 'email'),
       phone: requireString(json, 'phone'),
       unit: requireString(json, 'unit'),
-      expectedShift: requireString(json, 'expectedShift'),
+      expectedShiftStart: _parseTimeOfDayFromApi(json, 'expectedShiftStart'),
+      expectedShiftEnd: _parseTimeOfDayFromApi(json, 'expectedShiftEnd'),
       status: employeeStatusFromApi(requireString(json, 'status')),
       workMode: employeeWorkModeFromApi(requireString(json, 'workMode')),
       roleLevel: roleLevelFromApi(requireString(json, 'roleLevel')),
@@ -128,7 +170,8 @@ abstract class EmployeeProfile with _$EmployeeProfile {
       email: draft.email,
       phone: draft.phone,
       unit: draft.unit,
-      expectedShift: draft.expectedShift,
+      expectedShiftStart: draft.expectedShiftStart,
+      expectedShiftEnd: draft.expectedShiftEnd,
       status: draft.status,
       workMode: draft.workMode,
       roleLevel: draft.roleLevel,
@@ -150,7 +193,8 @@ abstract class EmployeeProfile with _$EmployeeProfile {
       email: draft.email,
       phone: draft.phone,
       unit: draft.unit,
-      expectedShift: draft.expectedShift,
+      expectedShiftStart: draft.expectedShiftStart,
+      expectedShiftEnd: draft.expectedShiftEnd,
       status: draft.status,
       workMode: draft.workMode,
       roleLevel: draft.roleLevel,
@@ -162,27 +206,43 @@ abstract class EmployeeProfile with _$EmployeeProfile {
       notes: draft.notes,
     );
   }
+
+  String get expectedShiftLabel =>
+      '${_timeOfDayLabel(expectedShiftStart)} às ${_timeOfDayLabel(expectedShiftEnd)}';
 }
 
-@freezed
-abstract class EmployeeDraft with _$EmployeeDraft {
-  const EmployeeDraft._();
+class EmployeeDraft {
+  const EmployeeDraft({
+    required this.name,
+    required this.role,
+    required this.department,
+    required this.email,
+    required this.phone,
+    required this.unit,
+    required this.expectedShiftStart,
+    required this.expectedShiftEnd,
+    required this.status,
+    required this.workMode,
+    required this.roleLevel,
+    required this.requiresLocationOnPunch,
+    required this.trustedDeviceRequired,
+    required this.notes,
+  });
 
-  const factory EmployeeDraft({
-    required String name,
-    required String role,
-    required String department,
-    required String email,
-    required String phone,
-    required String unit,
-    required String expectedShift,
-    required EmployeeStatus status,
-    required EmployeeWorkMode workMode,
-    required RoleLevel roleLevel,
-    required bool requiresLocationOnPunch,
-    required bool trustedDeviceRequired,
-    required String notes,
-  }) = _EmployeeDraft;
+  final String name;
+  final String role;
+  final String department;
+  final String email;
+  final String phone;
+  final String unit;
+  final TimeOfDay expectedShiftStart;
+  final TimeOfDay expectedShiftEnd;
+  final EmployeeStatus status;
+  final EmployeeWorkMode workMode;
+  final RoleLevel roleLevel;
+  final bool requiresLocationOnPunch;
+  final bool trustedDeviceRequired;
+  final String notes;
 
   factory EmployeeDraft.fromEmployee(EmployeeProfile employee) {
     return EmployeeDraft(
@@ -192,13 +252,50 @@ abstract class EmployeeDraft with _$EmployeeDraft {
       email: employee.email,
       phone: employee.phone,
       unit: employee.unit,
-      expectedShift: employee.expectedShift,
+      expectedShiftStart: employee.expectedShiftStart,
+      expectedShiftEnd: employee.expectedShiftEnd,
       status: employee.status,
       workMode: employee.workMode,
       roleLevel: employee.roleLevel,
       requiresLocationOnPunch: employee.requiresLocationOnPunch,
       trustedDeviceRequired: employee.trustedDeviceRequired,
       notes: employee.notes,
+    );
+  }
+
+  EmployeeDraft copyWith({
+    String? name,
+    String? role,
+    String? department,
+    String? email,
+    String? phone,
+    String? unit,
+    TimeOfDay? expectedShiftStart,
+    TimeOfDay? expectedShiftEnd,
+    EmployeeStatus? status,
+    EmployeeWorkMode? workMode,
+    RoleLevel? roleLevel,
+    bool? requiresLocationOnPunch,
+    bool? trustedDeviceRequired,
+    String? notes,
+  }) {
+    return EmployeeDraft(
+      name: name ?? this.name,
+      role: role ?? this.role,
+      department: department ?? this.department,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      unit: unit ?? this.unit,
+      expectedShiftStart: expectedShiftStart ?? this.expectedShiftStart,
+      expectedShiftEnd: expectedShiftEnd ?? this.expectedShiftEnd,
+      status: status ?? this.status,
+      workMode: workMode ?? this.workMode,
+      roleLevel: roleLevel ?? this.roleLevel,
+      requiresLocationOnPunch:
+          requiresLocationOnPunch ?? this.requiresLocationOnPunch,
+      trustedDeviceRequired:
+          trustedDeviceRequired ?? this.trustedDeviceRequired,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -210,7 +307,8 @@ abstract class EmployeeDraft with _$EmployeeDraft {
       'email': email,
       'phone': phone,
       'unit': unit,
-      'expectedShift': expectedShift,
+      'expectedShiftStart': _timeOfDayToApi(expectedShiftStart),
+      'expectedShiftEnd': _timeOfDayToApi(expectedShiftEnd),
       'status': employeeStatusToApi(status),
       'workMode': employeeWorkModeToApi(workMode),
       'roleLevel': roleLevelToApi(roleLevel),

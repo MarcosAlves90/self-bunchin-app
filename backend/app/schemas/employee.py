@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from enum import Enum
 
 from pydantic import EmailStr, Field, field_validator
@@ -34,7 +34,8 @@ class EmployeeDraftPayload(CamelModel):
     email: EmailStr
     phone: str = Field(min_length=10, max_length=20)
     unit: str = Field(min_length=2)
-    expected_shift: str = Field(min_length=3)
+    expected_shift_start: time
+    expected_shift_end: time
     status: EmployeeStatus
     work_mode: EmployeeWorkMode
     role_level: RoleLevel
@@ -59,7 +60,8 @@ class EmployeeProfileResponse(CamelModel):
     email: str
     phone: str
     unit: str
-    expected_shift: str
+    expected_shift_start: time
+    expected_shift_end: time
     status: EmployeeStatus
     work_mode: EmployeeWorkMode
     role_level: RoleLevel

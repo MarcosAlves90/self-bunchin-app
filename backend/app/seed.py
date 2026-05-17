@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
+import json
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -41,7 +42,8 @@ def _employee(
     email: str,
     phone: str,
     unit: str,
-    expected_shift: str,
+    expected_shift_start: time,
+    expected_shift_end: time,
     status: str,
     work_mode: str,
     role_level: str,
@@ -62,7 +64,16 @@ def _employee(
         email_hash=lookup_digest(normalized_email, get_settings().encryption_secret or ""),
         phone_ciphertext=cipher.encrypt(phone) or "",
         unit_ciphertext=cipher.encrypt(unit) or "",
-        expected_shift_ciphertext=cipher.encrypt(expected_shift) or "",
+        expected_shift_ciphertext=cipher.encrypt(
+            json.dumps(
+                {
+                    "start": expected_shift_start.strftime("%H:%M"),
+                    "end": expected_shift_end.strftime("%H:%M"),
+                },
+                separators=(",", ":"),
+            ),
+        )
+        or "",
         status=status,
         work_mode=work_mode,
         role_level=role_level,
@@ -126,7 +137,8 @@ def seed_database_if_empty(db: Session) -> None:
             email="marina.costa@bunchin.com",
             phone="(11) 99123-1001",
             unit="Unidade Paulista",
-            expected_shift="08:00 as 17:00",
+            expected_shift_start=time(8, 0),
+            expected_shift_end=time(17, 0),
             status="active",
             work_mode="onsite",
             role_level="leadership",
@@ -144,7 +156,8 @@ def seed_database_if_empty(db: Session) -> None:
             email="caio.martins@bunchin.com",
             phone="(11) 98888-2020",
             unit="Backoffice Centro",
-            expected_shift="09:00 as 18:00",
+            expected_shift_start=time(9, 0),
+            expected_shift_end=time(18, 0),
             status="active",
             work_mode="hybrid",
             role_level="specialist",
@@ -162,7 +175,8 @@ def seed_database_if_empty(db: Session) -> None:
             email="bianca.nogueira@bunchin.com",
             phone="(11) 97777-3030",
             unit="Loja Santo Andre",
-            expected_shift="13:40 as 22:00",
+            expected_shift_start=time(13, 40),
+            expected_shift_end=time(22, 0),
             status="onLeave",
             work_mode="onsite",
             role_level="staff",
@@ -180,7 +194,8 @@ def seed_database_if_empty(db: Session) -> None:
             email="joao.lima@bunchin.com",
             phone="(11) 96666-4040",
             unit="Studio Digital",
-            expected_shift="09:00 as 18:00",
+            expected_shift_start=time(9, 0),
+            expected_shift_end=time(18, 0),
             status="active",
             work_mode="remote",
             role_level="specialist",
@@ -198,7 +213,8 @@ def seed_database_if_empty(db: Session) -> None:
             email="larissa.araujo@bunchin.com",
             phone="(11) 95555-5050",
             unit="Backoffice Centro",
-            expected_shift="08:30 as 17:30",
+            expected_shift_start=time(8, 30),
+            expected_shift_end=time(17, 30),
             status="onboarding",
             work_mode="hybrid",
             role_level="staff",
