@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.config import get_settings
@@ -25,17 +26,18 @@ class Base(DeclarativeBase):
 
 
 settings = get_settings()
-connect_args = (
-    {"check_same_thread": False}
-    if settings.database_url.startswith("sqlite")
-    else {}
-)
-engine = create_engine(
-    settings.database_url,
-    future=True,
-    pool_pre_ping=True,
-    connect_args=connect_args,
-)
+is_sqlite = settings.database_url.startswith("sqlite")
+is_memory_sqlite = settings.database_url in {"sqlite://", "sqlite:///:memory:"}
+connect_args = {"check_same_thread": False} if is_sqlite else {}
+engine_kwargs = {
+    "future": True,
+    "pool_pre_ping": True,
+    "connect_args": connect_args,
+}
+if is_memory_sqlite:
+    engine_kwargs["poolclass"] = StaticPool
+
+engine = create_engine(settings.database_url, **engine_kwargs)
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
