@@ -8,23 +8,74 @@
         "cwd": "${workspaceFolder}/backend"
       },
       "windows": {
-        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload"
+        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
       },
       "osx": {
-        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --reload"
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
       },
       "linux": {
-        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --reload"
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
       },
       "problemMatcher": []
     },
     {
       "label": "🌐 frontend",
       "type": "shell",
-      "command": "flutter run -d web-server",
       "options": {
         "cwd": "${workspaceFolder}/frontend"
       },
+      "windows": {
+        "command": "flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080"
+      },
+      "osx": {
+        "command": "flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080"
+      },
+      "linux": {
+        "command": "flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 backend tests",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "windows": {
+        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m pytest"
+      },
+      "osx": {
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m pytest"
+      },
+      "linux": {
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m pytest"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 frontend tests",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "windows": {
+        "command": "flutter pub get && flutter test"
+      },
+      "osx": {
+        "command": "flutter pub get && flutter test"
+      },
+      "linux": {
+        "command": "flutter pub get && flutter test"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🚦 github ci tests",
+      "dependsOn": [
+        "🧪 backend tests",
+        "🧪 frontend tests"
+      ],
+      "dependsOrder": "parallel",
       "problemMatcher": []
     },
     {

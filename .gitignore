@@ -15,6 +15,7 @@ Thumbs.db
 *.ipr
 *.iws
 .github/copilot-instructions.md
+docs/superpowers/
 
 # Logs
 *.log
