@@ -4,9 +4,17 @@
     {
       "label": "🚀 backend",
       "type": "shell",
-      "command": "rm -rf .venv && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --reload",
       "options": {
         "cwd": "${workspaceFolder}/backend"
+      },
+      "windows": {
+        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload"
+      },
+      "osx": {
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --reload"
+      },
+      "linux": {
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --reload"
       },
       "problemMatcher": []
     },
