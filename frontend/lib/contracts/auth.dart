@@ -96,7 +96,28 @@ abstract class AuthUserSummary with _$AuthUserSummary {
 
   bool get isAdmin => role == 'admin';
 
+  bool get isSuperAdmin => role == 'super_admin';
+
+  bool get isManager => role == 'manager';
+
+  bool get isEmployee => role == 'employee';
+
+  bool get hasAdminWorkspaceAccess => isAdmin || isSuperAdmin;
+
   bool get hasEmployeeProfile => (employeeId ?? '').isNotEmpty;
+
+  String get workspaceAccessLabel {
+    if (isSuperAdmin) {
+      return 'Perfil super administrador';
+    }
+    if (isAdmin) {
+      return 'Perfil administrador';
+    }
+    if (isManager) {
+      return 'Perfil gerencial';
+    }
+    return 'Acesso autenticado';
+  }
 }
 
 @freezed

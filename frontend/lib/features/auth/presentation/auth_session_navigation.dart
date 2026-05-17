@@ -4,7 +4,7 @@ import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_p
 import 'package:flutter/material.dart';
 
 Route<void> buildAuthenticatedWorkspaceRoute(AuthSession session) {
-  if (session.user.isAdmin || !session.user.hasEmployeeProfile) {
+  if (session.user.hasAdminWorkspaceAccess || !session.user.hasEmployeeProfile) {
     return MaterialPageRoute<void>(
       builder: (_) => const AdminEmployeesPage(),
     );

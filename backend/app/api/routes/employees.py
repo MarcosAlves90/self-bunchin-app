@@ -3,7 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_db, require_admin
+from app.authorization import require_permission
+from app.dependencies import get_db
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.services.auth import AuthenticatedContext
 from app.services.employees import create_employee, get_employee, list_employees, update_employee
@@ -14,7 +15,7 @@ router = APIRouter()
 
 @router.get("", response_model=list[EmployeeProfileResponse])
 def list_employees_route(
-    context: AuthenticatedContext = Depends(require_admin),
+    context: AuthenticatedContext = Depends(require_permission("employees.read")),
     db: Session = Depends(get_db),
 ) -> list[EmployeeProfileResponse]:
     return list_employees(
@@ -27,7 +28,7 @@ def list_employees_route(
 @router.get("/{employee_id}", response_model=EmployeeProfileResponse)
 def get_employee_route(
     employee_id: str,
-    context: AuthenticatedContext = Depends(require_admin),
+    context: AuthenticatedContext = Depends(require_permission("employees.read")),
     db: Session = Depends(get_db),
 ) -> EmployeeProfileResponse:
     return get_employee(
@@ -45,7 +46,7 @@ def get_employee_route(
 )
 def create_employee_route(
     payload: EmployeeDraftPayload,
-    context: AuthenticatedContext = Depends(require_admin),
+    context: AuthenticatedContext = Depends(require_permission("employees.create")),
     db: Session = Depends(get_db),
 ) -> EmployeeProfileResponse:
     return create_employee(
@@ -60,7 +61,7 @@ def create_employee_route(
 def update_employee_route(
     employee_id: str,
     payload: EmployeeDraftPayload,
-    context: AuthenticatedContext = Depends(require_admin),
+    context: AuthenticatedContext = Depends(require_permission("employees.update")),
     db: Session = Depends(get_db),
 ) -> EmployeeProfileResponse:
     return update_employee(

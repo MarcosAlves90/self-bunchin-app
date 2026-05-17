@@ -377,10 +377,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   List<Widget> _buildSidebarHighlightChips() {
-    final isAdmin = _authContext?.user.isAdmin ?? false;
+    final workspaceAccessLabel =
+        _authContext?.user.workspaceAccessLabel ?? 'Acesso autenticado';
     return <Widget>[
       WorkspaceHighlightChip(
-        label: isAdmin ? 'Perfil administrador' : 'Acesso autenticado',
+        label: workspaceAccessLabel,
       ),
       const WorkspaceHighlightChip(label: 'Dados mascarados'),
     ];
