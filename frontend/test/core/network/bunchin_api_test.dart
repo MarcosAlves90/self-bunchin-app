@@ -6,6 +6,7 @@ import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/core/storage/token_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -145,7 +146,8 @@ void main() {
             'email': 'marina.costa@bunchin.com',
             'phone': '(11) 99123-1001',
             'unit': 'Matriz Paulista',
-            'expectedShift': '09:00 as 18:00',
+            'expectedShiftStart': '09:00',
+            'expectedShiftEnd': '18:00',
             'status': 'active',
             'workMode': 'onsite',
             'roleLevel': 'leadership',
@@ -180,7 +182,8 @@ void main() {
       'email': 'renata.souza@bunchin.com',
       'phone': '(11) 94444-6060',
       'unit': 'Backoffice Centro',
-      'expectedShift': '08:00 as 17:00',
+      'expectedShiftStart': '08:00',
+      'expectedShiftEnd': '17:00',
       'status': 'active',
       'workMode': 'hybrid',
       'roleLevel': 'specialist',
@@ -212,7 +215,8 @@ void main() {
       email: 'renata.souza@bunchin.com',
       phone: '(11) 94444-6060',
       unit: 'Backoffice Centro',
-      expectedShift: '08:00 as 17:00',
+      expectedShiftStart: TimeOfDay(hour: 8, minute: 0),
+      expectedShiftEnd: TimeOfDay(hour: 17, minute: 0),
       status: EmployeeStatus.active,
       workMode: EmployeeWorkMode.hybrid,
       roleLevel: RoleLevel.specialist,
@@ -242,7 +246,8 @@ void main() {
       'email': 'renata.souza@bunchin.com',
       'phone': '(11) 94444-6060',
       'unit': 'Backoffice Centro',
-      'expectedShift': '08:00 as 17:00',
+      'expectedShiftStart': '08:00',
+      'expectedShiftEnd': '17:00',
       'status': 'active',
       'workMode': 'remote',
       'roleLevel': 'specialist',
@@ -250,6 +255,21 @@ void main() {
       'trustedDeviceRequired': true,
       'notes': 'Nova contratacao.',
     });
+  });
+
+  test('deleteEmployee calls employees endpoint with auth', () async {
+    final client = _FakeApiClient(
+      deleteResponses: {
+        '/employees/emp-99': null,
+      },
+    );
+    final api =
+        BunchinApi(client: client, tokenStorage: _InMemoryTokenStorage());
+
+    await api.deleteEmployee('emp-99');
+
+    expect(client.lastPath, '/employees/emp-99');
+    expect(client.lastWithAuth, isTrue);
   });
 
   test('time clock endpoints use time-clock contracts end-to-end', () async {
@@ -406,12 +426,14 @@ class _FakeApiClient extends ApiClient {
     this.postResponses = const <String, dynamic>{},
     this.postErrors = const <String, Object>{},
     this.putResponses = const <String, dynamic>{},
+    this.deleteResponses = const <String, dynamic>{},
   });
 
   final Map<String, dynamic> getResponses;
   final Map<String, dynamic> postResponses;
   final Map<String, Object> postErrors;
   final Map<String, dynamic> putResponses;
+  final Map<String, dynamic> deleteResponses;
 
   String? lastPath;
   Object? lastBody;
@@ -458,6 +480,16 @@ class _FakeApiClient extends ApiClient {
       throw StateError('No fake PUT response registered for $path');
     }
     return putResponses[path];
+  }
+
+  @override
+  Future<dynamic> delete(String path, {bool withAuth = false}) async {
+    lastPath = path;
+    lastWithAuth = withAuth;
+    if (!deleteResponses.containsKey(path)) {
+      throw StateError('No fake DELETE response registered for $path');
+    }
+    return deleteResponses[path];
   }
 }
 

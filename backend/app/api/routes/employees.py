@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from fastapi import Response
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -7,7 +8,7 @@ from app.authorization import require_permission
 from app.dependencies import get_db
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.services.auth import AuthenticatedContext
-from app.services.employees import create_employee, get_employee, list_employees, update_employee
+from app.services.employees import create_employee, delete_employee, get_employee, list_employees, update_employee
 
 
 router = APIRouter()
@@ -71,3 +72,17 @@ def update_employee_route(
         payload=payload,
         timezone_name=context.company.timezone,
     )
+
+
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_employee_route(
+    employee_id: str,
+    context: AuthenticatedContext = Depends(require_permission("employees.delete")),
+    db: Session = Depends(get_db),
+) -> Response:
+    delete_employee(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

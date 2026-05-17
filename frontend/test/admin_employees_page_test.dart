@@ -19,6 +19,7 @@ void main() {
 
     expect(find.text('Administrar equipe'), findsOneWidget);
     expect(find.text('Novo funcionário'), findsOneWidget);
+    expect(find.text('Remover selecionado'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
     expect(find.byTooltip('Editar funcionário'), findsNothing);
     expect(find.text('renata.souza@bunchin.com'), findsOneWidget);
@@ -52,6 +53,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Novo funcionário'), findsOneWidget);
+    expect(find.text('Remover selecionado'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
     expect(find.byIcon(Icons.badge_rounded), findsNothing);
   });
@@ -110,7 +112,8 @@ class _FakeAdminApi extends BunchinApi {
         email: 'renata.souza@bunchin.com',
         phone: '(11) 94444-6060',
         unit: 'Backoffice Centro',
-        expectedShift: '08:00 as 17:00',
+        expectedShiftStart: const TimeOfDay(hour: 8, minute: 0),
+        expectedShiftEnd: const TimeOfDay(hour: 17, minute: 0),
         status: EmployeeStatus.active,
         workMode: EmployeeWorkMode.hybrid,
         roleLevel: RoleLevel.specialist,

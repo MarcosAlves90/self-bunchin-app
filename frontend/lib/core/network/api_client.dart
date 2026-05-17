@@ -18,8 +18,8 @@ class ApiException implements Exception {
 
 class ApiClient {
   ApiClient({http.Client? client, TokenStorage? tokenStorage})
-    : _client = client ?? http.Client(),
-      _tokenStorage = tokenStorage ?? TokenStorage();
+      : _client = client ?? http.Client(),
+        _tokenStorage = tokenStorage ?? TokenStorage();
 
   final http.Client _client;
   final TokenStorage _tokenStorage;
@@ -80,6 +80,14 @@ class ApiClient {
     return _decodeResponse(response);
   }
 
+  Future<dynamic> delete(String path, {bool withAuth = false}) async {
+    final response = await _client.delete(
+      _uri(path),
+      headers: await _headers(withAuth: withAuth),
+    );
+    return _decodeResponse(response);
+  }
+
   dynamic _decodeResponse(http.Response response) {
     final hasBody = response.body.isNotEmpty;
     final parsedBody = hasBody ? jsonDecode(response.body) : null;
@@ -88,7 +96,8 @@ class ApiClient {
       return parsedBody;
     }
 
-    final message = _extractMessage(parsedBody) ?? 'Falha na comunicacao com a API.';
+    final message =
+        _extractMessage(parsedBody) ?? 'Falha na comunicacao com a API.';
     throw ApiException(message, statusCode: response.statusCode);
   }
 

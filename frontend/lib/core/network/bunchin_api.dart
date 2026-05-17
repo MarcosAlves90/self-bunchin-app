@@ -111,6 +111,10 @@ class BunchinApi {
     );
   }
 
+  Future<void> deleteEmployee(String employeeId) async {
+    await _client.delete('/employees/$employeeId', withAuth: true);
+  }
+
   Future<TimeClockState> getMyTimeClockState() async {
     final response = await _client.get('/time-clock/me', withAuth: true);
 

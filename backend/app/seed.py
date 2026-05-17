@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
+import json
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -30,7 +31,8 @@ class EmployeeSeed:
     email: str
     phone: str
     unit: str
-    expected_shift: str
+    expected_shift_start: time
+    expected_shift_end: time
     status: str
     work_mode: str
     role_level: str
@@ -72,7 +74,16 @@ def _employee(company_id: str, seed: EmployeeSeed) -> Employee:
         email_hash=lookup_digest(normalized_email, get_settings().encryption_secret or ""),
         phone_ciphertext=cipher.encrypt(seed.phone) or "",
         unit_ciphertext=cipher.encrypt(seed.unit) or "",
-        expected_shift_ciphertext=cipher.encrypt(seed.expected_shift) or "",
+        expected_shift_ciphertext=cipher.encrypt(
+            json.dumps(
+                {
+                    "start": seed.expected_shift_start.strftime("%H:%M"),
+                    "end": seed.expected_shift_end.strftime("%H:%M"),
+                },
+                separators=(",", ":"),
+            ),
+        )
+        or "",
         status=seed.status,
         work_mode=seed.work_mode,
         role_level=seed.role_level,
@@ -93,7 +104,8 @@ def _employee_seeds() -> list[EmployeeSeed]:
             email=MARINA_EMAIL,
             phone="(11) 99123-1001",
             unit="Unidade Paulista",
-            expected_shift="08:00 as 17:00",
+            expected_shift_start=time(8, 0),
+            expected_shift_end=time(17, 0),
             status="active",
             work_mode="onsite",
             role_level="leadership",
@@ -110,7 +122,8 @@ def _employee_seeds() -> list[EmployeeSeed]:
             email=CAIO_EMAIL,
             phone="(11) 98888-2020",
             unit="Backoffice Centro",
-            expected_shift="09:00 as 18:00",
+            expected_shift_start=time(9, 0),
+            expected_shift_end=time(18, 0),
             status="active",
             work_mode="hybrid",
             role_level="specialist",
@@ -127,7 +140,8 @@ def _employee_seeds() -> list[EmployeeSeed]:
             email="bianca.nogueira@bunchin.com",
             phone="(11) 97777-3030",
             unit="Loja Santo Andre",
-            expected_shift="13:40 as 22:00",
+            expected_shift_start=time(13, 40),
+            expected_shift_end=time(22, 0),
             status="onLeave",
             work_mode="onsite",
             role_level="staff",
@@ -144,7 +158,8 @@ def _employee_seeds() -> list[EmployeeSeed]:
             email=JOAO_EMAIL,
             phone="(11) 96666-4040",
             unit="Studio Digital",
-            expected_shift="09:00 as 18:00",
+            expected_shift_start=time(9, 0),
+            expected_shift_end=time(18, 0),
             status="active",
             work_mode="remote",
             role_level="specialist",
@@ -161,7 +176,8 @@ def _employee_seeds() -> list[EmployeeSeed]:
             email="larissa.araujo@bunchin.com",
             phone="(11) 95555-5050",
             unit="Backoffice Centro",
-            expected_shift="08:30 as 17:30",
+            expected_shift_start=time(8, 30),
+            expected_shift_end=time(17, 30),
             status="onboarding",
             work_mode="hybrid",
             role_level="staff",
