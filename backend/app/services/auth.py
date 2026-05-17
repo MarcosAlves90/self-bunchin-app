@@ -62,7 +62,9 @@ def mask_cnpj(value: str) -> str:
     return f"{digits[:2]}.***.***/****-{digits[-2:]}"
 
 
-def _company_summary(company: Company, cipher: FieldCipher) -> CompanySummary:
+def summarize_company(company: Company, cipher: FieldCipher | None = None) -> CompanySummary:
+    if cipher is None:
+        cipher = _cipher()
     legal_name = cipher.decrypt(company.legal_name_ciphertext) or ""
     trade_name = cipher.decrypt(company.trade_name_ciphertext) or ""
     cnpj = cipher.decrypt(company.cnpj_ciphertext) or ""
@@ -169,7 +171,7 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
     return AuthSessionResponse(
         access_token=token,
         expires_at=ensure_utc(auth_session.expires_at),
-        company=_company_summary(company, cipher),
+        company=summarize_company(company, cipher),
         user=_user_summary(user, cipher),
     )
 
@@ -209,7 +211,7 @@ def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
     return AuthSessionResponse(
         access_token=token,
         expires_at=ensure_utc(auth_session.expires_at),
-        company=_company_summary(company, cipher),
+        company=summarize_company(company, cipher),
         user=_user_summary(user, cipher),
     )
 
@@ -254,7 +256,7 @@ def resolve_context(db: Session, token: str) -> AuthenticatedContext:
 def get_auth_context(context: AuthenticatedContext) -> AuthContextResponse:
     cipher = _cipher()
     return AuthContextResponse(
-        company=_company_summary(context.company, cipher),
+        company=summarize_company(context.company, cipher),
         user=_user_summary(context.user, cipher),
     )
 

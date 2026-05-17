@@ -6,13 +6,30 @@ from app.api.routes import auth as auth_routes
 from app.db import SessionLocal
 from app.models import Employee
 
+TEST_SEED_SECRET = "Bunchin@123"
+TEST_REGISTER_SECRET = "Acme@1234"
+
 
 def login_headers(client):
     response = client.post(
         "/api/v1/auth/login",
         json={
             "email": "marina.costa@bunchin.com",
-            "password": "Bunchin@123",
+            "password": TEST_SEED_SECRET,
+            "keepConnected": True,
+        },
+    )
+    assert response.status_code == 200
+    token = response.json()["accessToken"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def login_headers_for(client, *, email: str, password: str):
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": email,
+            "password": password,
             "keepConnected": True,
         },
     )
@@ -36,6 +53,16 @@ def test_login_and_get_employees(client):
     assert employees[0]["id"] == "emp-05"
     assert employees[-1]["id"] == "emp-01"
     assert employees[-1]["requiresLocationOnPunch"] is True
+
+
+def test_employee_cannot_list_employees(client):
+    headers = login_headers_for(
+        client,
+        email="joao.lima@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    response = client.get("/api/v1/employees", headers=headers)
+    assert response.status_code == 403
 
 
 def test_create_and_update_employee(client):
@@ -128,6 +155,17 @@ def test_pii_is_not_stored_in_plain_text(client):
         assert "@bunchin.com" not in employee.email_ciphertext
 
 
+def test_super_admin_can_list_companies(client):
+    headers = login_headers_for(
+        client,
+        email="super.admin@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    response = client.get("/api/v1/admin/companies", headers=headers)
+    assert response.status_code == 200
+    assert response.json()[0]["tradeName"] == "Bunchin Servicos Digitais"
+
+
 def test_register_company_triggers_welcome_email_task(client, monkeypatch):
     calls: list[dict[str, str]] = []
 
@@ -159,7 +197,7 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             "cnpj": "98.765.432/0001-10",
             "email": "contato@acmetech.com",
             "phone": "(11) 99888-7766",
-            "password": "Acme@1234",
+            "password": TEST_REGISTER_SECRET,
             "acceptTerms": True,
         },
     )

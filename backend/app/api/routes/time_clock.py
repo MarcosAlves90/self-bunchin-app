@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.authorization import require_permission
 from app.dependencies import get_current_context, get_db
 from app.schemas.punch import CreatePunchRequest, PunchRecordResponse, TimeClockStateResponse
 from app.services.auth import AuthenticatedContext
@@ -23,7 +24,7 @@ def _require_employee_context(context: AuthenticatedContext):
 
 @router.get("/me", response_model=TimeClockStateResponse)
 def get_time_clock_state_route(
-    context: AuthenticatedContext = Depends(get_current_context),
+    context: AuthenticatedContext = Depends(require_permission("time_clock.read")),
     db: Session = Depends(get_db),
 ) -> TimeClockStateResponse:
     employee = _require_employee_context(context)
@@ -37,7 +38,7 @@ def get_time_clock_state_route(
 @router.post("/me/punches", response_model=PunchRecordResponse)
 def create_punch_route(
     payload: CreatePunchRequest,
-    context: AuthenticatedContext = Depends(get_current_context),
+    context: AuthenticatedContext = Depends(require_permission("time_clock.punch")),
     db: Session = Depends(get_db),
 ) -> PunchRecordResponse:
     employee = _require_employee_context(context)
