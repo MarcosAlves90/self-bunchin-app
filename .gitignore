@@ -14,6 +14,7 @@ Thumbs.db
 *.iml
 *.ipr
 *.iws
+.github/copilot-instructions.md
 
 # Logs
 *.log
