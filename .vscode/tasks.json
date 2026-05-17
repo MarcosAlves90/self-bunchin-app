@@ -23,7 +23,7 @@
       "label": "▶️ start-all",
       "dependsOn": [
         "🚀 backend",
-        "🌐 frontend-web-server"
+        "🌐 frontend"
       ],
       "dependsOrder": "parallel",
       "problemMatcher": []
