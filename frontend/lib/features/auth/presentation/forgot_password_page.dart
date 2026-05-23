@@ -12,44 +12,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
 
-  bool _isSubmitting = false;
-
   @override
   void dispose() {
     _emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  void _submit() {
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao.',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+    if (!mounted) {
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.',
+        ),
+      ),
+    );
+  }
+
+  void _backToLogin() {
+    Navigator.of(context).pop();
   }
 
   @override
@@ -57,7 +47,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return AuthShell(
       brandHeadline: 'Recupere acesso com rapidez.',
       brandDescription:
-          'Envie um link seguro para redefinir sua senha e retomar o controle da operacao com o minimo de friccao.',
+          'Envie um link seguro para redefinir sua senha e retomar o controle da operação.',
       brandTags: const [
         'E2E Encryption',
         'Automacao',
@@ -87,7 +77,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: _backToLogin,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   visualDensity: VisualDensity.compact,
@@ -137,18 +127,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Enviar link'),
+              onPressed: _submit,
+              child: const Text('Enviar link'),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _backToLogin,
               icon: const Icon(Icons.login_rounded),
               label: const Text('Voltar para login'),
             ),

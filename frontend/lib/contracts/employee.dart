@@ -1,5 +1,8 @@
 import 'package:bunchin_flutter/contracts/contract_parsing.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'employee.freezed.dart';
 
 enum EmployeeFilter { all, active, attention, inactive }
 
@@ -94,46 +97,30 @@ String _timeOfDayLabel(TimeOfDay value) {
   return '$hour:$minute';
 }
 
-class EmployeeProfile {
-  const EmployeeProfile({
-    required this.id,
-    required this.name,
-    required this.role,
-    required this.department,
-    required this.email,
-    required this.phone,
-    required this.unit,
-    required this.expectedShiftStart,
-    required this.expectedShiftEnd,
-    required this.status,
-    required this.workMode,
-    required this.roleLevel,
-    required this.requiresLocationOnPunch,
-    required this.trustedDeviceRequired,
-    required this.todayWorkedMinutes,
-    required this.pendingAdjustments,
-    required this.lastPunchAt,
-    required this.notes,
-  });
+@freezed
+abstract class EmployeeProfile with _$EmployeeProfile {
+  const EmployeeProfile._();
 
-  final String id;
-  final String name;
-  final String role;
-  final String department;
-  final String email;
-  final String phone;
-  final String unit;
-  final TimeOfDay expectedShiftStart;
-  final TimeOfDay expectedShiftEnd;
-  final EmployeeStatus status;
-  final EmployeeWorkMode workMode;
-  final RoleLevel roleLevel;
-  final bool requiresLocationOnPunch;
-  final bool trustedDeviceRequired;
-  final int todayWorkedMinutes;
-  final int pendingAdjustments;
-  final DateTime? lastPunchAt;
-  final String notes;
+  const factory EmployeeProfile({
+    required String id,
+    required String name,
+    required String role,
+    required String department,
+    required String email,
+    required String phone,
+    required String unit,
+    required TimeOfDay expectedShiftStart,
+    required TimeOfDay expectedShiftEnd,
+    required EmployeeStatus status,
+    required EmployeeWorkMode workMode,
+    required RoleLevel roleLevel,
+    required bool requiresLocationOnPunch,
+    required bool trustedDeviceRequired,
+    required int todayWorkedMinutes,
+    required int pendingAdjustments,
+    required DateTime? lastPunchAt,
+    required String notes,
+  }) = _EmployeeProfile;
 
   factory EmployeeProfile.fromJson(JsonMap json) {
     return EmployeeProfile(
