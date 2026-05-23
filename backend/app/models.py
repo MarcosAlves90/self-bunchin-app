@@ -46,6 +46,10 @@ class Company(Base):
         back_populates="company",
         cascade="all, delete-orphan",
     )
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
 
 
 class Employee(Base):
@@ -84,6 +88,52 @@ class Employee(Base):
         back_populates="employee",
         cascade="all, delete-orphan",
     )
+    project_links: Mapped[list["EmployeeProject"]] = relationship(
+        back_populates="employee",
+        cascade="all, delete-orphan",
+    )
+
+
+class Project(Base):
+    __tablename__ = "projects"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    name_ciphertext: Mapped[str] = mapped_column(Text)
+    description_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
+        onupdate=utcnow,
+    )
+
+    company: Mapped[Company] = relationship(back_populates="projects")
+    employee_links: Mapped[list["EmployeeProject"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+    )
+    punches: Mapped[list["Punch"]] = relationship(back_populates="project")
+
+
+class EmployeeProject(Base):
+    __tablename__ = "employee_projects"
+
+    employee_id: Mapped[str] = mapped_column(
+        ForeignKey("employees.id"),
+        primary_key=True,
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id"),
+        primary_key=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    employee: Mapped[Employee] = relationship(back_populates="project_links")
+    project: Mapped[Project] = relationship(back_populates="employee_links")
 
 
 class UserAccount(Base):
@@ -123,6 +173,7 @@ class Punch(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
     company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
     employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), index=True)
+    project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
     type: Mapped[str] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     detail_ciphertext: Mapped[str] = mapped_column(Text)
@@ -131,6 +182,7 @@ class Punch(Base):
 
     company: Mapped[Company] = relationship(back_populates="punches")
     employee: Mapped[Employee] = relationship(back_populates="punches")
+    project: Mapped[Project | None] = relationship(back_populates="punches")
 
 
 class AuthSession(Base):
