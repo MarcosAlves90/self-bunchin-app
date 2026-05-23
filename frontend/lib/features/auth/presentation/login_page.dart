@@ -87,10 +87,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline: 'Acesso rápido para quem precisa entrar e continuar.',
+      brandHeadline: 'O núcleo operacional da sua empresa.',
       brandDescription:
-          'Uma base de login limpa, escalável e coerente com o tema global do aplicativo.',
-      brandTags: const ['Tema unificado', 'Pronto para API', 'Responsivo'],
+          'Gerencie equipes, processos e operações em uma única plataforma inteligente, desenvolvida para empresas modernas que precisam de velocidade, controle e escala.',
+      brandTags: const [
+        'E2E Encryption',
+        'Automação',
+        'Cloud Native',
+      ],
       formPanel: _buildLoginPanel(context),
     );
   }
@@ -247,7 +251,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Sua empresa ainda nao tem conta?',
+                    'Sua empresa ainda não tem conta?',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,

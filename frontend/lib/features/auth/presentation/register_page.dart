@@ -119,13 +119,13 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return AuthShell(
       brandHeadline:
-          'Cadastro pensado para empresas que precisam operar rápido.',
+          'Sua operação começa aqui.',
       brandDescription:
-          'Estruture o onboarding B2B com dados essenciais, validação clara e um fluxo pronto para conectar API, CRM ou backoffice.',
+          'Ative sua empresa com um onboarding moderno, automatizado e desenvolvido para negócios que valorizam velocidade, controle e crescimento.',
       brandTags: const [
-        'Cadastro empresarial',
-        'Onboarding B2B',
-        'Pronto para integração',
+        'E2E Encryption',
+        'Automação',
+        'Cloud Native',
       ],
       formPanel: _buildRegisterPanel(context),
     );
@@ -196,7 +196,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Cadastro exclusivo para empresas com CNPJ. Perfis pessoais devem ser tratados em um fluxo separado.',
+                      'Cadastro exclusivo para empresas com CNPJ. Perfis pessoais devem ser tratados no painel do gestor.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         height: 1.45,
