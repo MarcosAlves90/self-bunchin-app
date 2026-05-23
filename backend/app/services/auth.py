@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 
-from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.crypto import FieldCipher, lookup_digest
 from app.db import ensure_utc, utcnow
+from app.errors import DomainError, ErrorKind
 from app.models import AuthSession, Company, Employee, UserAccount
 from app.schemas.auth import (
     AuthContextResponse,
@@ -130,19 +130,16 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
         ),
     )
     if existing_company is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A company with this CNPJ or contact email already exists.",
+        raise DomainError(
+            ErrorKind.conflict,
+            "A company with this CNPJ or contact email already exists.",
         )
 
     existing_user = db.scalar(
         select(UserAccount).where(UserAccount.email_hash == email_hash),
     )
     if existing_user is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A user with this email already exists.",
-        )
+        raise DomainError(ErrorKind.conflict, "A user with this email already exists.")
 
     company = Company(
         legal_name_ciphertext=cipher.encrypt(payload.company_name) or "",
@@ -183,22 +180,13 @@ def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
     email_hash = lookup_digest(normalized_email, settings.encryption_secret or "")
     user = db.scalar(select(UserAccount).where(UserAccount.email_hash == email_hash))
     if user is None or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-        )
+        raise DomainError(ErrorKind.unauthorized, "Invalid email or password.")
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="This account is inactive.",
-        )
+        raise DomainError(ErrorKind.forbidden, "This account is inactive.")
 
     company = db.get(Company, user.company_id)
     if company is None or not company.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The company account is inactive.",
-        )
+        raise DomainError(ErrorKind.forbidden, "The company account is inactive.")
 
     user.last_login_at = utcnow()
     token, auth_session = _issue_session(
@@ -223,23 +211,20 @@ def resolve_context(db: Session, token: str) -> AuthenticatedContext:
     now = utcnow()
     expires_at = ensure_utc(auth_session.expires_at) if auth_session is not None else None
     if auth_session is None or auth_session.revoked_at is not None or expires_at is None or expires_at <= now:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token.",
-        )
+        raise DomainError(ErrorKind.unauthorized, "Invalid or expired access token.")
 
     user = db.get(UserAccount, auth_session.user_id)
     if user is None or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="The account associated with this token is unavailable.",
+        raise DomainError(
+            ErrorKind.unauthorized,
+            "The account associated with this token is unavailable.",
         )
 
     company = db.get(Company, user.company_id)
     if company is None or not company.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="The company associated with this token is unavailable.",
+        raise DomainError(
+            ErrorKind.unauthorized,
+            "The company associated with this token is unavailable.",
         )
 
     auth_session.last_used_at = now

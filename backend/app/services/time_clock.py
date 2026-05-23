@@ -4,13 +4,13 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.crypto import FieldCipher
 from app.db import ensure_utc, utcnow
+from app.errors import DomainError, ErrorKind
 from app.models import Employee, Punch
 from app.schemas.punch import (
     CreatePunchRequest,
@@ -83,10 +83,7 @@ def _get_company_employee(db: Session, *, company_id: str, employee_id: str) -> 
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Employee not found.")
     return employee
 
 
@@ -105,10 +102,7 @@ def _get_employee_punch(
         ),
     )
     if record is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Punch not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Punch not found.")
     return record
 
 
@@ -240,18 +234,18 @@ def create_punch(
         ShiftStatus.on_break: {PunchType.break_end, PunchType.check_out},
     }
     if punch_type not in allowed_types[current_status]:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
+        raise DomainError(
+            ErrorKind.conflict,
+            (
                 "Invalid punch transition for the current shift status. "
                 f"Current status: {current_status.value}."
             ),
         )
 
     if employee.requires_location_on_punch and payload.location is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This employee must submit location data when punching.",
+        raise DomainError(
+            ErrorKind.bad_request,
+            "This employee must submit location data when punching.",
         )
 
     if payload.project_id is not None:

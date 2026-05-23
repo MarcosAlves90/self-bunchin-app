@@ -5,13 +5,13 @@ from datetime import time
 import json
 import re
 
-from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.crypto import FieldCipher, lookup_digest
 from app.db import ensure_utc
+from app.errors import DomainError, ErrorKind
 from app.models import Employee, Punch, UserAccount
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.services.auth import normalize_email
@@ -158,10 +158,7 @@ def get_employee(db: Session, *, company_id: str, employee_id: str, timezone_nam
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Employee not found.")
 
     today_records_by_employee = group_today_records(
         db,
@@ -198,9 +195,9 @@ def create_employee(
         ),
     )
     if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An employee with this email already exists in the company.",
+        raise DomainError(
+            ErrorKind.conflict,
+            "An employee with this email already exists in the company.",
         )
 
     employee = Employee(
@@ -254,10 +251,7 @@ def update_employee(
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Employee not found.")
 
     email_hash = _employee_email_hash(str(payload.email))
     duplicate = db.scalar(
@@ -268,10 +262,7 @@ def update_employee(
         ),
     )
     if duplicate is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Another employee already uses this email.",
-        )
+        raise DomainError(ErrorKind.conflict, "Another employee already uses this email.")
 
     employee.name_ciphertext = cipher.encrypt(payload.name) or ""
     employee.role_ciphertext = cipher.encrypt(payload.role) or ""
@@ -311,10 +302,7 @@ def delete_employee(
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Employee not found.")
 
     linked_accounts = db.scalars(
         select(UserAccount).where(

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
 from app.crypto import FieldCipher
+from app.errors import DomainError, ErrorKind
 from app.models import Employee, EmployeeProject, Project
 from app.schemas.project import (
     ProjectDraftPayload,
@@ -25,10 +25,7 @@ def _project_or_404(db: Session, *, company_id: str, project_id: str) -> Project
         select(Project).where(Project.company_id == company_id, Project.id == project_id),
     )
     if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Project not found.")
     return project
 
 
@@ -37,10 +34,7 @@ def _employee_or_404(db: Session, *, company_id: str, employee_id: str) -> Emplo
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Employee not found.",
-        )
+        raise DomainError(ErrorKind.not_found, "Employee not found.")
     return employee
 
 
@@ -210,10 +204,7 @@ def validate_project_for_punch(
 ) -> Project:
     project = _project_or_404(db, company_id=company_id, project_id=project_id)
     if project.status != ProjectStatus.active.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Project is inactive.",
-        )
+        raise DomainError(ErrorKind.forbidden, "Project is inactive.")
     linked = db.scalar(
         select(EmployeeProject).where(
             EmployeeProject.employee_id == employee_id,
@@ -221,8 +212,5 @@ def validate_project_for_punch(
         ),
     )
     if linked is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Employee is not assigned to this project.",
-        )
+        raise DomainError(ErrorKind.forbidden, "Employee is not assigned to this project.")
     return project
