@@ -14,7 +14,8 @@ from app.db import ensure_utc
 from app.errors import DomainError, ErrorKind
 from app.models import Employee, Punch, UserAccount
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
-from app.services.auth import normalize_email
+from app.security import generate_temp_password, hash_password
+from app.services.auth import AuthenticatedContext, normalize_email
 from app.services.time_clock import calculate_worked_minutes, group_today_records
 
 
@@ -22,8 +23,6 @@ _LEGACY_EXPECTED_SHIFT_PATTERN = re.compile(r"^\s*(\d{1,2}:\d{2})\s*(?:as|às|a|
 _TIME_TOKEN_PATTERN = re.compile(r"\b([01]?\d|2[0-3]):([0-5]\d)\b")
 _DEFAULT_SHIFT_START = time(hour=8, minute=0)
 _DEFAULT_SHIFT_END = time(hour=17, minute=0)
-
-
 def _cipher() -> FieldCipher:
     settings = get_settings()
     return FieldCipher(settings.encryption_secret or "")
@@ -182,12 +181,20 @@ def create_employee(
     company_id: str,
     payload: EmployeeDraftPayload,
     timezone_name: str,
-) -> EmployeeProfileResponse:
+) -> tuple[EmployeeProfileResponse, str]:
     cipher = _cipher()
     status_value = str(payload.status)
     work_mode_value = str(payload.work_mode)
     role_level_value = str(payload.role_level)
-    email_hash = _employee_email_hash(str(payload.email))
+    access_role_value = (
+        payload.access_role
+        if isinstance(payload.access_role, str)
+        else payload.access_role.value
+        if payload.access_role is not None
+        else "employee"
+    )
+    normalized_email = normalize_email(str(payload.email))
+    email_hash = _employee_email_hash(normalized_email)
     existing = db.scalar(
         select(Employee).where(
             Employee.company_id == company_id,
@@ -200,12 +207,19 @@ def create_employee(
             "An employee with this email already exists in the company.",
         )
 
+    existing_user = db.scalar(
+        select(UserAccount).where(UserAccount.email_hash == email_hash),
+    )
+    if existing_user is not None:
+        raise DomainError(ErrorKind.conflict, "A user with this email already exists.")
+
+    temp_password = generate_temp_password()
     employee = Employee(
         company_id=company_id,
         name_ciphertext=cipher.encrypt(payload.name) or "",
         role_ciphertext=cipher.encrypt(payload.role) or "",
         department_ciphertext=cipher.encrypt(payload.department) or "",
-        email_ciphertext=cipher.encrypt(normalize_email(str(payload.email))) or "",
+        email_ciphertext=cipher.encrypt(normalized_email) or "",
         email_hash=email_hash,
         phone_ciphertext=cipher.encrypt(payload.phone) or "",
         unit_ciphertext=cipher.encrypt(payload.unit) or "",
@@ -224,20 +238,32 @@ def create_employee(
         pending_adjustments=2 if status_value == "onboarding" else 0,
         notes_ciphertext=cipher.encrypt(payload.notes) or "",
     )
-    db.add(employee)
+    user = UserAccount(
+        company_id=company_id,
+        email_ciphertext=cipher.encrypt(normalized_email) or "",
+        email_hash=email_hash,
+        password_hash=hash_password(temp_password),
+        role=access_role_value,
+        employee=employee,
+    )
+    db.add_all([employee, user])
     db.commit()
     db.refresh(employee)
-    return get_employee(
-        db,
-        company_id=company_id,
-        employee_id=employee.id,
-        timezone_name=timezone_name,
+    return (
+        get_employee(
+            db,
+            company_id=company_id,
+            employee_id=employee.id,
+            timezone_name=timezone_name,
+        ),
+        temp_password,
     )
 
 
 def update_employee(
     db: Session,
     *,
+    context: AuthenticatedContext,
     company_id: str,
     employee_id: str,
     payload: EmployeeDraftPayload,
@@ -253,7 +279,8 @@ def update_employee(
     if employee is None:
         raise DomainError(ErrorKind.not_found, "Employee not found.")
 
-    email_hash = _employee_email_hash(str(payload.email))
+    normalized_email = normalize_email(str(payload.email))
+    email_hash = _employee_email_hash(normalized_email)
     duplicate = db.scalar(
         select(Employee).where(
             Employee.company_id == company_id,
@@ -264,10 +291,34 @@ def update_employee(
     if duplicate is not None:
         raise DomainError(ErrorKind.conflict, "Another employee already uses this email.")
 
+    existing_user = db.scalar(
+        select(UserAccount).where(
+            UserAccount.email_hash == email_hash,
+            UserAccount.employee_id != employee_id,
+        ),
+    )
+    if existing_user is not None:
+        raise DomainError(ErrorKind.conflict, "A user with this email already exists.")
+
+    linked_account = db.scalar(
+        select(UserAccount).where(
+            UserAccount.company_id == company_id,
+            UserAccount.employee_id == employee_id,
+        ),
+    )
+    is_self_edit = context.user.employee_id == employee_id
+    if linked_account is not None:
+        if context.user.role == "manager" and is_self_edit:
+            raise DomainError(ErrorKind.forbidden, "Managers cannot edit their own profile.")
+        if context.user.role == "manager" and linked_account.role == "admin":
+            raise DomainError(ErrorKind.forbidden, "Managers cannot edit admin accounts.")
+        if linked_account.role == "admin" and not (context.user.role == "admin" and is_self_edit):
+            raise DomainError(ErrorKind.forbidden, "Admin profiles can only be edited by the admin account itself.")
+
     employee.name_ciphertext = cipher.encrypt(payload.name) or ""
     employee.role_ciphertext = cipher.encrypt(payload.role) or ""
     employee.department_ciphertext = cipher.encrypt(payload.department) or ""
-    employee.email_ciphertext = cipher.encrypt(normalize_email(str(payload.email))) or ""
+    employee.email_ciphertext = cipher.encrypt(normalized_email) or ""
     employee.email_hash = email_hash
     employee.phone_ciphertext = cipher.encrypt(payload.phone) or ""
     employee.unit_ciphertext = cipher.encrypt(payload.unit) or ""
@@ -283,6 +334,19 @@ def update_employee(
     employee.requires_location_on_punch = payload.requires_location_on_punch
     employee.trusted_device_required = payload.trusted_device_required
     employee.notes_ciphertext = cipher.encrypt(payload.notes) or ""
+    if linked_account is not None:
+        linked_account.email_ciphertext = cipher.encrypt(normalized_email) or ""
+        linked_account.email_hash = email_hash
+    if payload.access_role is not None:
+        if linked_account is None:
+            raise DomainError(ErrorKind.bad_request, "Employee account not found.")
+        if linked_account.role == "admin":
+            raise DomainError(ErrorKind.forbidden, "Admin role cannot be changed.")
+        linked_account.role = (
+            payload.access_role
+            if isinstance(payload.access_role, str)
+            else payload.access_role.value
+        )
     db.commit()
     return get_employee(
         db,

@@ -10,16 +10,24 @@ from app.schemas.auth import (
     AuthSessionResponse,
     CompanyRegisterRequest,
     LoginRequest,
+    PasswordChangeRequest,
+    PasswordResetRequest,
 )
 from app.schemas.base import MessageResponse
 from app.services.auth import (
     AuthenticatedContext,
+    change_password,
     get_auth_context,
     login,
     logout,
     register_company,
+    reset_password,
 )
-from app.services.brevo import send_company_welcome_email
+from app.services.brevo import (
+    send_company_welcome_email,
+    send_password_changed_email,
+    send_password_reset_email,
+)
 
 
 router = APIRouter()
@@ -51,6 +59,46 @@ def login_route(
     db: Session = Depends(get_db),
 ) -> AuthSessionResponse:
     return login(db, payload)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password_route(
+    payload: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    recipient_email, display_name, temp_password = reset_password(
+        db,
+        email=str(payload.email).strip(),
+    )
+    background_tasks.add_task(
+        send_password_reset_email,
+        recipient_email=recipient_email,
+        display_name=display_name,
+        temp_password=temp_password,
+    )
+    return MessageResponse(message="Password reset email sent.")
+
+
+@router.post("/change-password", response_model=MessageResponse)
+def change_password_route(
+    payload: PasswordChangeRequest,
+    background_tasks: BackgroundTasks,
+    context: AuthenticatedContext = Depends(get_current_context),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    recipient_email, display_name = change_password(
+        db,
+        context=context,
+        current_password=payload.current_password,
+        new_password=payload.new_password,
+    )
+    background_tasks.add_task(
+        send_password_changed_email,
+        recipient_email=recipient_email,
+        display_name=display_name,
+    )
+    return MessageResponse(message="Password updated successfully.")
 
 
 @router.get("/me", response_model=AuthContextResponse)
