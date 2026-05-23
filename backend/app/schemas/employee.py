@@ -27,6 +27,11 @@ class RoleLevel(str, Enum):
     leadership = "leadership"
 
 
+class EmployeeAccessRole(str, Enum):
+    employee = "employee"
+    manager = "manager"
+
+
 class EmployeeDraftPayload(CamelModel):
     name: str = Field(min_length=3)
     role: str = Field(min_length=2)
@@ -39,6 +44,7 @@ class EmployeeDraftPayload(CamelModel):
     status: EmployeeStatus
     work_mode: EmployeeWorkMode
     role_level: RoleLevel
+    access_role: EmployeeAccessRole | None = None
     requires_location_on_punch: bool
     trusted_device_required: bool
     notes: str = Field(default="", max_length=2_000)

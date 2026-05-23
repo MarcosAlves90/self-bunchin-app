@@ -50,6 +50,222 @@ def _welcome_html(display_name: str, recipient_email: str) -> str:
     )
 
 
+def _credentials_subject(display_name: str) -> str:
+    return "Credenciais de acesso — Bunchin"
+
+
+def _credentials_text(display_name: str, recipient_email: str, temp_password: str) -> str:
+    return (
+        f"Prezado(a) {display_name},\n\n"
+        "Sua conta na plataforma Bunchin foi criada.\n"
+        f"E-mail de acesso: {recipient_email}\n"
+        f"Senha temporária: {temp_password}\n\n"
+        "Por segurança, altere sua senha após o primeiro acesso.\n\n"
+        "Atenciosamente,\n"
+        "Equipe Bunchin\n"
+    )
+
+
+def _credentials_html(display_name: str, recipient_email: str, temp_password: str) -> str:
+    safe_display_name = escape(display_name)
+    safe_email = escape(recipient_email)
+    safe_password = escape(temp_password)
+    return (
+        f"<p>Prezado(a) {safe_display_name},</p>"
+        "<p>Sua conta na plataforma <strong>Bunchin</strong> foi criada.</p>"
+        "<p>E-mail de acesso: "
+        f"<strong>{safe_email}</strong><br>"
+        f"Senha temporária: <strong>{safe_password}</strong></p>"
+        "<p>Por segurança, altere sua senha após o primeiro acesso.</p>"
+        "<p>Atenciosamente,<br>Equipe Bunchin</p>"
+    )
+
+
+def _password_reset_subject(display_name: str) -> str:
+    return "Redefinição de senha — Bunchin"
+
+
+def _password_reset_text(display_name: str, recipient_email: str, temp_password: str) -> str:
+    return (
+        f"Prezado(a) {display_name},\n\n"
+        "Recebemos uma solicitação para redefinir sua senha.\n"
+        f"E-mail de acesso: {recipient_email}\n"
+        f"Senha temporária: {temp_password}\n\n"
+        "Por segurança, altere sua senha após o primeiro acesso.\n\n"
+        "Atenciosamente,\n"
+        "Equipe Bunchin\n"
+    )
+
+
+def _password_reset_html(display_name: str, recipient_email: str, temp_password: str) -> str:
+    safe_display_name = escape(display_name)
+    safe_email = escape(recipient_email)
+    safe_password = escape(temp_password)
+    return (
+        f"<p>Prezado(a) {safe_display_name},</p>"
+        "<p>Recebemos uma solicitação para redefinir sua senha.</p>"
+        "<p>E-mail de acesso: "
+        f"<strong>{safe_email}</strong><br>"
+        f"Senha temporária: <strong>{safe_password}</strong></p>"
+        "<p>Por segurança, altere sua senha após o primeiro acesso.</p>"
+        "<p>Atenciosamente,<br>Equipe Bunchin</p>"
+    )
+
+
+def _password_changed_subject(display_name: str) -> str:
+    return "Senha atualizada — Bunchin"
+
+
+def _password_changed_text(display_name: str, recipient_email: str) -> str:
+    return (
+        f"Prezado(a) {display_name},\n\n"
+        "Sua senha foi atualizada com sucesso.\n"
+        f"E-mail de acesso: {recipient_email}\n\n"
+        "Se você não realizou esta alteração, entre em contato com nossa equipe de suporte.\n\n"
+        "Atenciosamente,\n"
+        "Equipe Bunchin\n"
+    )
+
+
+def _password_changed_html(display_name: str, recipient_email: str) -> str:
+    safe_display_name = escape(display_name)
+    safe_email = escape(recipient_email)
+    return (
+        f"<p>Prezado(a) {safe_display_name},</p>"
+        "<p>Sua senha foi atualizada com sucesso.</p>"
+        "<p>E-mail de acesso: "
+        f"<strong>{safe_email}</strong>.</p>"
+        "<p>Se você não realizou esta alteração, entre em contato com nossa equipe de suporte.</p>"
+        "<p>Atenciosamente,<br>Equipe Bunchin</p>"
+    )
+
+
+def send_employee_credentials_email(
+    *,
+    recipient_email: str,
+    employee_name: str,
+    temp_password: str,
+) -> None:
+    settings = get_settings()
+    if not _is_brevo_enabled(settings):
+        return
+
+    display_name = employee_name.strip() or recipient_email.strip()
+    payload = {
+        "sender": {
+            "email": settings.brevo_sender_email,
+            "name": settings.brevo_sender_name,
+        },
+        "to": [{"email": recipient_email.strip(), "name": display_name}],
+        "subject": _credentials_subject(display_name),
+        "textContent": _credentials_text(display_name, recipient_email.strip(), temp_password),
+        "htmlContent": _credentials_html(display_name, recipient_email.strip(), temp_password),
+    }
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.brevo_api_key or "",
+        "content-type": "application/json",
+    }
+
+    try:
+        response = httpx.post(
+            BREVO_SMTP_EMAIL_URL,
+            json=payload,
+            headers=headers,
+            timeout=BREVO_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else "n/a"
+        logger.warning(
+            "Brevo credentials email failed without blocking employee creation. status=%s",
+            status_code,
+        )
+
+
+def send_password_reset_email(
+    *,
+    recipient_email: str,
+    display_name: str,
+    temp_password: str,
+) -> None:
+    settings = get_settings()
+    if not _is_brevo_enabled(settings):
+        return
+
+    payload = {
+        "sender": {
+            "email": settings.brevo_sender_email,
+            "name": settings.brevo_sender_name,
+        },
+        "to": [{"email": recipient_email.strip(), "name": display_name.strip()}],
+        "subject": _password_reset_subject(display_name),
+        "textContent": _password_reset_text(display_name, recipient_email.strip(), temp_password),
+        "htmlContent": _password_reset_html(display_name, recipient_email.strip(), temp_password),
+    }
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.brevo_api_key or "",
+        "content-type": "application/json",
+    }
+
+    try:
+        response = httpx.post(
+            BREVO_SMTP_EMAIL_URL,
+            json=payload,
+            headers=headers,
+            timeout=BREVO_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else "n/a"
+        logger.warning(
+            "Brevo password reset email failed without blocking reset. status=%s",
+            status_code,
+        )
+
+
+def send_password_changed_email(
+    *,
+    recipient_email: str,
+    display_name: str,
+) -> None:
+    settings = get_settings()
+    if not _is_brevo_enabled(settings):
+        return
+
+    payload = {
+        "sender": {
+            "email": settings.brevo_sender_email,
+            "name": settings.brevo_sender_name,
+        },
+        "to": [{"email": recipient_email.strip(), "name": display_name.strip()}],
+        "subject": _password_changed_subject(display_name),
+        "textContent": _password_changed_text(display_name, recipient_email.strip()),
+        "htmlContent": _password_changed_html(display_name, recipient_email.strip()),
+    }
+    headers = {
+        "accept": "application/json",
+        "api-key": settings.brevo_api_key or "",
+        "content-type": "application/json",
+    }
+
+    try:
+        response = httpx.post(
+            BREVO_SMTP_EMAIL_URL,
+            json=payload,
+            headers=headers,
+            timeout=BREVO_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else "n/a"
+        logger.warning(
+            "Brevo password change email failed without blocking change. status=%s",
+            status_code,
+        )
+
+
 def send_company_welcome_email(
     *,
     recipient_email: str,
