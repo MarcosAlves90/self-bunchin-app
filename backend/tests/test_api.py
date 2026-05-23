@@ -188,6 +188,62 @@ def test_time_clock_requires_location_when_policy_demands_it(client):
     assert payload["location"]["latitude"] == -23.5632
 
 
+def test_employee_cannot_manage_employee_punches(client):
+    headers = login_headers_for(
+        client,
+        email="joao.lima@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    response = client.get("/api/v1/time-clock/employees/emp-02/punches", headers=headers)
+    assert response.status_code == 403
+
+
+def test_manager_can_manage_employee_punches(client):
+    headers = login_headers_for(
+        client,
+        email="caio.martins@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+
+    create_response = client.post(
+        "/api/v1/time-clock/employees/emp-02/punches",
+        headers=headers,
+        json={
+            "type": "checkIn",
+            "timestamp": "2026-05-20T09:00:00-03:00",
+            "detail": "Ajuste manual aprovado pelo gestor.",
+        },
+    )
+    assert create_response.status_code == 201
+    created = create_response.json()
+    assert created["id"]
+    assert created["employeeId"] == "emp-02"
+    assert created["type"] == "checkIn"
+    assert created["detail"] == "Ajuste manual aprovado pelo gestor."
+
+    list_response = client.get("/api/v1/time-clock/employees/emp-02/punches", headers=headers)
+    assert list_response.status_code == 200
+    assert any(item["id"] == created["id"] for item in list_response.json())
+
+    update_response = client.put(
+        f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
+        headers=headers,
+        json={"detail": "Ajuste revisado pelo gestor."},
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["detail"] == "Ajuste revisado pelo gestor."
+
+    delete_response = client.delete(
+        f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
+        headers=headers,
+    )
+    assert delete_response.status_code == 204
+
+    final_list_response = client.get("/api/v1/time-clock/employees/emp-02/punches", headers=headers)
+    assert final_list_response.status_code == 200
+    assert all(item["id"] != created["id"] for item in final_list_response.json())
+
+
 def test_pii_is_not_stored_in_plain_text(client):
     login_headers(client)
     with SessionLocal() as db:

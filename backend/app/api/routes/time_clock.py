@@ -1,13 +1,27 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.authorization import require_permission
 from app.dependencies import get_current_context, get_db
-from app.schemas.punch import CreatePunchRequest, PunchRecordResponse, TimeClockStateResponse
+from app.schemas.punch import (
+    CreatePunchRequest,
+    ManagedPunchRecordResponse,
+    ManagePunchRequest,
+    PunchRecordResponse,
+    TimeClockStateResponse,
+    UpdateManagedPunchRequest,
+)
 from app.services.auth import AuthenticatedContext
-from app.services.time_clock import create_punch, time_clock_state
+from app.services.time_clock import (
+    create_managed_punch,
+    create_punch,
+    delete_managed_punch,
+    list_managed_punches,
+    time_clock_state,
+    update_managed_punch,
+)
 
 
 router = APIRouter()
@@ -48,3 +62,74 @@ def create_punch_route(
         payload=payload,
         timezone_name=context.company.timezone,
     )
+
+
+@router.get("/employees/{employee_id}/punches", response_model=list[ManagedPunchRecordResponse])
+def list_managed_punches_route(
+    employee_id: str,
+    context: AuthenticatedContext = Depends(require_permission("time_clock.manage")),
+    db: Session = Depends(get_db),
+) -> list[ManagedPunchRecordResponse]:
+    return list_managed_punches(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
+    )
+
+
+@router.post(
+    "/employees/{employee_id}/punches",
+    response_model=ManagedPunchRecordResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_managed_punch_route(
+    employee_id: str,
+    payload: ManagePunchRequest,
+    context: AuthenticatedContext = Depends(require_permission("time_clock.manage")),
+    db: Session = Depends(get_db),
+) -> ManagedPunchRecordResponse:
+    return create_managed_punch(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
+        payload=payload,
+    )
+
+
+@router.put(
+    "/employees/{employee_id}/punches/{punch_id}",
+    response_model=ManagedPunchRecordResponse,
+)
+def update_managed_punch_route(
+    employee_id: str,
+    punch_id: str,
+    payload: UpdateManagedPunchRequest,
+    context: AuthenticatedContext = Depends(require_permission("time_clock.manage")),
+    db: Session = Depends(get_db),
+) -> ManagedPunchRecordResponse:
+    return update_managed_punch(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
+        punch_id=punch_id,
+        payload=payload,
+    )
+
+
+@router.delete(
+    "/employees/{employee_id}/punches/{punch_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_managed_punch_route(
+    employee_id: str,
+    punch_id: str,
+    context: AuthenticatedContext = Depends(require_permission("time_clock.manage")),
+    db: Session = Depends(get_db),
+) -> Response:
+    delete_managed_punch(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
+        punch_id=punch_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

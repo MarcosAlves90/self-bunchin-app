@@ -21,7 +21,8 @@ mixin _$EmployeeProfile {
   String get email;
   String get phone;
   String get unit;
-  String get expectedShift;
+  TimeOfDay get expectedShiftStart;
+  TimeOfDay get expectedShiftEnd;
   EmployeeStatus get status;
   EmployeeWorkMode get workMode;
   RoleLevel get roleLevel;
@@ -53,8 +54,10 @@ mixin _$EmployeeProfile {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.phone, phone) || other.phone == phone) &&
             (identical(other.unit, unit) || other.unit == unit) &&
-            (identical(other.expectedShift, expectedShift) ||
-                other.expectedShift == expectedShift) &&
+            (identical(other.expectedShiftStart, expectedShiftStart) ||
+                other.expectedShiftStart == expectedShiftStart) &&
+            (identical(other.expectedShiftEnd, expectedShiftEnd) ||
+                other.expectedShiftEnd == expectedShiftEnd) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.workMode, workMode) ||
                 other.workMode == workMode) &&
@@ -84,7 +87,8 @@ mixin _$EmployeeProfile {
       email,
       phone,
       unit,
-      expectedShift,
+      expectedShiftStart,
+      expectedShiftEnd,
       status,
       workMode,
       roleLevel,
@@ -97,7 +101,7 @@ mixin _$EmployeeProfile {
 
   @override
   String toString() {
-    return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
+    return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShiftStart: $expectedShiftStart, expectedShiftEnd: $expectedShiftEnd, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
   }
 }
 
@@ -115,7 +119,8 @@ abstract mixin class $EmployeeProfileCopyWith<$Res> {
       String email,
       String phone,
       String unit,
-      String expectedShift,
+      TimeOfDay expectedShiftStart,
+      TimeOfDay expectedShiftEnd,
       EmployeeStatus status,
       EmployeeWorkMode workMode,
       RoleLevel roleLevel,
@@ -147,7 +152,8 @@ class _$EmployeeProfileCopyWithImpl<$Res>
     Object? email = null,
     Object? phone = null,
     Object? unit = null,
-    Object? expectedShift = null,
+    Object? expectedShiftStart = null,
+    Object? expectedShiftEnd = null,
     Object? status = null,
     Object? workMode = null,
     Object? roleLevel = null,
@@ -187,10 +193,14 @@ class _$EmployeeProfileCopyWithImpl<$Res>
           ? _self.unit
           : unit // ignore: cast_nullable_to_non_nullable
               as String,
-      expectedShift: null == expectedShift
-          ? _self.expectedShift
-          : expectedShift // ignore: cast_nullable_to_non_nullable
-              as String,
+      expectedShiftStart: null == expectedShiftStart
+          ? _self.expectedShiftStart
+          : expectedShiftStart // ignore: cast_nullable_to_non_nullable
+              as TimeOfDay,
+      expectedShiftEnd: null == expectedShiftEnd
+          ? _self.expectedShiftEnd
+          : expectedShiftEnd // ignore: cast_nullable_to_non_nullable
+              as TimeOfDay,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -332,7 +342,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             String email,
             String phone,
             String unit,
-            String expectedShift,
+            TimeOfDay expectedShiftStart,
+            TimeOfDay expectedShiftEnd,
             EmployeeStatus status,
             EmployeeWorkMode workMode,
             RoleLevel roleLevel,
@@ -356,7 +367,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             _that.email,
             _that.phone,
             _that.unit,
-            _that.expectedShift,
+            _that.expectedShiftStart,
+            _that.expectedShiftEnd,
             _that.status,
             _that.workMode,
             _that.roleLevel,
@@ -394,7 +406,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             String email,
             String phone,
             String unit,
-            String expectedShift,
+            TimeOfDay expectedShiftStart,
+            TimeOfDay expectedShiftEnd,
             EmployeeStatus status,
             EmployeeWorkMode workMode,
             RoleLevel roleLevel,
@@ -417,7 +430,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             _that.email,
             _that.phone,
             _that.unit,
-            _that.expectedShift,
+            _that.expectedShiftStart,
+            _that.expectedShiftEnd,
             _that.status,
             _that.workMode,
             _that.roleLevel,
@@ -454,7 +468,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             String email,
             String phone,
             String unit,
-            String expectedShift,
+            TimeOfDay expectedShiftStart,
+            TimeOfDay expectedShiftEnd,
             EmployeeStatus status,
             EmployeeWorkMode workMode,
             RoleLevel roleLevel,
@@ -477,7 +492,8 @@ extension EmployeeProfilePatterns on EmployeeProfile {
             _that.email,
             _that.phone,
             _that.unit,
-            _that.expectedShift,
+            _that.expectedShiftStart,
+            _that.expectedShiftEnd,
             _that.status,
             _that.workMode,
             _that.roleLevel,
@@ -504,7 +520,8 @@ class _EmployeeProfile extends EmployeeProfile {
       required this.email,
       required this.phone,
       required this.unit,
-      required this.expectedShift,
+      required this.expectedShiftStart,
+      required this.expectedShiftEnd,
       required this.status,
       required this.workMode,
       required this.roleLevel,
@@ -531,7 +548,9 @@ class _EmployeeProfile extends EmployeeProfile {
   @override
   final String unit;
   @override
-  final String expectedShift;
+  final TimeOfDay expectedShiftStart;
+  @override
+  final TimeOfDay expectedShiftEnd;
   @override
   final EmployeeStatus status;
   @override
@@ -572,8 +591,10 @@ class _EmployeeProfile extends EmployeeProfile {
             (identical(other.email, email) || other.email == email) &&
             (identical(other.phone, phone) || other.phone == phone) &&
             (identical(other.unit, unit) || other.unit == unit) &&
-            (identical(other.expectedShift, expectedShift) ||
-                other.expectedShift == expectedShift) &&
+            (identical(other.expectedShiftStart, expectedShiftStart) ||
+                other.expectedShiftStart == expectedShiftStart) &&
+            (identical(other.expectedShiftEnd, expectedShiftEnd) ||
+                other.expectedShiftEnd == expectedShiftEnd) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.workMode, workMode) ||
                 other.workMode == workMode) &&
@@ -603,7 +624,8 @@ class _EmployeeProfile extends EmployeeProfile {
       email,
       phone,
       unit,
-      expectedShift,
+      expectedShiftStart,
+      expectedShiftEnd,
       status,
       workMode,
       roleLevel,
@@ -616,7 +638,7 @@ class _EmployeeProfile extends EmployeeProfile {
 
   @override
   String toString() {
-    return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
+    return 'EmployeeProfile(id: $id, name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShiftStart: $expectedShiftStart, expectedShiftEnd: $expectedShiftEnd, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, todayWorkedMinutes: $todayWorkedMinutes, pendingAdjustments: $pendingAdjustments, lastPunchAt: $lastPunchAt, notes: $notes)';
   }
 }
 
@@ -636,7 +658,8 @@ abstract mixin class _$EmployeeProfileCopyWith<$Res>
       String email,
       String phone,
       String unit,
-      String expectedShift,
+      TimeOfDay expectedShiftStart,
+      TimeOfDay expectedShiftEnd,
       EmployeeStatus status,
       EmployeeWorkMode workMode,
       RoleLevel roleLevel,
@@ -668,7 +691,8 @@ class __$EmployeeProfileCopyWithImpl<$Res>
     Object? email = null,
     Object? phone = null,
     Object? unit = null,
-    Object? expectedShift = null,
+    Object? expectedShiftStart = null,
+    Object? expectedShiftEnd = null,
     Object? status = null,
     Object? workMode = null,
     Object? roleLevel = null,
@@ -708,10 +732,14 @@ class __$EmployeeProfileCopyWithImpl<$Res>
           ? _self.unit
           : unit // ignore: cast_nullable_to_non_nullable
               as String,
-      expectedShift: null == expectedShift
-          ? _self.expectedShift
-          : expectedShift // ignore: cast_nullable_to_non_nullable
-              as String,
+      expectedShiftStart: null == expectedShiftStart
+          ? _self.expectedShiftStart
+          : expectedShiftStart // ignore: cast_nullable_to_non_nullable
+              as TimeOfDay,
+      expectedShiftEnd: null == expectedShiftEnd
+          ? _self.expectedShiftEnd
+          : expectedShiftEnd // ignore: cast_nullable_to_non_nullable
+              as TimeOfDay,
       status: null == status
           ? _self.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -744,636 +772,6 @@ class __$EmployeeProfileCopyWithImpl<$Res>
           ? _self.lastPunchAt
           : lastPunchAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      notes: null == notes
-          ? _self.notes
-          : notes // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
-}
-
-/// @nodoc
-mixin _$EmployeeDraft {
-  String get name;
-  String get role;
-  String get department;
-  String get email;
-  String get phone;
-  String get unit;
-  String get expectedShift;
-  EmployeeStatus get status;
-  EmployeeWorkMode get workMode;
-  RoleLevel get roleLevel;
-  bool get requiresLocationOnPunch;
-  bool get trustedDeviceRequired;
-  String get notes;
-
-  /// Create a copy of EmployeeDraft
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $EmployeeDraftCopyWith<EmployeeDraft> get copyWith =>
-      _$EmployeeDraftCopyWithImpl<EmployeeDraft>(
-          this as EmployeeDraft, _$identity);
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is EmployeeDraft &&
-            (identical(other.name, name) || other.name == name) &&
-            (identical(other.role, role) || other.role == role) &&
-            (identical(other.department, department) ||
-                other.department == department) &&
-            (identical(other.email, email) || other.email == email) &&
-            (identical(other.phone, phone) || other.phone == phone) &&
-            (identical(other.unit, unit) || other.unit == unit) &&
-            (identical(other.expectedShift, expectedShift) ||
-                other.expectedShift == expectedShift) &&
-            (identical(other.status, status) || other.status == status) &&
-            (identical(other.workMode, workMode) ||
-                other.workMode == workMode) &&
-            (identical(other.roleLevel, roleLevel) ||
-                other.roleLevel == roleLevel) &&
-            (identical(
-                    other.requiresLocationOnPunch, requiresLocationOnPunch) ||
-                other.requiresLocationOnPunch == requiresLocationOnPunch) &&
-            (identical(other.trustedDeviceRequired, trustedDeviceRequired) ||
-                other.trustedDeviceRequired == trustedDeviceRequired) &&
-            (identical(other.notes, notes) || other.notes == notes));
-  }
-
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      name,
-      role,
-      department,
-      email,
-      phone,
-      unit,
-      expectedShift,
-      status,
-      workMode,
-      roleLevel,
-      requiresLocationOnPunch,
-      trustedDeviceRequired,
-      notes);
-
-  @override
-  String toString() {
-    return 'EmployeeDraft(name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, notes: $notes)';
-  }
-}
-
-/// @nodoc
-abstract mixin class $EmployeeDraftCopyWith<$Res> {
-  factory $EmployeeDraftCopyWith(
-          EmployeeDraft value, $Res Function(EmployeeDraft) _then) =
-      _$EmployeeDraftCopyWithImpl;
-  @useResult
-  $Res call(
-      {String name,
-      String role,
-      String department,
-      String email,
-      String phone,
-      String unit,
-      String expectedShift,
-      EmployeeStatus status,
-      EmployeeWorkMode workMode,
-      RoleLevel roleLevel,
-      bool requiresLocationOnPunch,
-      bool trustedDeviceRequired,
-      String notes});
-}
-
-/// @nodoc
-class _$EmployeeDraftCopyWithImpl<$Res>
-    implements $EmployeeDraftCopyWith<$Res> {
-  _$EmployeeDraftCopyWithImpl(this._self, this._then);
-
-  final EmployeeDraft _self;
-  final $Res Function(EmployeeDraft) _then;
-
-  /// Create a copy of EmployeeDraft
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? name = null,
-    Object? role = null,
-    Object? department = null,
-    Object? email = null,
-    Object? phone = null,
-    Object? unit = null,
-    Object? expectedShift = null,
-    Object? status = null,
-    Object? workMode = null,
-    Object? roleLevel = null,
-    Object? requiresLocationOnPunch = null,
-    Object? trustedDeviceRequired = null,
-    Object? notes = null,
-  }) {
-    return _then(_self.copyWith(
-      name: null == name
-          ? _self.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      role: null == role
-          ? _self.role
-          : role // ignore: cast_nullable_to_non_nullable
-              as String,
-      department: null == department
-          ? _self.department
-          : department // ignore: cast_nullable_to_non_nullable
-              as String,
-      email: null == email
-          ? _self.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
-      phone: null == phone
-          ? _self.phone
-          : phone // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: null == unit
-          ? _self.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String,
-      expectedShift: null == expectedShift
-          ? _self.expectedShift
-          : expectedShift // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as EmployeeStatus,
-      workMode: null == workMode
-          ? _self.workMode
-          : workMode // ignore: cast_nullable_to_non_nullable
-              as EmployeeWorkMode,
-      roleLevel: null == roleLevel
-          ? _self.roleLevel
-          : roleLevel // ignore: cast_nullable_to_non_nullable
-              as RoleLevel,
-      requiresLocationOnPunch: null == requiresLocationOnPunch
-          ? _self.requiresLocationOnPunch
-          : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
-              as bool,
-      trustedDeviceRequired: null == trustedDeviceRequired
-          ? _self.trustedDeviceRequired
-          : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
-              as bool,
-      notes: null == notes
-          ? _self.notes
-          : notes // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
-}
-
-/// Adds pattern-matching-related methods to [EmployeeDraft].
-extension EmployeeDraftPatterns on EmployeeDraft {
-  /// A variant of `map` that fallback to returning `orElse`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>(
-    TResult Function(_EmployeeDraft value)? $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft() when $default != null:
-        return $default(_that);
-      case _:
-        return orElse();
-    }
-  }
-
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// Callbacks receives the raw object, upcasted.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case final Subclass2 value:
-  ///     return ...;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>(
-    TResult Function(_EmployeeDraft value) $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft():
-        return $default(_that);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
-
-  /// A variant of `map` that fallback to returning `null`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_EmployeeDraft value)? $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft() when $default != null:
-        return $default(_that);
-      case _:
-        return null;
-    }
-  }
-
-  /// A variant of `when` that fallback to an `orElse` callback.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>(
-    TResult Function(
-            String name,
-            String role,
-            String department,
-            String email,
-            String phone,
-            String unit,
-            String expectedShift,
-            EmployeeStatus status,
-            EmployeeWorkMode workMode,
-            RoleLevel roleLevel,
-            bool requiresLocationOnPunch,
-            bool trustedDeviceRequired,
-            String notes)?
-        $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft() when $default != null:
-        return $default(
-            _that.name,
-            _that.role,
-            _that.department,
-            _that.email,
-            _that.phone,
-            _that.unit,
-            _that.expectedShift,
-            _that.status,
-            _that.workMode,
-            _that.roleLevel,
-            _that.requiresLocationOnPunch,
-            _that.trustedDeviceRequired,
-            _that.notes);
-      case _:
-        return orElse();
-    }
-  }
-
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// As opposed to `map`, this offers destructuring.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case Subclass2(:final field2):
-  ///     return ...;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>(
-    TResult Function(
-            String name,
-            String role,
-            String department,
-            String email,
-            String phone,
-            String unit,
-            String expectedShift,
-            EmployeeStatus status,
-            EmployeeWorkMode workMode,
-            RoleLevel roleLevel,
-            bool requiresLocationOnPunch,
-            bool trustedDeviceRequired,
-            String notes)
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft():
-        return $default(
-            _that.name,
-            _that.role,
-            _that.department,
-            _that.email,
-            _that.phone,
-            _that.unit,
-            _that.expectedShift,
-            _that.status,
-            _that.workMode,
-            _that.roleLevel,
-            _that.requiresLocationOnPunch,
-            _that.trustedDeviceRequired,
-            _that.notes);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
-
-  /// A variant of `when` that fallback to returning `null`
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
-
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(
-            String name,
-            String role,
-            String department,
-            String email,
-            String phone,
-            String unit,
-            String expectedShift,
-            EmployeeStatus status,
-            EmployeeWorkMode workMode,
-            RoleLevel roleLevel,
-            bool requiresLocationOnPunch,
-            bool trustedDeviceRequired,
-            String notes)?
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _EmployeeDraft() when $default != null:
-        return $default(
-            _that.name,
-            _that.role,
-            _that.department,
-            _that.email,
-            _that.phone,
-            _that.unit,
-            _that.expectedShift,
-            _that.status,
-            _that.workMode,
-            _that.roleLevel,
-            _that.requiresLocationOnPunch,
-            _that.trustedDeviceRequired,
-            _that.notes);
-      case _:
-        return null;
-    }
-  }
-}
-
-/// @nodoc
-
-class _EmployeeDraft extends EmployeeDraft {
-  const _EmployeeDraft(
-      {required this.name,
-      required this.role,
-      required this.department,
-      required this.email,
-      required this.phone,
-      required this.unit,
-      required this.expectedShift,
-      required this.status,
-      required this.workMode,
-      required this.roleLevel,
-      required this.requiresLocationOnPunch,
-      required this.trustedDeviceRequired,
-      required this.notes})
-      : super._();
-
-  @override
-  final String name;
-  @override
-  final String role;
-  @override
-  final String department;
-  @override
-  final String email;
-  @override
-  final String phone;
-  @override
-  final String unit;
-  @override
-  final String expectedShift;
-  @override
-  final EmployeeStatus status;
-  @override
-  final EmployeeWorkMode workMode;
-  @override
-  final RoleLevel roleLevel;
-  @override
-  final bool requiresLocationOnPunch;
-  @override
-  final bool trustedDeviceRequired;
-  @override
-  final String notes;
-
-  /// Create a copy of EmployeeDraft
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  _$EmployeeDraftCopyWith<_EmployeeDraft> get copyWith =>
-      __$EmployeeDraftCopyWithImpl<_EmployeeDraft>(this, _$identity);
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _EmployeeDraft &&
-            (identical(other.name, name) || other.name == name) &&
-            (identical(other.role, role) || other.role == role) &&
-            (identical(other.department, department) ||
-                other.department == department) &&
-            (identical(other.email, email) || other.email == email) &&
-            (identical(other.phone, phone) || other.phone == phone) &&
-            (identical(other.unit, unit) || other.unit == unit) &&
-            (identical(other.expectedShift, expectedShift) ||
-                other.expectedShift == expectedShift) &&
-            (identical(other.status, status) || other.status == status) &&
-            (identical(other.workMode, workMode) ||
-                other.workMode == workMode) &&
-            (identical(other.roleLevel, roleLevel) ||
-                other.roleLevel == roleLevel) &&
-            (identical(
-                    other.requiresLocationOnPunch, requiresLocationOnPunch) ||
-                other.requiresLocationOnPunch == requiresLocationOnPunch) &&
-            (identical(other.trustedDeviceRequired, trustedDeviceRequired) ||
-                other.trustedDeviceRequired == trustedDeviceRequired) &&
-            (identical(other.notes, notes) || other.notes == notes));
-  }
-
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      name,
-      role,
-      department,
-      email,
-      phone,
-      unit,
-      expectedShift,
-      status,
-      workMode,
-      roleLevel,
-      requiresLocationOnPunch,
-      trustedDeviceRequired,
-      notes);
-
-  @override
-  String toString() {
-    return 'EmployeeDraft(name: $name, role: $role, department: $department, email: $email, phone: $phone, unit: $unit, expectedShift: $expectedShift, status: $status, workMode: $workMode, roleLevel: $roleLevel, requiresLocationOnPunch: $requiresLocationOnPunch, trustedDeviceRequired: $trustedDeviceRequired, notes: $notes)';
-  }
-}
-
-/// @nodoc
-abstract mixin class _$EmployeeDraftCopyWith<$Res>
-    implements $EmployeeDraftCopyWith<$Res> {
-  factory _$EmployeeDraftCopyWith(
-          _EmployeeDraft value, $Res Function(_EmployeeDraft) _then) =
-      __$EmployeeDraftCopyWithImpl;
-  @override
-  @useResult
-  $Res call(
-      {String name,
-      String role,
-      String department,
-      String email,
-      String phone,
-      String unit,
-      String expectedShift,
-      EmployeeStatus status,
-      EmployeeWorkMode workMode,
-      RoleLevel roleLevel,
-      bool requiresLocationOnPunch,
-      bool trustedDeviceRequired,
-      String notes});
-}
-
-/// @nodoc
-class __$EmployeeDraftCopyWithImpl<$Res>
-    implements _$EmployeeDraftCopyWith<$Res> {
-  __$EmployeeDraftCopyWithImpl(this._self, this._then);
-
-  final _EmployeeDraft _self;
-  final $Res Function(_EmployeeDraft) _then;
-
-  /// Create a copy of EmployeeDraft
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? name = null,
-    Object? role = null,
-    Object? department = null,
-    Object? email = null,
-    Object? phone = null,
-    Object? unit = null,
-    Object? expectedShift = null,
-    Object? status = null,
-    Object? workMode = null,
-    Object? roleLevel = null,
-    Object? requiresLocationOnPunch = null,
-    Object? trustedDeviceRequired = null,
-    Object? notes = null,
-  }) {
-    return _then(_EmployeeDraft(
-      name: null == name
-          ? _self.name
-          : name // ignore: cast_nullable_to_non_nullable
-              as String,
-      role: null == role
-          ? _self.role
-          : role // ignore: cast_nullable_to_non_nullable
-              as String,
-      department: null == department
-          ? _self.department
-          : department // ignore: cast_nullable_to_non_nullable
-              as String,
-      email: null == email
-          ? _self.email
-          : email // ignore: cast_nullable_to_non_nullable
-              as String,
-      phone: null == phone
-          ? _self.phone
-          : phone // ignore: cast_nullable_to_non_nullable
-              as String,
-      unit: null == unit
-          ? _self.unit
-          : unit // ignore: cast_nullable_to_non_nullable
-              as String,
-      expectedShift: null == expectedShift
-          ? _self.expectedShift
-          : expectedShift // ignore: cast_nullable_to_non_nullable
-              as String,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as EmployeeStatus,
-      workMode: null == workMode
-          ? _self.workMode
-          : workMode // ignore: cast_nullable_to_non_nullable
-              as EmployeeWorkMode,
-      roleLevel: null == roleLevel
-          ? _self.roleLevel
-          : roleLevel // ignore: cast_nullable_to_non_nullable
-              as RoleLevel,
-      requiresLocationOnPunch: null == requiresLocationOnPunch
-          ? _self.requiresLocationOnPunch
-          : requiresLocationOnPunch // ignore: cast_nullable_to_non_nullable
-              as bool,
-      trustedDeviceRequired: null == trustedDeviceRequired
-          ? _self.trustedDeviceRequired
-          : trustedDeviceRequired // ignore: cast_nullable_to_non_nullable
-              as bool,
       notes: null == notes
           ? _self.notes
           : notes // ignore: cast_nullable_to_non_nullable

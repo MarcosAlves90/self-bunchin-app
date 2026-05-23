@@ -8,13 +8,13 @@
         "cwd": "${workspaceFolder}/backend"
       },
       "windows": {
-        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+        "command": "if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }; py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt; .\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8071 --reload"
       },
       "osx": {
-        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8071 --reload"
       },
       "linux": {
-        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+        "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8071 --reload"
       },
       "problemMatcher": []
     },
@@ -49,6 +49,40 @@
       },
       "linux": {
         "command": "rm -rf .venv && python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt && .venv/bin/python -m pytest"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧹 drop postgres tables",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "windows": {
+        "command": "if (!(Test-Path .venv)) { py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt }; .\\.venv\\Scripts\\python.exe -m app.scripts.clean_postgres"
+      },
+      "osx": {
+        "command": "if [ ! -d .venv ]; then python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; fi; .venv/bin/python -m app.scripts.clean_postgres"
+      },
+      "linux": {
+        "command": "if [ ! -d .venv ]; then python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; fi; .venv/bin/python -m app.scripts.clean_postgres"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧰 restore postgres db",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "windows": {
+        "command": "if (!(Test-Path .venv)) { py -3 -m venv .venv; .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt }; .\\.venv\\Scripts\\python.exe -m app.scripts.create_postgres"
+      },
+      "osx": {
+        "command": "if [ ! -d .venv ]; then python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; fi; .venv/bin/python -m app.scripts.create_postgres"
+      },
+      "linux": {
+        "command": "if [ ! -d .venv ]; then python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; fi; .venv/bin/python -m app.scripts.create_postgres"
       },
       "problemMatcher": []
     },
