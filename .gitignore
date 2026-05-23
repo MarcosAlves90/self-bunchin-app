@@ -94,3 +94,4 @@ backend/.nuxt/
 backend/.svelte-kit/
 backend/.turbo/
 backend/*.tsbuildinfo
+.aider*
