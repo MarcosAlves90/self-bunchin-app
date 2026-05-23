@@ -82,23 +82,29 @@ class AuthShell extends StatelessWidget {
                                       ),
                                     ),
                                     Expanded(
-                                      child: SingleChildScrollView(
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minHeight: constraints.maxHeight,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: SingleChildScrollView(
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              minHeight: constraints.maxHeight,
+                                            ),
+                                            child: formPanel,
                                           ),
-                                          child: formPanel,
                                         ),
                                       ),
                                     ),
                                   ],
                                 )
-                              : SingleChildScrollView(
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minHeight: constraints.maxHeight,
+                              : Material(
+                                  color: Colors.transparent,
+                                  child: SingleChildScrollView(
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        minHeight: constraints.maxHeight,
+                                      ),
+                                      child: formPanel,
                                     ),
-                                    child: formPanel,
                                   ),
                                 ),
                         ),
