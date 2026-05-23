@@ -26,10 +26,13 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "manager": {
         AUTH_READ_CONTEXT,
         EMPLOYEES_READ,
+        EMPLOYEES_CREATE,
         EMPLOYEES_UPDATE,
+        EMPLOYEES_DELETE,
         PROJECTS_READ,
         PROJECTS_CREATE,
         PROJECTS_UPDATE,
+        PROJECTS_DELETE,
         PROJECTS_ASSIGN,
         TIME_CLOCK_READ,
         TIME_CLOCK_PUNCH,

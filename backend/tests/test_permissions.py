@@ -24,7 +24,7 @@ def test_project_permissions_by_role():
     assert "projects.create" in manager_permissions
     assert "projects.update" in manager_permissions
     assert "projects.assign" in manager_permissions
-    assert "projects.delete" not in manager_permissions
+    assert "projects.delete" in manager_permissions
 
     admin_permissions = get_permissions_for_role("admin")
     assert "projects.read" in admin_permissions
