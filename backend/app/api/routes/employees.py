@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 from app.authorization import require_permission
 from app.dependencies import get_db
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
+from app.schemas.project import ProjectResponse
 from app.services.auth import AuthenticatedContext
 from app.services.employees import create_employee, delete_employee, get_employee, list_employees, update_employee
+from app.services.projects import list_employee_projects
 
 
 router = APIRouter()
@@ -37,6 +39,19 @@ def get_employee_route(
         company_id=context.company.id,
         employee_id=employee_id,
         timezone_name=context.company.timezone,
+    )
+
+
+@router.get("/{employee_id}/projects", response_model=list[ProjectResponse])
+def list_employee_projects_route(
+    employee_id: str,
+    context: AuthenticatedContext = Depends(require_permission("projects.read")),
+    db: Session = Depends(get_db),
+) -> list[ProjectResponse]:
+    return list_employee_projects(
+        db,
+        company_id=context.company.id,
+        employee_id=employee_id,
     )
 
 

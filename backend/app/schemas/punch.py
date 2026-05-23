@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import Field, field_validator
+from pydantic import model_validator
 
 from app.schemas.base import CamelModel
 
@@ -32,11 +33,13 @@ class PunchRecordResponse(CamelModel):
     type: PunchType
     timestamp: datetime
     detail: str
+    project_id: str | None = None
     location: PunchLocationSnapshotPayload | None = None
 
 
 class CreatePunchRequest(CamelModel):
     type: PunchType
+    project_id: str | None = None
     location: PunchLocationSnapshotPayload | None = None
 
     @field_validator("location")
@@ -46,6 +49,33 @@ class CreatePunchRequest(CamelModel):
         value: PunchLocationSnapshotPayload | None,
     ) -> PunchLocationSnapshotPayload | None:
         return value
+
+
+class ManagedPunchRecordResponse(PunchRecordResponse):
+    id: str
+    employee_id: str
+
+
+class ManagePunchRequest(CamelModel):
+    type: PunchType
+    timestamp: datetime | None = None
+    detail: str = Field(default="Ajuste manual de ponto.", min_length=1, max_length=500)
+    project_id: str | None = None
+    location: PunchLocationSnapshotPayload | None = None
+
+
+class UpdateManagedPunchRequest(CamelModel):
+    type: PunchType | None = None
+    timestamp: datetime | None = None
+    detail: str | None = Field(default=None, min_length=1, max_length=500)
+    project_id: str | None = None
+    location: PunchLocationSnapshotPayload | None = None
+
+    @model_validator(mode="after")
+    def validate_has_update(self) -> "UpdateManagedPunchRequest":
+        if not self.model_fields_set:
+            raise ValueError("At least one punch field must be provided.")
+        return self
 
 
 class TimeClockEmployeeSummary(CamelModel):

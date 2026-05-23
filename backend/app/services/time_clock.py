@@ -14,13 +14,17 @@ from app.db import ensure_utc, utcnow
 from app.models import Employee, Punch
 from app.schemas.punch import (
     CreatePunchRequest,
+    ManagedPunchRecordResponse,
+    ManagePunchRequest,
     PunchLocationSnapshotPayload,
     PunchRecordResponse,
     PunchType,
     ShiftStatus,
     TimeClockEmployeeSummary,
     TimeClockStateResponse,
+    UpdateManagedPunchRequest,
 )
+from app.services.projects import validate_project_for_punch
 
 
 def _cipher() -> FieldCipher:
@@ -57,8 +61,55 @@ def serialize_record(record: Punch, *, cipher: FieldCipher) -> PunchRecordRespon
         type=record.type,
         timestamp=ensure_utc(record.timestamp),
         detail=cipher.decrypt(record.detail_ciphertext) or "",
+        project_id=record.project_id,
         location=deserialize_location(record.location_payload_ciphertext, cipher=cipher),
     )
+
+
+def serialize_managed_record(record: Punch, *, cipher: FieldCipher) -> ManagedPunchRecordResponse:
+    return ManagedPunchRecordResponse(
+        id=record.id,
+        employee_id=record.employee_id,
+        type=record.type,
+        timestamp=ensure_utc(record.timestamp),
+        detail=cipher.decrypt(record.detail_ciphertext) or "",
+        project_id=record.project_id,
+        location=deserialize_location(record.location_payload_ciphertext, cipher=cipher),
+    )
+
+
+def _get_company_employee(db: Session, *, company_id: str, employee_id: str) -> Employee:
+    employee = db.scalar(
+        select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
+    )
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found.",
+        )
+    return employee
+
+
+def _get_employee_punch(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+    punch_id: str,
+) -> Punch:
+    record = db.scalar(
+        select(Punch).where(
+            Punch.company_id == company_id,
+            Punch.employee_id == employee_id,
+            Punch.id == punch_id,
+        ),
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Punch not found.",
+        )
+    return record
 
 
 def derive_shift_status(records: list[Punch]) -> ShiftStatus:
@@ -200,7 +251,15 @@ def create_punch(
     if employee.requires_location_on_punch and payload.location is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-        detail="This employee must submit location data when punching.",
+            detail="This employee must submit location data when punching.",
+        )
+
+    if payload.project_id is not None:
+        validate_project_for_punch(
+            db,
+            company_id=employee.company_id,
+            employee_id=employee.id,
+            project_id=payload.project_id,
         )
 
     detail = {
@@ -212,6 +271,7 @@ def create_punch(
     record = Punch(
         company_id=employee.company_id,
         employee_id=employee.id,
+        project_id=payload.project_id,
         type=punch_type.value,
         timestamp=utcnow(),
         detail_ciphertext=cipher.encrypt(detail) or "",
@@ -225,3 +285,115 @@ def create_punch(
     db.commit()
     db.refresh(record)
     return serialize_record(record, cipher=cipher)
+
+
+def list_managed_punches(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+) -> list[ManagedPunchRecordResponse]:
+    cipher = _cipher()
+    _get_company_employee(db, company_id=company_id, employee_id=employee_id)
+    records = db.scalars(
+        select(Punch)
+        .where(Punch.company_id == company_id, Punch.employee_id == employee_id)
+        .order_by(Punch.timestamp.asc(), Punch.id.asc()),
+    ).all()
+    return [serialize_managed_record(record, cipher=cipher) for record in records]
+
+
+def create_managed_punch(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+    payload: ManagePunchRequest,
+) -> ManagedPunchRecordResponse:
+    cipher = _cipher()
+    employee = _get_company_employee(db, company_id=company_id, employee_id=employee_id)
+    if payload.project_id is not None:
+        validate_project_for_punch(
+            db,
+            company_id=company_id,
+            employee_id=employee.id,
+            project_id=payload.project_id,
+        )
+
+    record = Punch(
+        company_id=company_id,
+        employee_id=employee.id,
+        project_id=payload.project_id,
+        type=PunchType(payload.type).value,
+        timestamp=ensure_utc(payload.timestamp) if payload.timestamp is not None else utcnow(),
+        detail_ciphertext=cipher.encrypt(payload.detail) or "",
+        location_payload_ciphertext=cipher.encrypt_json(
+            payload.location.model_dump(mode="json", by_alias=False)
+            if payload.location is not None
+            else None,
+        ),
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return serialize_managed_record(record, cipher=cipher)
+
+
+def update_managed_punch(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+    punch_id: str,
+    payload: UpdateManagedPunchRequest,
+) -> ManagedPunchRecordResponse:
+    cipher = _cipher()
+    record = _get_employee_punch(
+        db,
+        company_id=company_id,
+        employee_id=employee_id,
+        punch_id=punch_id,
+    )
+
+    if "type" in payload.model_fields_set and payload.type is not None:
+        record.type = PunchType(payload.type).value
+    if "timestamp" in payload.model_fields_set and payload.timestamp is not None:
+        record.timestamp = ensure_utc(payload.timestamp)
+    if "detail" in payload.model_fields_set and payload.detail is not None:
+        record.detail_ciphertext = cipher.encrypt(payload.detail) or ""
+    if "project_id" in payload.model_fields_set:
+        if payload.project_id is not None:
+            validate_project_for_punch(
+                db,
+                company_id=company_id,
+                employee_id=employee_id,
+                project_id=payload.project_id,
+            )
+        record.project_id = payload.project_id
+    if "location" in payload.model_fields_set:
+        record.location_payload_ciphertext = cipher.encrypt_json(
+            payload.location.model_dump(mode="json", by_alias=False)
+            if payload.location is not None
+            else None,
+        )
+
+    db.commit()
+    db.refresh(record)
+    return serialize_managed_record(record, cipher=cipher)
+
+
+def delete_managed_punch(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+    punch_id: str,
+) -> None:
+    record = _get_employee_punch(
+        db,
+        company_id=company_id,
+        employee_id=employee_id,
+        punch_id=punch_id,
+    )
+    db.delete(record)
+    db.commit()
