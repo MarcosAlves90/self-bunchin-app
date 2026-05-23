@@ -1,4 +1,5 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
+import 'package:bunchin_flutter/features/auth/presentation/forgot_password_page.dart';
 import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
@@ -219,7 +220,13 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ForgotPasswordPage(),
+                      ),
+                    );
+                  },
                   child: const Text('Esqueci a senha'),
                 ),
               ],
