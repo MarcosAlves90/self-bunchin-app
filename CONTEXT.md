@@ -229,11 +229,8 @@ frontend/
 - [ ] Definir padrão de paginação em listas de employees/punches/projects
 - [ ] Implementar refresh token dedicado (atualmente só novo login)
 - [ ] Adicionar rate limiting em endpoints de login
-- [ ] Configurar CI/CD (GitHub Actions) com lint + test
-- [ ] Documentar setup completo em `docs/` (além do README)
 - [ ] Adicionar testes de integração para fluxos críticos
 - [ ] Avaliar necessidade de containerização (Dockerfile + docker-compose)
-- impacto: médio-alta
 
 ---
 
