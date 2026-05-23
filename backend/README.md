@@ -82,7 +82,7 @@ Content-Type: application/json
 
 {
   "email": "marina.costa@bunchin.com",
-  "password": "Bunchin@123",
+  "password": "BUNCHIN_SEED_ADMIN_PASSWORD",
   "keepConnected": true
 }
 ```
