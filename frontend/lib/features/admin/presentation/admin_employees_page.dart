@@ -1211,19 +1211,20 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Atualize dados mestres, políticas de ponto e contexto operacional do colaborador.',
+                    'Preencha os campos do payload do backend: dados principais, jornada, status, políticas e observações.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.45,
                         ),
                   ),
                   const SizedBox(height: 24),
+                  _buildFormSectionTitle('Dados principais'),
                   _buildTextField(
                     controller: _nameController,
-                    label: 'Nome completo',
+                    label: 'Nome',
                     hintText: 'Ex.: Maria da Silva',
                     icon: Icons.person_outline_rounded,
-                    validatorMessage: 'Informe o nome do funcionário.',
+                    validatorMessage: 'Informe o nome.',
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -1232,6 +1233,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     hintText: 'Ex.: Analista Financeira',
                     icon: Icons.badge_outlined,
                     validatorMessage: 'Informe o cargo principal.',
+                    minLength: 2,
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -1240,13 +1242,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     hintText: 'Ex.: Financeiro',
                     icon: Icons.apartment_rounded,
                     validatorMessage: 'Informe o departamento.',
+                    minLength: 2,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'E-mail corporativo',
+                      labelText: 'E-mail',
                       hintText: 'Ex.: maria@empresa.com.br',
                       prefixIcon: Icon(Icons.alternate_email_rounded),
                     ),
@@ -1287,8 +1290,10 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     hintText: 'Ex.: Matriz Paulista',
                     icon: Icons.location_city_outlined,
                     validatorMessage: 'Informe a unidade de referência.',
+                    minLength: 2,
                   ),
                   const SizedBox(height: 16),
+                  _buildFormSectionTitle('Jornada'),
                   Row(
                     children: <Widget>[
                       Expanded(
@@ -1313,6 +1318,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  _buildFormSectionTitle('Status e políticas'),
                   _buildStatusDropdown(),
                   const SizedBox(height: 16),
                   _buildWorkModeDropdown(),
@@ -1322,9 +1328,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   SwitchListTile(
                     value: _requiresLocationOnPunch,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Exigir localização no registro de ponto',
-                    ),
+                    title: const Text('Exigir localização no ponto'),
                     onChanged: (value) {
                       setState(() {
                         _requiresLocationOnPunch = value;
@@ -1334,7 +1338,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   SwitchListTile(
                     value: _trustedDeviceRequired,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Restringir a dispositivo confiável'),
+                    title: const Text('Exigir dispositivo confiável'),
                     onChanged: (value) {
                       setState(() {
                         _trustedDeviceRequired = value;
@@ -1342,12 +1346,14 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     },
                   ),
                   const SizedBox(height: 8),
+                  _buildFormSectionTitle('Observações'),
                   TextFormField(
                     controller: _notesController,
                     minLines: 3,
                     maxLines: 5,
+                    maxLength: 2000,
                     decoration: const InputDecoration(
-                      labelText: 'Contexto administrativo',
+                      labelText: 'Observações',
                       hintText: 'Ex.: Responsável pela operação da unidade.',
                       alignLabelWithHint: true,
                       prefixIcon: Icon(Icons.notes_rounded),
@@ -1422,6 +1428,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     String? hintText,
     required IconData icon,
     required String validatorMessage,
+    int minLength = 3,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String? value)? validator,
@@ -1437,11 +1444,23 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
       ),
       validator: validator ??
           (value) {
-            if (value == null || value.trim().length < 3) {
+            if (value == null || value.trim().length < minLength) {
               return validatorMessage;
             }
             return null;
           },
+    );
+  }
+
+  Widget _buildFormSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+      ),
     );
   }
 
@@ -1513,7 +1532,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     return DropdownButtonFormField<EmployeeStatus>(
       initialValue: _status,
       decoration: const InputDecoration(
-        labelText: 'Status do colaborador',
+        labelText: 'Status',
         prefixIcon: Icon(Icons.flag_outlined),
       ),
       items: EmployeeStatus.values.map((status) {
@@ -1563,7 +1582,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     return DropdownButtonFormField<RoleLevel>(
       initialValue: _roleLevel,
       decoration: const InputDecoration(
-        labelText: 'Nível de acesso',
+        labelText: 'Nível',
         prefixIcon: Icon(Icons.shield_outlined),
       ),
       items: RoleLevel.values.map((roleLevel) {
