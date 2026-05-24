@@ -1,5 +1,5 @@
-import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_submission_mixin.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
 
@@ -10,12 +10,12 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage>
+    with AuthSubmissionMixin<ForgotPasswordPage> {
   final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
 
-  bool _isSubmitting = false;
   bool _submitted = false;
 
   @override
@@ -31,26 +31,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      await _api.resetPassword(email: _emailController.text.trim());
-    } on ApiException {
-      // Always show success to avoid email enumeration
-    } catch (_) {
-      // Generic error — show success anyway (anti-enumeration)
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = false;
-      _submitted = true;
-    });
+    await submitAuthAction<String>(
+      action: () => _api.resetPassword(email: _emailController.text.trim()),
+      ignoreFailures: true,
+      onSuccess: (_) {
+        setState(() {
+          _submitted = true;
+        });
+      },
+    );
   }
 
   void _backToLogin() {
@@ -123,12 +112,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _isSubmitting
+                onPressed: isSubmitting
                     ? null
                     : () {
                         _submit();
                       },
-                child: _isSubmitting
+                child: isSubmitting
                     ? const SizedBox(
                         height: 18,
                         width: 18,

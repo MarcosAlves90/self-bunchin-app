@@ -1,6 +1,6 @@
-import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_submission_mixin.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +11,8 @@ class MustChangePasswordPage extends StatefulWidget {
   State<MustChangePasswordPage> createState() => _MustChangePasswordPageState();
 }
 
-class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
+class _MustChangePasswordPageState extends State<MustChangePasswordPage>
+    with AuthSubmissionMixin<MustChangePasswordPage> {
   final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
@@ -21,7 +22,6 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -38,54 +38,28 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    await submitAuthAction(
+      action: () {
+        return _api.changePassword(
+          currentPassword: _currentPasswordController.text,
+          newPassword: _newPasswordController.text,
+        );
+      },
+      onSuccess: (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Senha redefinida com sucesso.'),
+          ),
+        );
 
-    try {
-      await _api.changePassword(
-        currentPassword: _currentPasswordController.text,
-        newPassword: _newPasswordController.text,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Senha redefinida com sucesso.'),
-        ),
-      );
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const AdminEmployeesPage(),
-        ),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível redefinir sua senha.'),
-        ),
-      );
-    }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => const AdminEmployeesPage(),
+          ),
+        );
+      },
+      genericErrorMessage: 'Não foi possível redefinir sua senha.',
+    );
   }
 
   static String? _validatePassword(String? value) {
@@ -207,12 +181,12 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isSubmitting
+                onPressed: isSubmitting
                     ? null
                     : () {
                         _submit();
                       },
-                child: _isSubmitting
+                child: isSubmitting
                     ? const SizedBox(
                         height: 18,
                         width: 18,

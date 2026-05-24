@@ -7,19 +7,67 @@ import 'package:geolocator/geolocator.dart';
 export 'package:bunchin_flutter/contracts/location.dart';
 
 class PunchLocationService {
-  const PunchLocationService();
+  const PunchLocationService({PunchLocationGateway? gateway})
+      : _gateway = gateway ?? const GeolocatorPunchLocationGateway();
+
+  final PunchLocationGateway _gateway;
 
   Future<PunchLocationResult> requestPermission() async {
     try {
-      final servicesEnabled = await Geolocator.isLocationServiceEnabled();
+      final servicesEnabled = await _gateway.isLocationServiceEnabled();
       if (!servicesEnabled) {
         return const PunchLocationResult.serviceDisabled();
       }
 
-      var permission = await Geolocator.checkPermission();
+      final permission = await _gateway.checkPermission();
+      if (_isGranted(permission)) {
+        final probe = await _tryCapturePosition();
+        if (probe != null) {
+          return PunchLocationResult.ready(
+            message:
+                'Permissão concedida. A localização será anexada nas próximas batidas.',
+            snapshot: probe,
+          );
+        }
+        return const PunchLocationResult.checking();
+      }
+
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.unableToDetermine) {
-        permission = await Geolocator.requestPermission();
+        final requested = await _gateway.requestPermission();
+        if (_isGranted(requested)) {
+          final probe = await _tryCapturePosition();
+          if (probe != null) {
+            return PunchLocationResult.ready(
+              message:
+                  'Permissão concedida. A localização será anexada nas próximas batidas.',
+              snapshot: probe,
+            );
+          }
+          return const PunchLocationResult.checking();
+        }
+
+        final probe = await _tryCapturePosition();
+        if (probe != null) {
+          return PunchLocationResult.ready(
+            message:
+                'Permissão concedida. A localização será anexada nas próximas batidas.',
+            snapshot: probe,
+          );
+        }
+
+        return _mapPermission(requested);
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        final probe = await _tryCapturePosition();
+        if (probe != null) {
+          return PunchLocationResult.ready(
+            message:
+                'Permissão concedida. A localização será anexada nas próximas batidas.',
+            snapshot: probe,
+          );
+        }
       }
 
       return _mapPermission(permission);
@@ -29,13 +77,8 @@ class PunchLocationService {
   }
 
   Future<PunchLocationResult> captureForPunch() async {
-    final permissionResult = await requestPermission();
-    if (!permissionResult.isReady) {
-      return permissionResult;
-    }
-
     try {
-      final position = await Geolocator.getCurrentPosition(
+      final position = await _gateway.getCurrentPosition(
         locationSettings: _locationSettings(),
       );
 
@@ -44,14 +87,57 @@ class PunchLocationService {
         snapshot: PunchLocationSnapshot.fromPosition(position),
       );
     } catch (error) {
+      if (error is PermissionDeniedException) {
+        final permissionResult = await requestPermission();
+        if (permissionResult.snapshot != null) {
+          return permissionResult;
+        }
+        if (permissionResult.isReady) {
+          try {
+            final position = await _gateway.getCurrentPosition(
+              locationSettings: _locationSettings(),
+            );
+
+            return PunchLocationResult.ready(
+              message: 'localização validada e vinculada a batida.',
+              snapshot: PunchLocationSnapshot.fromPosition(position),
+            );
+          } catch (retryError) {
+            return _mapError(retryError);
+          }
+        }
+        return permissionResult;
+      }
       return _mapError(error);
+    }
+  }
+
+  bool _isGranted(LocationPermission permission) {
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  Future<PunchLocationSnapshot?> _tryCapturePosition() async {
+    try {
+      final position = await _gateway.getCurrentPosition(
+        locationSettings: _locationSettings(),
+      );
+
+      return PunchLocationSnapshot.fromPosition(position);
+    } catch (error) {
+      if (error is LocationServiceDisabledException) {
+        return null;
+      }
+
+      return null;
     }
   }
 
   PunchLocationResult _mapPermission(LocationPermission permission) {
     return switch (permission) {
       LocationPermission.always ||
-      LocationPermission.whileInUse => const PunchLocationResult.ready(),
+      LocationPermission.whileInUse =>
+        const PunchLocationResult.ready(),
       LocationPermission.denied => const PunchLocationResult.permissionDenied(),
       LocationPermission.deniedForever =>
         const PunchLocationResult.permissionDeniedForever(),
@@ -73,6 +159,10 @@ class PunchLocationService {
         message:
             'A plataforma nao esta configurada para solicitar localização.',
       );
+    }
+
+    if (error is PermissionDeniedException) {
+      return const PunchLocationResult.permissionDenied();
     }
 
     if (error is TimeoutException) {
@@ -102,5 +192,45 @@ class PunchLocationService {
       accuracy: LocationAccuracy.high,
       timeLimit: Duration(seconds: 12),
     );
+  }
+}
+
+abstract class PunchLocationGateway {
+  const PunchLocationGateway();
+
+  Future<bool> isLocationServiceEnabled();
+
+  Future<LocationPermission> checkPermission();
+
+  Future<LocationPermission> requestPermission();
+
+  Future<Position> getCurrentPosition({
+    required LocationSettings locationSettings,
+  });
+}
+
+class GeolocatorPunchLocationGateway extends PunchLocationGateway {
+  const GeolocatorPunchLocationGateway();
+
+  @override
+  Future<bool> isLocationServiceEnabled() {
+    return Geolocator.isLocationServiceEnabled();
+  }
+
+  @override
+  Future<LocationPermission> checkPermission() {
+    return Geolocator.checkPermission();
+  }
+
+  @override
+  Future<LocationPermission> requestPermission() {
+    return Geolocator.requestPermission();
+  }
+
+  @override
+  Future<Position> getCurrentPosition({
+    required LocationSettings locationSettings,
+  }) {
+    return Geolocator.getCurrentPosition(locationSettings: locationSettings);
   }
 }

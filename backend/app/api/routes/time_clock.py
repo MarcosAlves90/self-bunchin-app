@@ -19,7 +19,7 @@ from app.services.time_clock import (
     create_punch,
     delete_managed_punch,
     list_managed_punches,
-    time_clock_state,
+    time_clock_state_page,
     update_managed_punch,
 )
 
@@ -38,14 +38,18 @@ def _require_employee_context(context: AuthenticatedContext):
 
 @router.get("/me", response_model=TimeClockStateResponse)
 def get_time_clock_state_route(
+    page: int = 1,
+    limit: int = 4,
     context: AuthenticatedContext = Depends(require_permission("time_clock.read")),
     db: Session = Depends(get_db),
 ) -> TimeClockStateResponse:
     employee = _require_employee_context(context)
-    return time_clock_state(
+    return time_clock_state_page(
         db,
         employee=employee,
         timezone_name=context.company.timezone,
+        page=page,
+        page_size=limit,
     )
 
 

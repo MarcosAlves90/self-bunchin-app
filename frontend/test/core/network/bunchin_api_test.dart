@@ -303,6 +303,12 @@ void main() {
               },
             },
           ],
+          'recordsPage': 1,
+          'recordsPageSize': 4,
+          'recordsTotal': 1,
+          'recordsTotalPages': 1,
+          'recordsHasPrevious': false,
+          'recordsHasNext': false,
         },
       },
       postResponses: {
@@ -440,7 +446,11 @@ class _FakeApiClient extends ApiClient {
   bool? lastWithAuth;
 
   @override
-  Future<dynamic> get(String path, {bool withAuth = false}) async {
+  Future<dynamic> get(
+    String path, {
+    bool withAuth = false,
+    Map<String, Object?>? queryParameters,
+  }) async {
     lastPath = path;
     lastWithAuth = withAuth;
     if (!getResponses.containsKey(path)) {
