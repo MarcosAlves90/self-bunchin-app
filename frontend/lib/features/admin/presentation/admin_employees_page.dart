@@ -1350,6 +1350,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final selectedTab = visibleItems.any((item) => item.value == activeTab)
         ? activeTab
         : visibleItems.first.value;
+    final selectedTabForeground =
+        ThemeData.estimateBrightnessForColor(AppTheme.accent) ==
+                Brightness.dark
+            ? Colors.white
+            : Colors.black87;
 
     Widget buildTabButton({
       required _EmployeeDetailTab value,
@@ -1369,7 +1374,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           minimumSize: const Size.fromHeight(48),
           backgroundColor: selected ? AppTheme.accent : null,
           foregroundColor:
-              selected ? colorScheme.onPrimary : colorScheme.onSurface,
+              selected ? selectedTabForeground : colorScheme.onSurface,
           side: const BorderSide(color: AppTheme.accent),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.zero,
