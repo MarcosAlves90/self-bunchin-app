@@ -65,7 +65,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           'Envie um link seguro para redefinir sua senha e retomar o controle da operação.',
       brandTags: const [
         'E2E Encryption',
-        'Automacao',
+        'Automação',
         'Cloud Native',
       ],
       formPanel: _buildForgotPasswordPanel(context),
