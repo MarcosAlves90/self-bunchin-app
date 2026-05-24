@@ -1,9 +1,9 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
-import 'package:bunchin_flutter/features/auth/presentation/forgot_password_page.dart';
-import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/auth/presentation/auth_session_navigation.dart';
 import 'package:bunchin_flutter/features/auth/presentation/auth_submission_mixin.dart';
+import 'package:bunchin_flutter/features/auth/presentation/forgot_password_page.dart';
+import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
 

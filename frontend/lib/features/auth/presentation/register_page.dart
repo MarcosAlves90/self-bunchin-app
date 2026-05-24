@@ -84,8 +84,7 @@ class _RegisterPageState extends State<RegisterPage>
           (route) => false,
         );
       },
-      genericErrorMessage:
-          'Não foi possível concluir o cadastro da empresa.',
+      genericErrorMessage: 'Não foi possível concluir o cadastro da empresa.',
     );
   }
 
