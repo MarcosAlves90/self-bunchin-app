@@ -122,7 +122,8 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       controller: controller,
       obscureText: obscure,
       textInputAction: textInputAction,
-      onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
+      onFieldSubmitted:
+          onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -130,9 +131,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
         suffixIcon: IconButton(
           onPressed: () => onToggleObscure(!obscure),
           icon: Icon(
-            obscure
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
           ),
         ),
       ),
@@ -173,9 +172,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
             ],
             Text(
               'Criar nova senha',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: authPageTitleStyle(context),
             ),
             const SizedBox(height: 10),
             Text(

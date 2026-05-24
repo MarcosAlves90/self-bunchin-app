@@ -118,8 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline:
-          'Sua operação começa aqui.',
+      brandHeadline: 'Sua operação começa aqui.',
       brandDescription:
           'Ative sua empresa com um onboarding moderno, automatizado e desenvolvido para negócios que valorizam velocidade, controle e crescimento.',
       brandTags: const [
@@ -161,9 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Expanded(
                   child: Text(
                     'Cadastrar empresa',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: authPageTitleStyle(context),
                   ),
                 ),
               ],

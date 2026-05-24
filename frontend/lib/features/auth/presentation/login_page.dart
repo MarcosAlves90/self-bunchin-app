@@ -118,9 +118,7 @@ class _LoginPageState extends State<LoginPage> {
             ],
             Text(
               'Entrar',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: authPageTitleStyle(context),
             ),
             const SizedBox(height: 10),
             Text(

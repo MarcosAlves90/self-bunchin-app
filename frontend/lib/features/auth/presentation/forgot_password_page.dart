@@ -102,15 +102,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 Expanded(
                   child: Text(
                     'Esqueci a senha',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: authPageTitleStyle(context),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-
             if (_submitted)
               _buildSuccessMessage(theme, colorScheme)
             else ...[
