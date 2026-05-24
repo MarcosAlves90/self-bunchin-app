@@ -100,6 +100,10 @@ def create_managed_punch_route(
     "/employees/{employee_id}/punches/{punch_id}",
     response_model=ManagedPunchRecordResponse,
 )
+@router.patch(
+    "/employees/{employee_id}/punches/{punch_id}",
+    response_model=ManagedPunchRecordResponse,
+)
 def update_managed_punch_route(
     employee_id: str,
     punch_id: str,

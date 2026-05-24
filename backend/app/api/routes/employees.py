@@ -74,6 +74,7 @@ def create_employee_route(
 
 
 @router.put("/{employee_id}", response_model=EmployeeProfileResponse)
+@router.patch("/{employee_id}", response_model=EmployeeProfileResponse)
 def update_employee_route(
     employee_id: str,
     payload: EmployeeDraftPayload,

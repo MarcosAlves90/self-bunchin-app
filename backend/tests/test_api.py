@@ -123,6 +123,29 @@ def test_create_and_update_employee(client):
     assert updated["role"] == "Analista Financeira Senior"
     assert updated["workMode"] == "remote"
 
+    patch_response = client.patch(
+        f"/api/v1/employees/{employee['id']}",
+        headers=headers,
+        json={
+            "name": "Renata Souza",
+            "role": "Analista Financeira Lead",
+            "department": "Financeiro",
+            "email": "renata.souza@bunchin.com",
+            "phone": "(11) 94444-6060",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "hybrid",
+            "roleLevel": "specialist",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Atualizada via patch.",
+        },
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["role"] == "Analista Financeira Lead"
+
 
 def test_delete_employee(client):
     headers = login_headers(client)
@@ -235,6 +258,14 @@ def test_manager_can_manage_employee_punches(client):
     )
     assert update_response.status_code == 200
     assert update_response.json()["detail"] == "Ajuste revisado pelo gestor."
+
+    patch_response = client.patch(
+        f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
+        headers=headers,
+        json={"detail": "Ajuste final via patch."},
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["detail"] == "Ajuste final via patch."
 
     delete_response = client.delete(
         f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
