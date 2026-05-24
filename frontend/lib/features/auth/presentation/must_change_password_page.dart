@@ -82,7 +82,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel redefinir sua senha.'),
+          content: Text('Não foi possível redefinir sua senha.'),
         ),
       );
     }

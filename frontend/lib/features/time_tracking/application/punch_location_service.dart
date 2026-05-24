@@ -58,7 +58,7 @@ class PunchLocationService {
       LocationPermission.unableToDetermine =>
         PunchLocationResult.permissionDeniedForever(
           message:
-              'Nao foi possivel confirmar a permissao no navegador. Verifique o acesso ao local e tente novamente.',
+              'Não foi possível confirmar a permissao no navegador. Verifique o acesso ao local e tente novamente.',
         ),
     };
   }

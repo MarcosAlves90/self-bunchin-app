@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel concluir o login.'),
+          content: Text('Não foi possível concluir o login.'),
         ),
       );
     } finally {

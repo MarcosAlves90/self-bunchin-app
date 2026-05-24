@@ -103,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel concluir o cadastro da empresa.'),
+          content: Text('Não foi possível concluir o cadastro da empresa.'),
         ),
       );
     } finally {

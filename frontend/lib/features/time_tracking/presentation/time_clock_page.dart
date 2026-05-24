@@ -120,7 +120,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
       setState(() {
         _isLoadingState = false;
-        _loadError = 'Nao foi possivel carregar o estado de ponto.';
+        _loadError = 'Não foi possível carregar o estado de ponto.';
       });
     }
   }
