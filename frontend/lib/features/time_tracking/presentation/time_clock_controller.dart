@@ -12,7 +12,8 @@ class TimeClockController extends ChangeNotifier {
     BunchinApi? api,
     PunchLocationService? punchLocationService,
   })  : _api = api ?? BunchinApi(),
-        _punchLocationService = punchLocationService ?? const PunchLocationService();
+        _punchLocationService =
+            punchLocationService ?? const PunchLocationService();
 
   final BunchinApi _api;
   final PunchLocationService _punchLocationService;
@@ -39,7 +40,7 @@ class TimeClockController extends ChangeNotifier {
       notifyListeners();
     });
 
-    await prepareLocationAccess();
+    unawaited(prepareLocationAccess());
     await loadTimeClockState();
   }
 
