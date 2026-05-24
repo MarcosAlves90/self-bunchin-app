@@ -128,6 +128,7 @@ abstract class AuthSession with _$AuthSession {
     required String accessToken,
     required String tokenType,
     required DateTime expiresAt,
+    @Default(false) bool mustChangePassword,
     required AuthCompanySummary company,
     required AuthUserSummary user,
   }) = _AuthSession;
@@ -137,6 +138,7 @@ abstract class AuthSession with _$AuthSession {
       accessToken: requireString(json, 'accessToken'),
       tokenType: requireString(json, 'tokenType'),
       expiresAt: requireDateTime(json, 'expiresAt'),
+      mustChangePassword: json['mustChangePassword'] == true,
       company: AuthCompanySummary.fromJson(
         requireJsonMap(json['company'], 'company'),
       ),

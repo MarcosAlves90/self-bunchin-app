@@ -24,6 +24,8 @@ from app.schemas.auth import (
 )
 from app.security import generate_temp_password, hash_password, issue_bearer_token, verify_password
 
+_MSG_COMPANY_INACTIVE = "The company account is inactive."
+
 
 @dataclass(slots=True)
 class AuthenticatedContext:
@@ -36,6 +38,28 @@ class AuthenticatedContext:
 def _cipher() -> FieldCipher:
     settings = get_settings()
     return FieldCipher(settings.encryption_secret or "")
+
+
+def _resolve_user(db: Session, email: str) -> tuple[UserAccount | None, str, str]:
+    """Resolve a user by email, returning (user, normalized_email, email_hash).
+
+    Returns (None, normalized_email, email_hash) if no user is found.
+    """
+    settings = get_settings()
+    normalized_email = normalize_email(email)
+    email_hash = lookup_digest(normalized_email, settings.encryption_secret or "")
+    user = db.scalar(select(UserAccount).where(UserAccount.email_hash == email_hash))
+    return user, normalized_email, email_hash
+
+
+def _ensure_accounts_active(user: UserAccount, company: Company) -> None:
+    """Raise DomainError if user or company is inactive."""
+    from app.errors import DomainError, ErrorKind
+
+    if not user.is_active:
+        raise DomainError(ErrorKind.forbidden, "This account is inactive.")
+    if not company.is_active:
+        raise DomainError(ErrorKind.forbidden, _MSG_COMPANY_INACTIVE)
 
 
 def normalize_email(value: str) -> str:
@@ -132,6 +156,22 @@ def _issue_session(
     return token, session
 
 
+def _build_auth_response(
+    token: str,
+    auth_session: AuthSession,
+    user: UserAccount,
+    company: Company,
+    cipher: FieldCipher,
+) -> AuthSessionResponse:
+    return AuthSessionResponse(
+        access_token=token,
+        expires_at=ensure_utc(auth_session.expires_at),
+        must_change_password=user.must_change_password,
+        company=summarize_company(company, cipher),
+        user=_user_summary(user, cipher),
+    )
+
+
 def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessionResponse:
     settings = get_settings()
     cipher = _cipher()
@@ -191,28 +231,19 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
             trade_name=payload.trade_name,
         ),
     )
-    return AuthSessionResponse(
-        access_token=token,
-        expires_at=ensure_utc(auth_session.expires_at),
-        company=summarize_company(company, cipher),
-        user=_user_summary(user, cipher),
-    )
+    return _build_auth_response(token, auth_session, user, company, cipher)
 
 
 def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
-    settings = get_settings()
     cipher = _cipher()
-    normalized_email = normalize_email(str(payload.email))
-    email_hash = lookup_digest(normalized_email, settings.encryption_secret or "")
-    user = db.scalar(select(UserAccount).where(UserAccount.email_hash == email_hash))
+    user, _, _ = _resolve_user(db, str(payload.email))
     if user is None or not verify_password(payload.password, user.password_hash):
         raise DomainError(ErrorKind.unauthorized, "Invalid email or password.")
-    if not user.is_active:
-        raise DomainError(ErrorKind.forbidden, "This account is inactive.")
 
     company = db.get(Company, user.company_id)
-    if company is None or not company.is_active:
-        raise DomainError(ErrorKind.forbidden, "The company account is inactive.")
+    if company is None:
+        raise DomainError(ErrorKind.forbidden, _MSG_COMPANY_INACTIVE)
+    _ensure_accounts_active(user, company)
 
     user.last_login_at = utcnow()
     token, auth_session = _issue_session(
@@ -222,12 +253,7 @@ def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
     )
     db.commit()
     db.refresh(auth_session)
-    return AuthSessionResponse(
-        access_token=token,
-        expires_at=ensure_utc(auth_session.expires_at),
-        company=summarize_company(company, cipher),
-        user=_user_summary(user, cipher),
-    )
+    return _build_auth_response(token, auth_session, user, company, cipher)
 
 
 def reset_password(
@@ -235,22 +261,19 @@ def reset_password(
     *,
     email: str,
 ) -> tuple[str, str, str]:
-    settings = get_settings()
     cipher = _cipher()
-    normalized_email = normalize_email(email)
-    email_hash = lookup_digest(normalized_email, settings.encryption_secret or "")
-    user = db.scalar(select(UserAccount).where(UserAccount.email_hash == email_hash))
+    user, normalized_email, _ = _resolve_user(db, email)
     if user is None:
         raise DomainError(ErrorKind.not_found, "User not found.")
-    if not user.is_active:
-        raise DomainError(ErrorKind.forbidden, "This account is inactive.")
 
     company = db.get(Company, user.company_id)
-    if company is None or not company.is_active:
-        raise DomainError(ErrorKind.forbidden, "The company account is inactive.")
+    if company is None:
+        raise DomainError(ErrorKind.forbidden, _MSG_COMPANY_INACTIVE)
+    _ensure_accounts_active(user, company)
 
     temp_password = generate_temp_password()
     user.password_hash = hash_password(temp_password)
+    user.must_change_password = True
     db.commit()
 
     recipient_email = cipher.decrypt(user.email_ciphertext) or normalized_email
@@ -271,6 +294,7 @@ def change_password(
         raise DomainError(ErrorKind.unauthorized, "Invalid password.")
 
     user.password_hash = hash_password(new_password)
+    user.must_change_password = False
     db.commit()
 
     recipient_email = cipher.decrypt(user.email_ciphertext) or ""
@@ -296,10 +320,7 @@ def resolve_context(db: Session, token: str) -> AuthenticatedContext:
 
     company = db.get(Company, user.company_id)
     if company is None or not company.is_active:
-        raise DomainError(
-            ErrorKind.unauthorized,
-            "The company associated with this token is unavailable.",
-        )
+        raise DomainError(ErrorKind.unauthorized, _MSG_COMPANY_INACTIVE)
 
     auth_session.last_used_at = now
     db.commit()

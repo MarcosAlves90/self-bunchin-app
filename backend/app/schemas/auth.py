@@ -75,6 +75,7 @@ class AuthSessionResponse(CamelModel):
     access_token: str
     token_type: str = "bearer"
     expires_at: datetime
+    must_change_password: bool = False
     company: CompanySummary
     user: UserSummary
 

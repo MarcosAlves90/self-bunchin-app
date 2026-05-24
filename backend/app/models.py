@@ -8,6 +8,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base, utcnow
 
+_CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
+_COL_COMPANIES_ID = "companies.id"
+_COL_EMPLOYEES_ID = "employees.id"
+
 
 def generate_id() -> str:
     return str(uuid4())
@@ -36,19 +40,19 @@ class Company(Base):
 
     users: Mapped[list["UserAccount"]] = relationship(
         back_populates="company",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
     employees: Mapped[list["Employee"]] = relationship(
         back_populates="company",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
     punches: Mapped[list["Punch"]] = relationship(
         back_populates="company",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
     projects: Mapped[list["Project"]] = relationship(
         back_populates="company",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
 
 
@@ -59,7 +63,7 @@ class Employee(Base):
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
-    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey(_COL_COMPANIES_ID), index=True)
     name_ciphertext: Mapped[str] = mapped_column(Text)
     role_ciphertext: Mapped[str] = mapped_column(Text)
     department_ciphertext: Mapped[str] = mapped_column(Text)
@@ -86,11 +90,11 @@ class Employee(Base):
     account: Mapped["UserAccount | None"] = relationship(back_populates="employee")
     punches: Mapped[list["Punch"]] = relationship(
         back_populates="employee",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
     project_links: Mapped[list["EmployeeProject"]] = relationship(
         back_populates="employee",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
 
 
@@ -98,7 +102,7 @@ class Project(Base):
     __tablename__ = "projects"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
-    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey(_COL_COMPANIES_ID), index=True)
     name_ciphertext: Mapped[str] = mapped_column(Text)
     description_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="active", index=True)
@@ -112,7 +116,7 @@ class Project(Base):
     company: Mapped[Company] = relationship(back_populates="projects")
     employee_links: Mapped[list["EmployeeProject"]] = relationship(
         back_populates="project",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
     punches: Mapped[list["Punch"]] = relationship(back_populates="project")
 
@@ -121,7 +125,7 @@ class EmployeeProject(Base):
     __tablename__ = "employee_projects"
 
     employee_id: Mapped[str] = mapped_column(
-        ForeignKey("employees.id"),
+        ForeignKey(_COL_EMPLOYEES_ID),
         primary_key=True,
         index=True,
     )
@@ -140,15 +144,16 @@ class UserAccount(Base):
     __tablename__ = "user_accounts"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
-    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey(_COL_COMPANIES_ID), index=True)
     employee_id: Mapped[str | None] = mapped_column(
-        ForeignKey("employees.id"),
+        ForeignKey(_COL_EMPLOYEES_ID),
         nullable=True,
         unique=True,
     )
     email_ciphertext: Mapped[str] = mapped_column(Text)
     email_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(512))
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     role: Mapped[str] = mapped_column(String(32), default="employee")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -163,7 +168,7 @@ class UserAccount(Base):
     employee: Mapped[Employee | None] = relationship(back_populates="account")
     sessions: Mapped[list["AuthSession"]] = relationship(
         back_populates="user",
-        cascade="all, delete-orphan",
+        cascade=_CASCADE_ALL_DELETE_ORPHAN,
     )
 
 
@@ -171,8 +176,8 @@ class Punch(Base):
     __tablename__ = "punches"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=generate_id)
-    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
-    employee_id: Mapped[str] = mapped_column(ForeignKey("employees.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey(_COL_COMPANIES_ID), index=True)
+    employee_id: Mapped[str] = mapped_column(ForeignKey(_COL_EMPLOYEES_ID), index=True)
     project_id: Mapped[str | None] = mapped_column(ForeignKey("projects.id"), nullable=True, index=True)
     type: Mapped[str] = mapped_column(String(32))
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
