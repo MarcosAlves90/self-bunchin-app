@@ -1,69 +1,95 @@
-# Backend Bunchin
+# Bunchin Backend
 
-API FastAPI + SQLAlchemy para autenticacao empresarial, administracao de funcionarios,
-projetos e controle de ponto. Contratos HTTP usam `camelCase` para manter alinhamento
-com o app Flutter.
+API FastAPI + SQLAlchemy para autenticação empresarial, gestão de funcionários, projetos e controle de ponto.
 
-## Visao Geral
+## Visão Geral
 
 - Base path: `/api/v1`
-- Stack: FastAPI, SQLAlchemy, Pydantic, cryptography/Fernet, Passlib bcrypt
-- Auth: bearer token opaco, armazenado como hash
-- DB padrao: SQLite local; Postgres via `BUNCHIN_DATABASE_URL`
-- Docs interativas: `http://127.0.0.1:8000/docs`
+- Stack principal: FastAPI, SQLAlchemy, Pydantic, cryptography, pytest
+- Autenticação: bearer token opaco, armazenado como hash no banco
+- Banco padrão: SQLite em desenvolvimento; PostgreSQL via `BUNCHIN_DATABASE_URL`
+- Documentação interativa: `http://127.0.0.1:8000/docs`
+
+## Estrutura Atual
+
+```text
+backend/
+  app/
+    api/
+      router.py
+      routes/
+    domain/
+    events/
+    schemas/
+    services/
+    main.py
+    models.py
+    security.py
+    crypto.py
+    permissions.py
+    authorization.py
+    dependencies.py
+    seed.py
+    scripts/
+  tests/
+  .env.example
+  requirements.txt
+  pytest.ini
+```
 
 ## Como Rodar
 
-1. Crie env local:
+### 1. Criar o `.env`
 
 ```powershell
 Copy-Item backend\.env.example backend\.env
 ```
 
-2. Ajuste segredos obrigatorios em `backend\.env`:
+### 2. Ajustar segredos obrigatórios
 
 ```env
 BUNCHIN_TOKEN_SECRET=troque-este-token-secret
 BUNCHIN_ENCRYPTION_SECRET=troque-este-encryption-secret
 ```
 
-3. Instale deps:
+### 3. Instalar dependências
 
 ```powershell
 cd backend
 py -3 -m pip install -r requirements.txt
 ```
 
-4. Suba API:
+### 4. Subir a API
 
 ```powershell
 py -3 -m uvicorn app.main:app --reload
 ```
 
-5. Rode testes:
+### 5. Rodar testes
 
 ```powershell
 py -3 -m pytest -q
 ```
 
-## Config
+## Configuração
 
-Variaveis principais:
+Variáveis mais importantes:
 
-- `BUNCHIN_DATABASE_URL`: URL SQLAlchemy. Ex: `sqlite:///./bunchin.db`.
-- `BUNCHIN_TOKEN_SECRET`: segredo para HMAC de tokens.
-- `BUNCHIN_ENCRYPTION_SECRET`: segredo para criptografia/HMAC de PII.
-- `BUNCHIN_SEED_ON_STARTUP`: cria seed dev quando `true`.
-- `BUNCHIN_SEED_ADMIN_PASSWORD`: senha dos usuarios seed.
-- `BUNCHIN_ENFORCE_HTTPS`: exige HTTPS fora de localhost quando `true`.
-- `BUNCHIN_ALLOWED_ORIGINS`: CSV de origens CORS.
-- `BUNCHIN_BREVO_API_KEY`: chave Brevo opcional.
-- `BUNCHIN_BREVO_SENDER_EMAIL`: remetente Brevo opcional.
-- `BUNCHIN_BREVO_WELCOME_ENABLED`: liga/desliga email de boas-vindas.
+- `BUNCHIN_DATABASE_URL`: URL SQLAlchemy. Exemplo: `sqlite:///./bunchin.db`
+- `BUNCHIN_TOKEN_SECRET`: segredo para tokens opacos
+- `BUNCHIN_ENCRYPTION_SECRET`: segredo para criptografia de PII
+- `BUNCHIN_ALLOWED_ORIGINS`: CSV de origens liberadas no CORS
+- `BUNCHIN_ENFORCE_HTTPS`: exige HTTPS fora de localhost quando `true`
+- `BUNCHIN_SEED_ON_STARTUP`: cria seed de desenvolvimento quando `true`
+- `BUNCHIN_SEED_ADMIN_PASSWORD`: senha usada pelos usuários seed
+- `BUNCHIN_BREVO_API_KEY`: chave opcional da Brevo
+- `BUNCHIN_BREVO_SENDER_EMAIL`: remetente das mensagens
+- `BUNCHIN_BREVO_SENDER_NAME`: nome do remetente
+- `BUNCHIN_BREVO_WELCOME_ENABLED`: habilita e-mails de boas-vindas
 
-## Seed Dev
+## Seed de Desenvolvimento
 
-Com `BUNCHIN_SEED_ON_STARTUP=true`, startup cria empresa e usuarios:
+Com `BUNCHIN_SEED_ON_STARTUP=true`, a inicialização cria uma empresa e usuários de apoio.
 
 | Role | Email | Senha |
 | --- | --- | --- |
@@ -72,9 +98,9 @@ Com `BUNCHIN_SEED_ON_STARTUP=true`, startup cria empresa e usuarios:
 | employee | `joao.lima@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 | super_admin | `super.admin@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 
-## Auth
+## Autenticação
 
-Login:
+### Login
 
 ```http
 POST /api/v1/auth/login
@@ -87,33 +113,46 @@ Content-Type: application/json
 }
 ```
 
-Resposta inclui `accessToken`. Use em rotas protegidas:
+Resposta inclui `accessToken`. Use o token em rotas protegidas:
 
 ```http
 Authorization: Bearer <accessToken>
 ```
 
-Sessao:
+### Fluxo de sessão
 
-- Token nunca e salvo puro.
-- DB guarda `token_hash`.
-- `POST /api/v1/auth/logout` revoga sessao atual.
-- `keepConnected=true` usa TTL longo configurado por `BUNCHIN_REMEMBER_ME_TTL_DAYS`.
+- O token nunca é salvo em texto puro no banco.
+- O banco guarda apenas `token_hash`.
+- `POST /api/v1/auth/logout` revoga a sessão atual.
+- `keepConnected=true` usa o TTL longo configurado em `BUNCHIN_REMEMBER_ME_TTL_DAYS`.
 
-## Permissoes
+### Rotas de auth
 
-Permissoes ficam em `app/permissions.py`.
+| Método | Rota | Acesso |
+| --- | --- | --- |
+| POST | `/api/v1/auth/register-company` | público |
+| POST | `/api/v1/auth/login` | público |
+| POST | `/api/v1/auth/reset-password` | público |
+| POST | `/api/v1/auth/change-password` | autenticado |
+| GET | `/api/v1/auth/me` | `auth.read_context` |
+| POST | `/api/v1/auth/logout` | autenticado |
 
-| Role | Permissoes principais |
+`register-company`, `reset-password` e `change-password` podem disparar e-mails via Brevo em background. Falha de e-mail não desfaz o fluxo principal.
+
+## Permissões
+
+As permissões ficam em `app/permissions.py`.
+
+| Role | Permissões principais |
 | --- | --- |
-| employee | auth context, projetos read, proprio ponto read/punch |
-| manager | employee read/update, projetos create/update/assign, pontos manage |
-| admin | manager + employee create/delete, projetos delete, company manage |
-| super_admin | admin + admin cross-company |
+| employee | ler contexto de auth, ler e registrar o próprio ponto, ler projetos |
+| manager | employee read/update, projects create/update/assign, time clock manage |
+| admin | manager + employee create/delete, projects delete, company manage |
+| super_admin | admin + acesso cross-company |
 
-Regra de escopo:
+Regras gerais:
 
-- Rotas comuns sao company-scoped.
+- As rotas comuns são escopadas por empresa.
 - `admin.cross_company` exige `super_admin`.
 
 ## Endpoints
@@ -122,19 +161,7 @@ Regra de escopo:
 
 | Método | Rota | Auth |
 | --- | --- | --- |
-| GET | `/api/v1/health` | nao |
-
-### Auth
-
-| Método | Rota | Permissão |
-| --- | --- | --- |
-| POST | `/api/v1/auth/register-company` | publico |
-| POST | `/api/v1/auth/login` | publico |
-| GET | `/api/v1/auth/me` | `auth.read_context` |
-| POST | `/api/v1/auth/logout` | token valido |
-
-`register-company` agenda email Brevo de boas-vindas quando config Brevo existe.
-Falha de email nao desfaz cadastro.
+| GET | `/api/v1/health` | não |
 
 ### Employees
 
@@ -144,10 +171,11 @@ Falha de email nao desfaz cadastro.
 | GET | `/api/v1/employees/{employeeId}` | `employees.read` |
 | POST | `/api/v1/employees` | `employees.create` |
 | PUT | `/api/v1/employees/{employeeId}` | `employees.update` |
+| PATCH | `/api/v1/employees/{employeeId}` | `employees.update` |
 | DELETE | `/api/v1/employees/{employeeId}` | `employees.delete` |
 | GET | `/api/v1/employees/{employeeId}/projects` | `projects.read` |
 
-Payload create/update:
+Payload de criação/edição:
 
 ```json
 {
@@ -164,31 +192,32 @@ Payload create/update:
   "roleLevel": "specialist",
   "requiresLocationOnPunch": false,
   "trustedDeviceRequired": true,
-  "notes": "Observacao interna."
+  "notes": "Observação interna."
 }
 ```
 
 ### Projects
 
-| Metodo | Rota | Permissão |
+| Método | Rota | Permissão |
 | --- | --- | --- |
 | GET | `/api/v1/projects` | `projects.read` |
 | POST | `/api/v1/projects` | `projects.create` |
 | GET | `/api/v1/projects/{projectId}` | `projects.read` |
 | PUT | `/api/v1/projects/{projectId}` | `projects.update` |
+| PATCH | `/api/v1/projects/{projectId}` | `projects.update` |
 | DELETE | `/api/v1/projects/{projectId}` | `projects.delete` |
 | GET | `/api/v1/projects/{projectId}/members` | `projects.read` |
 | POST | `/api/v1/projects/{projectId}/members` | `projects.assign` |
 | DELETE | `/api/v1/projects/{projectId}/members/{employeeId}` | `projects.assign` |
 
-`DELETE /projects/{projectId}` marca projeto como `inactive`; nao remove fisicamente.
+`DELETE /projects/{projectId}` marca o projeto como `inactive` e não remove fisicamente.
 
-Payload projeto:
+Payload de projeto:
 
 ```json
 {
-  "name": "Implantacao Cliente Sul",
-  "description": "Projeto de operacao assistida.",
+  "name": "Implantação Cliente Sul",
+  "description": "Projeto de operação assistida.",
   "status": "active"
 }
 ```
@@ -202,6 +231,7 @@ Payload projeto:
 | GET | `/api/v1/time-clock/employees/{employeeId}/punches` | `time_clock.manage` |
 | POST | `/api/v1/time-clock/employees/{employeeId}/punches` | `time_clock.manage` |
 | PUT | `/api/v1/time-clock/employees/{employeeId}/punches/{punchId}` | `time_clock.manage` |
+| PATCH | `/api/v1/time-clock/employees/{employeeId}/punches/{punchId}` | `time_clock.manage` |
 | DELETE | `/api/v1/time-clock/employees/{employeeId}/punches/{punchId}` | `time_clock.manage` |
 
 Transições automáticas permitidas no ponto próprio:
@@ -210,9 +240,9 @@ Transições automáticas permitidas no ponto próprio:
 - `working` -> `breakStart` ou `checkOut`
 - `onBreak` -> `breakEnd` ou `checkOut`
 
-Se funcionario tem `requiresLocationOnPunch=true`, req deve enviar `location`.
+Se o funcionário tiver `requiresLocationOnPunch=true`, a requisição precisa enviar `location`.
 
-Payload punch proprio:
+Payload de ponto próprio:
 
 ```json
 {
@@ -227,7 +257,7 @@ Payload punch proprio:
 }
 ```
 
-Payload ajuste gerencial:
+Payload de ajuste gerencial:
 
 ```json
 {
@@ -241,91 +271,21 @@ Payload ajuste gerencial:
 
 ### Admin
 
-| Metodo | Rota | Permissão |
+| Método | Rota | Permissão |
 | --- | --- | --- |
-| GET | `/api/v1/admin/companies` | `admin.cross_company` global |
+| GET | `/api/v1/admin/companies` | `admin.cross_company` |
 
-## Privacidade e Seguranca
+## Privacidade e Segurança
 
 PII protegida:
 
-- Nome, email, telefone, CNPJ, unidade, cargo, departamento, notas: criptografados em repouso.
-- Email e CNPJ: tambem possuem HMAC deterministico para lookup sem texto puro.
-- localização do ponto: payload criptografado.
-- Tokens: opacos, hash no banco.
+- nome, e-mail, telefone, CNPJ, unidade, cargo, departamento e notas são criptografados em repouso
+- e-mail e CNPJ também recebem HMAC determinístico para lookup sem texto puro
+- payload de localização do ponto é criptografado
+- tokens são opacos e o banco guarda apenas o hash
 
 Regras operacionais:
 
-- Nao logar payload sensivel.
-- Usar HTTPS fora de localhost em ambientes reais.
-- Rotas sempre filtram por `company_id`, exceto rota global `super_admin`.
-- Erros de dominio saem por `DomainError`; `main.py` traduz para HTTP.
-
-## Arquitetura
-
-Camadas:
-
-- `app/api/routes`: HTTP, Depends, status codes.
-- `app/services`: regras de negocio e persistencia. Nao importa FastAPI.
-- `app/schemas`: contratos Pydantic em camelCase.
-- `app/models`: modelos SQLAlchemy.
-- `app/permissions.py`: matriz de roles/permissoes.
-- `app/authorization.py`: checagem de permissão e escopo.
-- `app/errors.py`: erros de dominio desacoplados de HTTP.
-- `app/db.py`: engine, session, schema init e upgrades leves.
-
-Teste arquitetural:
-
-- `backend/tests/test_architecture.py` falha se `app/services` importar FastAPI.
-
-## Schema e Upgrades
-
-`init_database()` roda:
-
-1. `Base.metadata.create_all()`
-2. `upgrade_database_schema()`
-
-`create_all()` nao altera tabelas existentes. Upgrades leves ficam em
-`upgrade_database_schema()` para preservar dados locais, como adicao de
-`punches.project_id`.
-
-## Testes
-
-Suite:
-
-```powershell
-cd backend
-py -3 -m pytest -q
-```
-
-Coberturas principais:
-
-- auth/login/logout/contexto
-- permissão por role
-- CRUD funcionarios
-- projetos e membros
-- ponto proprio e ponto gerencial
-- criptografia de PII
-- upgrades de schema
-- regra arquitetural services sem FastAPI
-
-## Troubleshooting
-
-`psycopg2.errors.UndefinedColumn: column punches.project_id does not exist`
-
-- Causa: DB Postgres existente sem coluna nova.
-- Fix: reinicie API; `upgrade_database_schema()` aplica coluna no startup.
-
-`401 Invalid or expired access token`
-
-- Token expirado/revogado/invalido.
-- Login novamente.
-
-`403 Permission denied`
-
-- Role sem permissão ou rota global chamada sem `super_admin`.
-
-`400 HTTPS is required for non-local requests`
-
-- `BUNCHIN_ENFORCE_HTTPS=true`.
-- Use HTTPS ou localhost.
+- não logar payload sensível
+- usar HTTPS fora de localhost em ambientes reais
+- manter `BUNCHIN_TOKEN_SECRET` e `BUNCHIN_ENCRYPTION_SECRET` definidos
