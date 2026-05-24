@@ -58,9 +58,10 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
         ),
       );
 
-      // Navigate to workspace based on user role
       Navigator.of(context).pushReplacement(
-        _buildWorkspaceRoute(),
+        MaterialPageRoute<void>(
+          builder: (_) => const AdminEmployeesPage(),
+        ),
       );
     } on ApiException catch (error) {
       if (!mounted) {
@@ -87,17 +88,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
     }
   }
 
-  Route<void> _buildWorkspaceRoute() {
-    // User is authenticated but we only know they completed password change.
-    // Fetching full AuthContext here would add latency. Navigate to admin
-    // as safe default — admin is the most common role after password reset.
-    // Refresh on workspace will fetch real context.
-    return MaterialPageRoute<void>(
-      builder: (_) => const AdminEmployeesPage(),
-    );
-  }
-
-  String? _validatePassword(String? value) {
+  static String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Informe uma nova senha.';
     }
@@ -115,6 +106,38 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       return 'As senhas nao conferem.';
     }
     return null;
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required bool obscure,
+    required ValueChanged<bool> onToggleObscure,
+    required String label,
+    required String hint,
+    required String? Function(String?)? validator,
+    TextInputAction textInputAction = TextInputAction.next,
+    VoidCallback? onFieldSubmitted,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: const Icon(Icons.lock_outline_rounded),
+        suffixIcon: IconButton(
+          onPressed: () => onToggleObscure(!obscure),
+          icon: Icon(
+            obscure
+                ? Icons.visibility_outlined
+                : Icons.visibility_off_outlined,
+          ),
+        ),
+      ),
+      validator: validator,
+    );
   }
 
   @override
@@ -163,90 +186,33 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
               ),
             ),
             const SizedBox(height: 24),
-            TextFormField(
+            _buildPasswordField(
               controller: _currentPasswordController,
-              obscureText: _obscureCurrent,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Senha atual (temporaria)',
-                hintText: 'Digite a senha recebida por e-mail',
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscureCurrent = !_obscureCurrent;
-                    });
-                  },
-                  icon: Icon(
-                    _obscureCurrent
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Informe sua senha atual.';
-                }
-                if (value.length < 8) {
-                  return 'A senha precisa ter ao menos 8 caracteres.';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _newPasswordController,
-              obscureText: _obscureNew,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: 'Nova senha',
-                hintText: 'Minimo de 8 caracteres',
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscureNew = !_obscureNew;
-                    });
-                  },
-                  icon: Icon(
-                    _obscureNew
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
+              obscure: _obscureCurrent,
+              onToggleObscure: (v) => setState(() => _obscureCurrent = v),
+              label: 'Senha atual (temporaria)',
+              hint: 'Digite a senha recebida por e-mail',
               validator: _validatePassword,
-              onChanged: (_) {
-                if (_confirmPasswordController.text.isNotEmpty) {
-                  _formKey.currentState?.validate();
-                }
-              },
             ),
             const SizedBox(height: 16),
-            TextFormField(
+            _buildPasswordField(
+              controller: _newPasswordController,
+              obscure: _obscureNew,
+              onToggleObscure: (v) => setState(() => _obscureNew = v),
+              label: 'Nova senha',
+              hint: 'Minimo de 8 caracteres',
+              validator: _validatePassword,
+            ),
+            const SizedBox(height: 16),
+            _buildPasswordField(
               controller: _confirmPasswordController,
-              obscureText: _obscureConfirm,
-              textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                labelText: 'Confirmar nova senha',
-                hintText: 'Repita a nova senha',
-                prefixIcon: const Icon(Icons.lock_outline_rounded),
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscureConfirm = !_obscureConfirm;
-                    });
-                  },
-                  icon: Icon(
-                    _obscureConfirm
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
-                ),
-              ),
+              obscure: _obscureConfirm,
+              onToggleObscure: (v) => setState(() => _obscureConfirm = v),
+              label: 'Confirmar nova senha',
+              hint: 'Repita a nova senha',
               validator: _validateConfirm,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: _submit,
             ),
             const SizedBox(height: 24),
             SizedBox(

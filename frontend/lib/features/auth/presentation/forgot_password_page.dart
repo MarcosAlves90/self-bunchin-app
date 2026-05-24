@@ -37,42 +37,20 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     try {
       await _api.resetPassword(email: _emailController.text.trim());
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isSubmitting = false;
-        _submitted = true;
-      });
     } on ApiException {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      // Always show success message to avoid email enumeration
-      setState(() {
-        _submitted = true;
-      });
+      // Always show success to avoid email enumeration
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isSubmitting = false;
-      });
-
       // Generic error — show success anyway (anti-enumeration)
-      setState(() {
-        _submitted = true;
-      });
     }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = false;
+      _submitted = true;
+    });
   }
 
   void _backToLogin() {
