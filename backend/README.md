@@ -120,13 +120,13 @@ Regra de escopo:
 
 ### Health
 
-| Metodo | Rota | Auth |
+| Método | Rota | Auth |
 | --- | --- | --- |
 | GET | `/api/v1/health` | nao |
 
 ### Auth
 
-| Metodo | Rota | Permissao |
+| Método | Rota | Permissão |
 | --- | --- | --- |
 | POST | `/api/v1/auth/register-company` | publico |
 | POST | `/api/v1/auth/login` | publico |
@@ -138,7 +138,7 @@ Falha de email nao desfaz cadastro.
 
 ### Employees
 
-| Metodo | Rota | Permissao |
+| Método | Rota | Permissão |
 | --- | --- | --- |
 | GET | `/api/v1/employees` | `employees.read` |
 | GET | `/api/v1/employees/{employeeId}` | `employees.read` |
@@ -170,7 +170,7 @@ Payload create/update:
 
 ### Projects
 
-| Metodo | Rota | Permissao |
+| Metodo | Rota | Permissão |
 | --- | --- | --- |
 | GET | `/api/v1/projects` | `projects.read` |
 | POST | `/api/v1/projects` | `projects.create` |
@@ -195,7 +195,7 @@ Payload projeto:
 
 ### Time Clock
 
-| Metodo | Rota | Permissao |
+| Método | Rota | Permissão |
 | --- | --- | --- |
 | GET | `/api/v1/time-clock/me` | `time_clock.read` |
 | POST | `/api/v1/time-clock/me/punches` | `time_clock.punch` |
@@ -204,7 +204,7 @@ Payload projeto:
 | PUT | `/api/v1/time-clock/employees/{employeeId}/punches/{punchId}` | `time_clock.manage` |
 | DELETE | `/api/v1/time-clock/employees/{employeeId}/punches/{punchId}` | `time_clock.manage` |
 
-Transicoes automaticas permitidas no ponto proprio:
+Transições automáticas permitidas no ponto próprio:
 
 - `checkedOut` -> `checkIn`
 - `working` -> `breakStart` ou `checkOut`
@@ -241,7 +241,7 @@ Payload ajuste gerencial:
 
 ### Admin
 
-| Metodo | Rota | Permissao |
+| Metodo | Rota | Permissão |
 | --- | --- | --- |
 | GET | `/api/v1/admin/companies` | `admin.cross_company` global |
 
@@ -251,7 +251,7 @@ PII protegida:
 
 - Nome, email, telefone, CNPJ, unidade, cargo, departamento, notas: criptografados em repouso.
 - Email e CNPJ: tambem possuem HMAC deterministico para lookup sem texto puro.
-- Localizacao do ponto: payload criptografado.
+- localização do ponto: payload criptografado.
 - Tokens: opacos, hash no banco.
 
 Regras operacionais:
@@ -270,7 +270,7 @@ Camadas:
 - `app/schemas`: contratos Pydantic em camelCase.
 - `app/models`: modelos SQLAlchemy.
 - `app/permissions.py`: matriz de roles/permissoes.
-- `app/authorization.py`: checagem de permissao e escopo.
+- `app/authorization.py`: checagem de permissão e escopo.
 - `app/errors.py`: erros de dominio desacoplados de HTTP.
 - `app/db.py`: engine, session, schema init e upgrades leves.
 
@@ -301,7 +301,7 @@ py -3 -m pytest -q
 Coberturas principais:
 
 - auth/login/logout/contexto
-- permissao por role
+- permissão por role
 - CRUD funcionarios
 - projetos e membros
 - ponto proprio e ponto gerencial
@@ -323,7 +323,7 @@ Coberturas principais:
 
 `403 Permission denied`
 
-- Role sem permissao ou rota global chamada sem `super_admin`.
+- Role sem permissão ou rota global chamada sem `super_admin`.
 
 `400 HTTPS is required for non-local requests`
 

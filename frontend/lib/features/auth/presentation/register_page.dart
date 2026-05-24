@@ -134,36 +134,16 @@ class _RegisterPageState extends State<RegisterPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+    return AuthFormFrame(
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.sizeOf(context).width < 920) ...[
-              const AuthCompactBrandBadge(),
-              const SizedBox(height: 24),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Cadastrar empresa',
-                    style: authPageTitleStyle(context),
-                  ),
-                ),
-              ],
+            AuthPageHeading(
+              title: 'Cadastrar empresa',
+              onBack: () => Navigator.of(context).pop(),
             ),
             const SizedBox(height: 10),
             Text(

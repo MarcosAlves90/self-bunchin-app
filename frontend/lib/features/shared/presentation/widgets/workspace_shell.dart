@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
 import 'package:bunchin_flutter/features/auth/presentation/logout_navigation.dart';
+import 'package:bunchin_flutter/features/settings/presentation/settings_page.dart';
 import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_page.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -204,6 +205,19 @@ class _AppNavigationDrawer extends StatelessWidget {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute<void>(
                   builder: (_) => const AdminEmployeesPage(),
+                ),
+              );
+            },
+          ),
+          _buildDrawerItem(
+            context,
+            icon: Icons.tune_rounded,
+            label: 'Configurações',
+            onTap: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ThemeSettingsPage(),
                 ),
               );
             },

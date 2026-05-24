@@ -40,7 +40,7 @@ class PunchLocationService {
       );
 
       return PunchLocationResult.ready(
-        message: 'Localizacao validada e vinculada a batida.',
+        message: 'localização validada e vinculada a batida.',
         snapshot: PunchLocationSnapshot.fromPosition(position),
       );
     } catch (error) {
@@ -58,7 +58,7 @@ class PunchLocationService {
       LocationPermission.unableToDetermine =>
         PunchLocationResult.permissionDeniedForever(
           message:
-              'Não foi possível confirmar a permissao no navegador. Verifique o acesso ao local e tente novamente.',
+              'Não foi possível confirmar a permissão no navegador. Verifique o acesso ao local e tente novamente.',
         ),
     };
   }
@@ -71,29 +71,29 @@ class PunchLocationService {
     if (error is PermissionDefinitionsNotFoundException) {
       return const PunchLocationResult.error(
         message:
-            'A plataforma nao esta configurada para solicitar localizacao.',
+            'A plataforma nao esta configurada para solicitar localização.',
       );
     }
 
     if (error is TimeoutException) {
       return const PunchLocationResult.error(
         message:
-            'Tempo esgotado ao obter a localizacao. Tente novamente com melhor sinal.',
+            'Tempo esgotado ao obter a localização. Tente novamente com melhor sinal.',
       );
     }
 
     if (error is UnsupportedError) {
       return PunchLocationResult.unsupported(
         message: kIsWeb
-            ? 'No navegador, a geolocalizacao exige HTTPS ou localhost, alem da permissao do usuario.'
-            : 'Este dispositivo nao oferece suporte a geolocalizacao.',
+            ? 'No navegador, a geolocalização exige HTTPS ou localhost, alem da permissão do usuario.'
+            : 'Este dispositivo nao oferece suporte a geolocalização.',
       );
     }
 
     return PunchLocationResult.error(
       message: kIsWeb
-          ? 'Falha ao obter a localizacao. Verifique a permissao do navegador e se o site esta em HTTPS ou localhost.'
-          : 'Falha ao obter a localizacao atual do dispositivo.',
+          ? 'Falha ao obter a localização. Verifique a permissão do navegador e se o site esta em HTTPS ou localhost.'
+          : 'Falha ao obter a localização atual do dispositivo.',
     );
   }
 

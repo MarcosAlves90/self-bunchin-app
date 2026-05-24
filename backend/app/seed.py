@@ -184,7 +184,7 @@ def _employee_seeds() -> list[EmployeeSeed]:
             requires_location_on_punch=True,
             trusted_device_required=False,
             pending_adjustments=3,
-            notes="Admissao em andamento. Falta concluir politica de localizacao e dispositivo confiavel.",
+            notes="Admissao em andamento. Falta concluir politica de localização e dispositivo confiavel.",
         ),
     ]
 

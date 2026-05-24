@@ -104,22 +104,14 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+    return AuthFormFrame(
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.sizeOf(context).width < 920) ...[
-              const AuthCompactBrandBadge(),
-              const SizedBox(height: 24),
-            ],
-            Text(
-              'Entrar',
-              style: authPageTitleStyle(context),
-            ),
+            const AuthPageHeading(title: 'Entrar'),
             const SizedBox(height: 10),
             Text(
               'Use seu e-mail e senha para acessar sua conta.',

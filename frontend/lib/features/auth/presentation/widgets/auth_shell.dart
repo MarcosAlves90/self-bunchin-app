@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+part 'auth_form_widgets.dart';
+
 TextStyle? authPageTitleStyle(BuildContext context) {
   final theme = Theme.of(context);
   final isMobile = MediaQuery.sizeOf(context).width < 920;
