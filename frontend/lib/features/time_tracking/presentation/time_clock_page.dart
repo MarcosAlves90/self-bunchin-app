@@ -701,7 +701,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Histórico cronolóco das batidas com contexto suficiente para auditoria operacional.',
+            'Histórico cronológico das batidas com contexto suficiente para auditoria operacional.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
