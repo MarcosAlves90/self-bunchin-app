@@ -526,7 +526,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   List<Widget> _buildHeaderActions(bool isWide) {
     final selectedEmployee = _selectedEmployee;
     final removeButton = SizedBox(
-      width: isWide ? 210 : double.infinity,
+      width: isWide ? 240 : double.infinity,
       child: OutlinedButton.icon(
         onPressed: selectedEmployee == null ? null : _removeSelectedEmployee,
         icon: const Icon(Icons.person_remove_alt_1_rounded),
