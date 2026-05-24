@@ -720,6 +720,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
               return ChoiceChip(
                 label: Text(_filterLabel(filter)),
                 selected: _filter == filter,
+                checkmarkColor: AppTheme.accent,
                 onSelected: (_) {
                   setState(() {
                     _filter = filter;
