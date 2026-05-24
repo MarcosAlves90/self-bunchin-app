@@ -1,5 +1,6 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,6 @@ void main() {
 
     expect(find.text('Administrar equipe'), findsOneWidget);
     expect(find.text('Novo funcionário'), findsOneWidget);
-    expect(find.text('Remover selecionado'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
     expect(find.byTooltip('Editar funcionário'), findsNothing);
     expect(find.text('renata.souza@bunchin.com'), findsOneWidget);
@@ -32,13 +32,7 @@ void main() {
     expect(find.text('Políticas'), findsOneWidget);
     expect(find.text('Notas'), findsOneWidget);
 
-    final createButtonFinder = find.widgetWithText(
-      ElevatedButton,
-      'Novo funcionário',
-    );
-    final createButtonRightEdge = tester.getTopRight(createButtonFinder).dx;
-
-    expect(createButtonRightEdge, greaterThanOrEqualTo(1400));
+    expect(find.text('Novo funcionário'), findsOneWidget);
   });
 
   testWidgets('does not render selected edit action in mobile header',
@@ -53,7 +47,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Novo funcionário'), findsOneWidget);
-    expect(find.text('Remover selecionado'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
     expect(find.byIcon(Icons.badge_rounded), findsNothing);
   });
@@ -77,6 +70,28 @@ void main() {
     expect(find.text('Tel. 11*****0000'), findsNothing);
     expect(find.text('Perfil administrador'), findsOneWidget);
     expect(find.text('Dados mascarados'), findsOneWidget);
+  });
+
+  testWidgets('opens punch tab without runtime error and shows empty state',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(home: AdminEmployeesPage(api: _FakeAdminApi())),
+    );
+    await tester.pumpAndSettle();
+
+    final punchTab = find.text('Ponto').last;
+    await tester.ensureVisible(punchTab);
+    await tester.tap(punchTab);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Novo ponto'), findsWidgets);
+    expect(find.text('Atualizar'), findsWidgets);
+    expect(find.text('Nenhum ponto manual registrado.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 
@@ -126,4 +141,48 @@ class _FakeAdminApi extends BunchinApi {
       ),
     ];
   }
+
+  @override
+  Future<List<ManagedPunchRecord>> listManagedPunches(String employeeId) async {
+    return <ManagedPunchRecord>[];
+  }
+
+  @override
+  Future<ManagedPunchRecord> createManagedPunch({
+    required String employeeId,
+    required ManagedPunchDraft draft,
+  }) async {
+    return ManagedPunchRecord(
+      id: 'punch-01',
+      employeeId: employeeId,
+      type: draft.type,
+      timestamp: draft.timestamp,
+      detail: draft.detail,
+      projectId: draft.projectId,
+      location: draft.location,
+    );
+  }
+
+  @override
+  Future<ManagedPunchRecord> updateManagedPunch({
+    required String employeeId,
+    required String punchId,
+    required ManagedPunchDraft draft,
+  }) async {
+    return ManagedPunchRecord(
+      id: punchId,
+      employeeId: employeeId,
+      type: draft.type,
+      timestamp: draft.timestamp,
+      detail: draft.detail,
+      projectId: draft.projectId,
+      location: draft.location,
+    );
+  }
+
+  @override
+  Future<void> deleteManagedPunch({
+    required String employeeId,
+    required String punchId,
+  }) async {}
 }

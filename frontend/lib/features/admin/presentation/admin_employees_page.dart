@@ -1,5 +1,7 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/punch.dart';
+import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
@@ -29,6 +31,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   EmployeeFilter _filter = EmployeeFilter.all;
   String _searchQuery = '';
   String? _selectedEmployeeId;
+  List<ManagedPunchRecord> _employeePunches = <ManagedPunchRecord>[];
+  bool _isLoadingEmployeePunches = false;
+  String? _employeePunchesError;
   bool _isLoading = true;
   String? _loadError;
 
@@ -63,6 +68,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         }
         _isLoading = false;
       });
+
+      if (_selectedEmployeeId != null) {
+        await _loadEmployeePunches(employeeId: _selectedEmployeeId);
+      }
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -201,6 +210,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Future<void> _openCreateEmployeeDialog() async {
+    final messenger = ScaffoldMessenger.of(context);
     final draft = await showDialog<EmployeeDraft>(
       context: context,
       builder: (context) => const _EmployeeEditorDialog(),
@@ -220,8 +230,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         _employees = <EmployeeProfile>[employee, ..._employees];
         _selectedEmployeeId = employee.id;
       });
+      await _loadEmployeePunches(employeeId: employee.id);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('${employee.name} foi adicionado à empresa.')),
       );
     } on ApiException catch (error) {
@@ -236,6 +247,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Future<void> _openEditEmployeeDialog(EmployeeProfile employee) async {
+    final messenger = ScaffoldMessenger.of(context);
     final draft = await showDialog<EmployeeDraft>(
       context: context,
       builder: (context) => _EmployeeEditorDialog(employee: employee),
@@ -261,8 +273,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         }).toList();
         _selectedEmployeeId = employee.id;
       });
+      await _loadEmployeePunches(employeeId: employee.id);
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('${draft.name} foi atualizado com sucesso.')),
       );
     } on ApiException catch (error) {
@@ -277,6 +290,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Future<void> _removeEmployee(EmployeeProfile employee) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -318,9 +332,16 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         final fallbackSelection =
             _visibleEmployees.isEmpty ? null : _visibleEmployees.first.id;
         _selectedEmployeeId = fallbackSelection;
+        if (fallbackSelection == null) {
+          _employeePunches = <ManagedPunchRecord>[];
+          _employeePunchesError = null;
+        }
       });
+      if (_selectedEmployeeId != null) {
+        await _loadEmployeePunches(employeeId: _selectedEmployeeId);
+      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('${employee.name} foi removido da empresa.')),
       );
     } on ApiException catch (error) {
@@ -338,6 +359,191 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     setState(() {
       _selectedEmployeeId = employeeId;
     });
+    _loadEmployeePunches(employeeId: employeeId);
+  }
+
+  Future<void> _loadEmployeePunches({String? employeeId}) async {
+    final targetEmployeeId = employeeId ?? _selectedEmployeeId;
+    if (targetEmployeeId == null) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingEmployeePunches = true;
+      _employeePunchesError = null;
+    });
+
+    try {
+      final punches = await _api.listManagedPunches(targetEmployeeId);
+      if (!mounted || _selectedEmployeeId != targetEmployeeId) {
+        return;
+      }
+
+      setState(() {
+        _employeePunches = punches;
+        _isLoadingEmployeePunches = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted || _selectedEmployeeId != targetEmployeeId) {
+        return;
+      }
+
+      setState(() {
+        _employeePunches = <ManagedPunchRecord>[];
+        _isLoadingEmployeePunches = false;
+        _employeePunchesError = error.message;
+      });
+    } catch (_) {
+      if (!mounted || _selectedEmployeeId != targetEmployeeId) {
+        return;
+      }
+
+      setState(() {
+        _employeePunches = <ManagedPunchRecord>[];
+        _isLoadingEmployeePunches = false;
+        _employeePunchesError = 'Não foi possível carregar os pontos.';
+      });
+    }
+  }
+
+  Future<void> _openCreatePunchDialog(EmployeeProfile employee) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final draft = await showDialog<ManagedPunchDraft>(
+      context: context,
+      builder: (context) => _ManagedPunchEditorDialog(
+        employee: employee,
+      ),
+    );
+
+    if (draft == null || !mounted) {
+      return;
+    }
+
+    try {
+      await _api.createManagedPunch(
+        employeeId: employee.id,
+        draft: draft,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      await _loadEmployeePunches(employeeId: employee.id);
+
+      messenger.showSnackBar(
+        SnackBar(content: Text('Ponto manual de ${employee.name} foi criado.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
+  }
+
+  Future<void> _openEditPunchDialog({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final draft = await showDialog<ManagedPunchDraft>(
+      context: context,
+      builder: (context) => _ManagedPunchEditorDialog(
+        employee: employee,
+        punch: punch,
+      ),
+    );
+
+    if (draft == null || !mounted) {
+      return;
+    }
+
+    try {
+      await _api.updateManagedPunch(
+        employeeId: employee.id,
+        punchId: punch.id,
+        draft: draft,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      await _loadEmployeePunches(employeeId: employee.id);
+
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Ponto manual atualizado.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
+  }
+
+  Future<void> _deleteManagedPunch({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+          ),
+          title: const Text('Remover ponto'),
+          content: Text(
+            'Deseja remover o ponto de ${_formatDateTime(punch.timestamp)}? Esta ação não pode ser desfeita.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Remover'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      await _api.deleteManagedPunch(
+        employeeId: employee.id,
+        punchId: punch.id,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      await _loadEmployeePunches(employeeId: employee.id);
+
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Ponto manual removido.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    }
   }
 
   String _formatHours(int minutes) {
@@ -945,6 +1151,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     ),
                   ],
                 )
+              else if (activeTab == _EmployeeDetailTab.timeClock)
+                _buildPunchManagementSection(
+                  employee: employee,
+                  constraints: constraints,
+                )
               else
                 _EmployeeNarrativeCard(
                   icon: Icons.sticky_note_2_outlined,
@@ -955,6 +1166,149 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildPunchManagementSection({
+    required EmployeeProfile employee,
+    required BoxConstraints constraints,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isCompact = constraints.maxWidth < 540;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (isCompact)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              ElevatedButton.icon(
+                onPressed: () => _openCreatePunchDialog(employee),
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                label: const Text('Novo ponto'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _loadEmployeePunches(employeeId: employee.id),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Atualizar'),
+              ),
+            ],
+          )
+        else
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: <Widget>[
+              SizedBox(
+                width: 180,
+                child: ElevatedButton.icon(
+                  onPressed: () => _openCreatePunchDialog(employee),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  label: const Text('Novo ponto'),
+                ),
+              ),
+              SizedBox(
+                width: 180,
+                child: OutlinedButton.icon(
+                  onPressed: () =>
+                      _loadEmployeePunches(employeeId: employee.id),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Atualizar'),
+                ),
+              ),
+            ],
+          ),
+        const SizedBox(height: 16),
+        if (_isLoadingEmployeePunches)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_employeePunchesError != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _employeePunchesError!,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      _loadEmployeePunches(employeeId: employee.id),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          )
+        else if (_employeePunches.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Nenhum ponto manual registrado.',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Use a criação manual para corrigir batidas, ajustar horários ou registrar eventos passados.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => _openCreatePunchDialog(employee),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  label: const Text('Novo ponto'),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: _employeePunches.map((punch) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ManagedPunchTile(
+                  punch: punch,
+                  employee: employee,
+                  onEdit: () => _openEditPunchDialog(
+                    employee: employee,
+                    punch: punch,
+                  ),
+                  onDelete: () => _deleteManagedPunch(
+                    employee: employee,
+                    punch: punch,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
     );
   }
 
@@ -979,6 +1333,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         label: 'Políticas',
       ),
       (
+        value: _EmployeeDetailTab.timeClock,
+        icon: Icons.schedule_rounded,
+        label: 'Ponto',
+      ),
+      (
         value: _EmployeeDetailTab.notes,
         icon: Icons.notes_rounded,
         label: 'Notas',
@@ -988,73 +1347,66 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final visibleItems = tabItems
         .where((item) => hasNotes || item.value != _EmployeeDetailTab.notes)
         .toList();
+    final selectedTab = visibleItems.any((item) => item.value == activeTab)
+        ? activeTab
+        : visibleItems.first.value;
 
-    if (!useVerticalLayout) {
-      return SegmentedButton<_EmployeeDetailTab>(
-        segments: visibleItems
-            .map(
-              (item) => ButtonSegment<_EmployeeDetailTab>(
-                value: item.value,
-                icon: Icon(item.icon),
-                label: Text(item.label),
-              ),
-            )
-            .toList(),
-        selected: <_EmployeeDetailTab>{activeTab},
-        showSelectedIcon: false,
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppTheme.accent;
-            }
-
-            return null;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return colorScheme.onPrimary;
-            }
-
-            return null;
-          }),
-          side:
-              const WidgetStatePropertyAll(BorderSide(color: AppTheme.accent)),
-          shape: const WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+    Widget buildTabButton({
+      required _EmployeeDetailTab value,
+      required IconData icon,
+      required String label,
+    }) {
+      final selected = value == selectedTab;
+      return OutlinedButton.icon(
+        onPressed: selected
+            ? null
+            : () {
+                setState(() {
+                  _detailTab = value;
+                });
+              },
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          backgroundColor: selected ? AppTheme.accent : null,
+          foregroundColor:
+              selected ? colorScheme.onPrimary : colorScheme.onSurface,
+          side: const BorderSide(color: AppTheme.accent),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
           ),
         ),
-        onSelectionChanged: (selection) {
-          setState(() {
-            _detailTab = selection.first;
-          });
-        },
+        icon: Icon(icon),
+        label: Text(label),
+      );
+    }
+
+    if (!useVerticalLayout) {
+      return Row(
+        children: visibleItems.map((item) {
+          final isLast = item == visibleItems.last;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: isLast ? 0 : 8),
+              child: buildTabButton(
+                value: item.value,
+                icon: item.icon,
+                label: item.label,
+              ),
+            ),
+          );
+        }).toList(),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: visibleItems.map((item) {
-        final selected = item.value == activeTab;
         return Padding(
           padding: EdgeInsets.only(bottom: item == visibleItems.last ? 0 : 8),
-          child: OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _detailTab = item.value;
-              });
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: selected ? AppTheme.accent : null,
-              foregroundColor:
-                  selected ? colorScheme.onPrimary : colorScheme.onSurface,
-              side: const BorderSide(color: AppTheme.accent),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-            icon: Icon(item.icon),
-            label: Text(item.label),
+          child: buildTabButton(
+            value: item.value,
+            icon: item.icon,
+            label: item.label,
           ),
         );
       }).toList(),
@@ -1070,4 +1422,4 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 }
 
-enum _EmployeeDetailTab { registration, policies, notes }
+enum _EmployeeDetailTab { registration, policies, timeClock, notes }

@@ -139,6 +139,71 @@ class BunchinApi {
     await _client.delete('/employees/$employeeId', withAuth: true);
   }
 
+  Future<List<ManagedPunchRecord>> listManagedPunches(String employeeId) async {
+    final response = await _client.get(
+      '/time-clock/employees/$employeeId/punches',
+      withAuth: true,
+    );
+
+    return _parseContract('managed punches', () {
+      final payload = requireJsonList(response, 'managed punches response');
+      return payload
+          .map(
+            (item) => ManagedPunchRecord.fromJson(
+              requireJsonMap(item, 'managed punches[]'),
+            ),
+          )
+          .toList();
+    });
+  }
+
+  Future<ManagedPunchRecord> createManagedPunch({
+    required String employeeId,
+    required ManagedPunchDraft draft,
+  }) async {
+    final response = await _client.post(
+      '/time-clock/employees/$employeeId/punches',
+      withAuth: true,
+      body: draft.toCreateApiJson(),
+    );
+
+    return _parseContract(
+      'create managed punch',
+      () => ManagedPunchRecord.fromJson(
+        requireJsonMap(response, 'create managed punch response'),
+      ),
+    );
+  }
+
+  Future<ManagedPunchRecord> updateManagedPunch({
+    required String employeeId,
+    required String punchId,
+    required ManagedPunchDraft draft,
+  }) async {
+    final response = await _client.put(
+      '/time-clock/employees/$employeeId/punches/$punchId',
+      withAuth: true,
+      body: draft.toUpdateApiJson(),
+    );
+
+    return _parseContract(
+      'update managed punch',
+      () => ManagedPunchRecord.fromJson(
+        requireJsonMap(response, 'update managed punch response'),
+      ),
+    );
+  }
+
+  Future<void> deleteManagedPunch({
+    required String employeeId,
+    required String punchId,
+  }) async {
+    await _client.delete(
+      '/time-clock/employees/$employeeId/punches/$punchId',
+      withAuth: true,
+    );
+  }
+
   Future<TimeClockState> getMyTimeClockState() async {
     final response = await _client.get('/time-clock/me', withAuth: true);
 

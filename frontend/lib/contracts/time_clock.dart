@@ -6,6 +6,104 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'time_clock.freezed.dart';
 
+class ManagedPunchRecord {
+  const ManagedPunchRecord({
+    required this.id,
+    required this.employeeId,
+    required this.type,
+    required this.timestamp,
+    required this.detail,
+    required this.projectId,
+    required this.location,
+  });
+
+  final String id;
+  final String employeeId;
+  final PunchType type;
+  final DateTime timestamp;
+  final String detail;
+  final String? projectId;
+  final PunchLocationSnapshot? location;
+
+  factory ManagedPunchRecord.fromJson(JsonMap json) {
+    final rawLocation = json['location'];
+
+    return ManagedPunchRecord(
+      id: requireString(json, 'id'),
+      employeeId: requireString(json, 'employeeId'),
+      type: punchTypeFromApi(requireString(json, 'type')),
+      timestamp: requireDateTime(json, 'timestamp'),
+      detail: requireString(json, 'detail'),
+      projectId: optionalString(json, 'projectId'),
+      location: rawLocation == null
+          ? null
+          : PunchLocationSnapshot.fromJson(
+              requireJsonMap(rawLocation, 'location'),
+            ),
+    );
+  }
+}
+
+class ManagedPunchDraft {
+  const ManagedPunchDraft({
+    required this.type,
+    required this.timestamp,
+    required this.detail,
+    this.projectId,
+    this.location,
+  });
+
+  final PunchType type;
+  final DateTime timestamp;
+  final String detail;
+  final String? projectId;
+  final PunchLocationSnapshot? location;
+
+  ManagedPunchDraft copyWith({
+    PunchType? type,
+    DateTime? timestamp,
+    String? detail,
+    String? projectId,
+    Object? location = _managedPunchLocationSentinel,
+  }) {
+    return ManagedPunchDraft(
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      detail: detail ?? this.detail,
+      projectId: projectId ?? this.projectId,
+      location: identical(location, _managedPunchLocationSentinel)
+          ? this.location
+          : location as PunchLocationSnapshot?,
+    );
+  }
+
+  JsonMap toCreateApiJson() {
+    return {
+      'type': punchTypeToApi(type),
+      'timestamp': timestamp.toUtc().toIso8601String(),
+      'detail': detail,
+      if (projectId != null && projectId!.trim().isNotEmpty)
+        'projectId': projectId!.trim(),
+      if (location != null) 'location': location!.toApiJson(),
+    };
+  }
+
+  JsonMap toUpdateApiJson() {
+    final payload = <String, dynamic>{
+      'type': punchTypeToApi(type),
+      'timestamp': timestamp.toUtc().toIso8601String(),
+      'detail': detail,
+      if (projectId != null && projectId!.trim().isNotEmpty)
+        'projectId': projectId!.trim(),
+      if (location != null) 'location': location!.toApiJson(),
+    };
+    payload.removeWhere((key, value) => value == null);
+    return payload;
+  }
+}
+
+const Object _managedPunchLocationSentinel = Object();
+
 @freezed
 abstract class CreatePunchRequest with _$CreatePunchRequest {
   const CreatePunchRequest._();

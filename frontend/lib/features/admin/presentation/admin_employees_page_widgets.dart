@@ -643,6 +643,105 @@ class _EmployeeListTile extends StatelessWidget {
         employee.status != EmployeeStatus.active || needsAttention;
     final showLeadingIcon = MediaQuery.sizeOf(context).width >= 560;
 
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (showLeadingIcon) ...<Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppTheme.accent.withValues(alpha: 0.16)
+                        : colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.72,
+                          ),
+                    border: Border.all(
+                      color: selected
+                          ? AppTheme.accent.withValues(alpha: 0.36)
+                          : colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.badge_rounded,
+                    size: 22,
+                    color: selected ? AppTheme.accent : colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            employee.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: onEdit,
+                          tooltip: 'Editar funcionário',
+                          icon: const Icon(Icons.edit_outlined),
+                          color: AppTheme.accent,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          onPressed: onDelete,
+                          tooltip: 'Remover funcionário',
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          color: const Color(0xFFE53935),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: 36,
+                            height: 36,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${employee.role} | ${employee.department}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hasSignals) ...<Widget>[
+            const SizedBox(height: 12),
+            _buildBadgeWrap(),
+          ],
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -1258,4 +1357,457 @@ class _EmployeePolicyRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ManagedPunchEditorDialog extends StatefulWidget {
+  const _ManagedPunchEditorDialog({
+    required this.employee,
+    this.punch,
+  });
+
+  final EmployeeProfile employee;
+  final ManagedPunchRecord? punch;
+
+  @override
+  State<_ManagedPunchEditorDialog> createState() =>
+      _ManagedPunchEditorDialogState();
+}
+
+class _ManagedPunchEditorDialogState extends State<_ManagedPunchEditorDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _timestampController;
+  late final TextEditingController _detailController;
+  late final TextEditingController _projectIdController;
+  late DateTime _timestamp;
+  late PunchType _type;
+
+  bool get _isEditing => widget.punch != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialPunch = widget.punch;
+    _timestamp = initialPunch?.timestamp ?? DateTime.now();
+    _type = initialPunch?.type ?? PunchType.checkIn;
+    _timestampController = TextEditingController(
+      text: _formatPunchTimestamp(_timestamp),
+    );
+    _detailController = TextEditingController(
+      text: initialPunch?.detail ?? 'Ajuste manual de ponto.',
+    );
+    _projectIdController = TextEditingController(
+      text: initialPunch?.projectId ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _timestampController.dispose();
+    _detailController.dispose();
+    _projectIdController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickTimestamp() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      initialDate: _timestamp,
+    );
+    if (date == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_timestamp),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+    if (time == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _timestamp = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+      _timestampController.text = _formatPunchTimestamp(_timestamp);
+    });
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    Navigator.of(context).pop(
+      ManagedPunchDraft(
+        type: _type,
+        timestamp: _timestamp,
+        detail: _detailController.text.trim(),
+        projectId: _projectIdController.text.trim().isEmpty
+            ? null
+            : _projectIdController.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero,
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    _isEditing ? 'Editar ponto' : 'Novo ponto manual',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Funcionário: ${widget.employee.name} | ${widget.employee.unit}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.45,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<PunchType>(
+                    initialValue: _type,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de ponto',
+                      prefixIcon: Icon(Icons.bolt_rounded),
+                    ),
+                    items: PunchType.values.map((type) {
+                      return DropdownMenuItem<PunchType>(
+                        value: type,
+                        child: Text(_punchTypeLabel(type)),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+
+                      setState(() {
+                        _type = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _timestampController,
+                    readOnly: true,
+                    onTap: _pickTimestamp,
+                    decoration: const InputDecoration(
+                      labelText: 'Data e hora',
+                      hintText: 'Selecione a data e hora',
+                      prefixIcon: Icon(Icons.schedule_rounded),
+                    ),
+                    validator: (value) {
+                      if ((value ?? '').trim().isEmpty) {
+                        return 'Informe data e hora do ponto.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _detailController,
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      labelText: 'Detalhe',
+                      hintText: 'Ex.: Ajuste manual aprovado pelo gestor.',
+                      alignLabelWithHint: true,
+                      prefixIcon: Icon(Icons.notes_rounded),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().length < 3) {
+                        return 'Informe um detalhe com pelo menos 3 caracteres.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _projectIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Projeto opcional',
+                      hintText: 'ID do projeto',
+                      prefixIcon: Icon(Icons.folder_open_rounded),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 560;
+                      if (isCompact) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            ElevatedButton.icon(
+                              onPressed: _submit,
+                              icon: const Icon(Icons.save_outlined),
+                              label: Text(
+                                _isEditing
+                                    ? 'Salvar alterações'
+                                    : 'Criar ponto',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: <Widget>[
+                          SizedBox(
+                            width: 200,
+                            child: ElevatedButton.icon(
+                              onPressed: _submit,
+                              icon: const Icon(Icons.save_outlined),
+                              label: Text(
+                                _isEditing
+                                    ? 'Salvar alterações'
+                                    : 'Criar ponto',
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 160,
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancelar'),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ManagedPunchTile extends StatelessWidget {
+  const _ManagedPunchTile({
+    required this.punch,
+    required this.employee,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final ManagedPunchRecord punch;
+  final EmployeeProfile employee;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final tone = _punchTypeTone(punch.type);
+    final isCompact = MediaQuery.sizeOf(context).width < 560;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.82),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: 0.12),
+                  border: Border.all(color: tone.withValues(alpha: 0.24)),
+                ),
+                child: Icon(
+                  _punchTypeIcon(punch.type),
+                  size: 22,
+                  color: tone,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        _InlinePill(
+                          label: _punchTypeLabel(punch.type),
+                          tone: tone,
+                          icon: _punchTypeIcon(punch.type),
+                        ),
+                        _InlinePill(
+                          label: _formatPunchTimestamp(punch.timestamp),
+                          tone: colorScheme.onSurfaceVariant,
+                          icon: Icons.schedule_rounded,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      punch.detail,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (punch.projectId != null &&
+                        punch.projectId!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Projeto: ${punch.projectId}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (!isCompact) const SizedBox(height: 12),
+          if (!isCompact)
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Editar'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Remover'),
+                  ),
+                ),
+              ],
+            )
+          else ...<Widget>[
+            const SizedBox(height: 12),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Editar'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Remover'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+String _formatPunchTimestamp(DateTime value) {
+  final day = value.day.toString().padLeft(2, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final year = value.year.toString();
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$day/$month/$year $hour:$minute';
+}
+
+String _punchTypeLabel(PunchType type) {
+  return switch (type) {
+    PunchType.checkIn => 'Entrada',
+    PunchType.breakStart => 'Início de pausa',
+    PunchType.breakEnd => 'Fim de pausa',
+    PunchType.checkOut => 'Saída',
+  };
+}
+
+IconData _punchTypeIcon(PunchType type) {
+  return switch (type) {
+    PunchType.checkIn => Icons.login_rounded,
+    PunchType.breakStart => Icons.pause_circle_outline_rounded,
+    PunchType.breakEnd => Icons.play_circle_outline_rounded,
+    PunchType.checkOut => Icons.logout_rounded,
+  };
+}
+
+Color _punchTypeTone(PunchType type) {
+  return switch (type) {
+    PunchType.checkIn => const Color(0xFF2F8F46),
+    PunchType.breakStart => const Color(0xFFB26A00),
+    PunchType.breakEnd => const Color(0xFF1F6F8B),
+    PunchType.checkOut => const Color(0xFFB3261E),
+  };
 }
