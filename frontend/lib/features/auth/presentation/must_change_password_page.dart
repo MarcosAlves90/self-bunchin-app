@@ -120,9 +120,9 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline: 'Redefinicao obrigatoria de senha.',
+      brandHeadline: 'Redefinição obrigatória de senha.',
       brandDescription:
-          'Voce esta usando uma senha temporaria. Crie uma nova senha para continuar.',
+          'Você está usando uma senha temporária. Crie uma nova senha para continuar.',
       brandTags: const [
         'E2E Encryption',
         'Seguranca',
