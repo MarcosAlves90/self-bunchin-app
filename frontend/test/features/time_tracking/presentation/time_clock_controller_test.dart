@@ -14,11 +14,25 @@ class _FakeBunchinApi extends BunchinApi {
 
   final TimeClockState state;
   int getStateCalls = 0;
+  CreatePunchRequest? lastPunchRequest;
 
   @override
   Future<TimeClockState> getMyTimeClockState() async {
     getStateCalls += 1;
     return state;
+  }
+
+  @override
+  Future<PunchRecord> createPunch({
+    required CreatePunchRequest request,
+  }) async {
+    lastPunchRequest = request;
+    return PunchRecord(
+      type: request.type,
+      timestamp: DateTime.parse('2026-05-24T13:30:00Z'),
+      detail: 'registrado',
+      location: request.location,
+    );
   }
 }
 
@@ -76,4 +90,27 @@ void main() {
 
     controller.dispose();
   });
+
+  test(
+    'handlePunch still registers punch when location capture has no snapshot',
+    () async {
+      final permission = Completer<PunchLocationResult>();
+      final api = _FakeBunchinApi(_timeClockState());
+      final controller = TimeClockController(
+        api: api,
+        punchLocationService: _BlockingPunchLocationService(permission),
+      );
+
+      permission.complete(const PunchLocationResult.ready());
+
+      final message = await controller.handlePunch(PunchType.checkIn);
+
+      expect(message, 'Entrada registrado sem localização.');
+      expect(api.lastPunchRequest, isNotNull);
+      expect(api.lastPunchRequest?.location, isNull);
+      expect(controller.isSubmittingPunch, isFalse);
+
+      controller.dispose();
+    },
+  );
 }

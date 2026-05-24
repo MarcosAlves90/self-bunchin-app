@@ -91,24 +91,28 @@ class TimeClockController extends ChangeNotifier {
     isSubmittingPunch = true;
     notifyListeners();
 
-    final locationResult = await _punchLocationService.captureForPunch();
-    isSubmittingPunch = false;
-    locationState = locationResult;
-    notifyListeners();
-
-    final location = locationResult.snapshot;
-    if (location == null) {
-      return locationResult.message;
-    }
-
     try {
+      final locationResult = await _punchLocationService.captureForPunch();
+      locationState = locationResult;
+      notifyListeners();
+
       final punch = await _api.createPunch(
-        request: CreatePunchRequest(type: type, location: location),
+        request: CreatePunchRequest(
+          type: type,
+          location: locationResult.snapshot,
+        ),
       );
       await loadTimeClockState();
-      return '${punch.title} registrado com sucesso.';
+      return locationResult.snapshot == null
+          ? '${punch.title} registrado sem localização.'
+          : '${punch.title} registrado com sucesso.';
     } on ApiException catch (error) {
       return error.message;
+    } catch (_) {
+      return 'Não foi possível registrar o ponto.';
+    } finally {
+      isSubmittingPunch = false;
+      notifyListeners();
     }
   }
 }
