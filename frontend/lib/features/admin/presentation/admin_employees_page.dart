@@ -279,6 +279,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+          ),
           title: const Text('Remover funcionário'),
           content: Text(
             'Deseja remover ${employee.name}? Esta ação não pode ser desfeita.',
@@ -352,9 +355,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   Color _statusColor(EmployeeStatus status) {
     return switch (status) {
       EmployeeStatus.active => const Color(0xFF2F8F46),
-      EmployeeStatus.onboarding => const Color(0xFF8C5D00),
-      EmployeeStatus.onLeave => const Color(0xFF8C5D00),
-      EmployeeStatus.inactive => const Color(0xFF8B1E1E),
+      EmployeeStatus.onboarding => const Color(0xFFB26A00),
+      EmployeeStatus.onLeave => const Color(0xFF1F6F8B),
+      EmployeeStatus.inactive => const Color(0xFFB3261E),
     };
   }
 
@@ -765,6 +768,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     statusLabel: _statusLabel(employee.status),
                     needsAttention: _needsAttention(employee),
                     onTap: () => _selectEmployee(employee.id),
+                    onEdit: () => _openEditEmployeeDialog(employee),
                     onDelete: () => _removeEmployee(employee),
                   ),
                 );
@@ -1615,6 +1619,7 @@ class _EmployeeListTile extends StatelessWidget {
     required this.statusLabel,
     required this.needsAttention,
     required this.onTap,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -1625,6 +1630,7 @@ class _EmployeeListTile extends StatelessWidget {
   final String statusLabel;
   final bool needsAttention;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -1722,10 +1728,23 @@ class _EmployeeListTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
+                        onPressed: onEdit,
+                        tooltip: 'Editar funcionário',
+                        icon: const Icon(Icons.edit_outlined),
+                        color: AppTheme.accent,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
                         onPressed: onDelete,
                         tooltip: 'Remover funcionário',
                         icon: const Icon(Icons.delete_outline_rounded),
-                        color: colorScheme.error,
+                        color: const Color(0xFFE53935),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints.tightFor(
@@ -1772,7 +1791,7 @@ class _EmployeeListTile extends StatelessWidget {
         if (needsAttention)
           const _InlinePill(
             label: 'Acompanhamento',
-            tone: Color(0xFF8C5D00),
+            tone: Color(0xFFD97706),
             icon: Icons.warning_amber_rounded,
           ),
       ],
