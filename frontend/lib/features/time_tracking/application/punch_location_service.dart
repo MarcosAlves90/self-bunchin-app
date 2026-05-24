@@ -21,14 +21,30 @@ class PunchLocationService {
 
       final permission = await _gateway.checkPermission();
       if (_isGranted(permission)) {
-        return const PunchLocationResult.ready();
+        final probe = await _tryCapturePosition();
+        if (probe != null) {
+          return PunchLocationResult.ready(
+            message:
+                'Permissão concedida. A localização será anexada nas próximas batidas.',
+            snapshot: probe,
+          );
+        }
+        return const PunchLocationResult.checking();
       }
 
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.unableToDetermine) {
         final requested = await _gateway.requestPermission();
         if (_isGranted(requested)) {
-          return const PunchLocationResult.ready();
+          final probe = await _tryCapturePosition();
+          if (probe != null) {
+            return PunchLocationResult.ready(
+              message:
+                  'Permissão concedida. A localização será anexada nas próximas batidas.',
+              snapshot: probe,
+            );
+          }
+          return const PunchLocationResult.checking();
         }
 
         final probe = await _tryCapturePosition();
@@ -61,15 +77,6 @@ class PunchLocationService {
   }
 
   Future<PunchLocationResult> captureForPunch() async {
-    final permissionResult = await requestPermission();
-    if (!permissionResult.isReady) {
-      return permissionResult;
-    }
-
-    if (permissionResult.snapshot != null) {
-      return permissionResult;
-    }
-
     try {
       final position = await _gateway.getCurrentPosition(
         locationSettings: _locationSettings(),
@@ -80,6 +87,27 @@ class PunchLocationService {
         snapshot: PunchLocationSnapshot.fromPosition(position),
       );
     } catch (error) {
+      if (error is PermissionDeniedException) {
+        final permissionResult = await requestPermission();
+        if (permissionResult.snapshot != null) {
+          return permissionResult;
+        }
+        if (permissionResult.isReady) {
+          try {
+            final position = await _gateway.getCurrentPosition(
+              locationSettings: _locationSettings(),
+            );
+
+            return PunchLocationResult.ready(
+              message: 'localização validada e vinculada a batida.',
+              snapshot: PunchLocationSnapshot.fromPosition(position),
+            );
+          } catch (retryError) {
+            return _mapError(retryError);
+          }
+        }
+        return permissionResult;
+      }
       return _mapError(error);
     }
   }
@@ -131,6 +159,10 @@ class PunchLocationService {
         message:
             'A plataforma nao esta configurada para solicitar localização.',
       );
+    }
+
+    if (error is PermissionDeniedException) {
+      return const PunchLocationResult.permissionDenied();
     }
 
     if (error is TimeoutException) {

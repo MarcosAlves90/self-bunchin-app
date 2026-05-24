@@ -399,7 +399,10 @@ def test_time_clock_requires_location_when_policy_demands_it(client):
         json={"type": "checkIn"},
     )
     assert forbidden_response.status_code == 400
-    assert "location" in forbidden_response.json()["detail"].lower()
+    assert (
+        forbidden_response.json()["detail"]
+        == "Este funcionário precisa enviar dados de localização ao bater ponto."
+    )
 
     success_response = client.post(
         "/api/v1/time-clock/me/punches",

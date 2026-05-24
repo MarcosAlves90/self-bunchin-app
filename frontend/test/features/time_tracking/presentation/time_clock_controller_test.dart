@@ -61,16 +61,15 @@ class _ReadyPunchLocationService extends PunchLocationService {
   Future<PunchLocationResult> captureForPunch() async => result;
 }
 
-class _HangingPunchLocationService extends PunchLocationService {
-  _HangingPunchLocationService(this.captureCompleter);
-
-  final Completer<PunchLocationResult> captureCompleter;
-  int captureCalls = 0;
+class _FailingPunchLocationService extends PunchLocationService {
+  const _FailingPunchLocationService();
 
   @override
-  Future<PunchLocationResult> captureForPunch() {
-    captureCalls += 1;
-    return captureCompleter.future;
+  Future<PunchLocationResult> captureForPunch() async {
+    return const PunchLocationResult.error(
+      message:
+          'Não foi possível validar a localização a tempo. Tente novamente.',
+    );
   }
 }
 
@@ -121,25 +120,30 @@ void main() {
   });
 
   test(
-    'handlePunch still registers punch when location capture has no snapshot',
+    'handlePunch sends location when capture is available',
     () async {
-      final permission = Completer<PunchLocationResult>();
       final api = _FakeBunchinApi(_timeClockState());
       final controller = TimeClockController(
         api: api,
-        punchLocationService: _BlockingPunchLocationService(permission),
+        punchLocationService: _ReadyPunchLocationService(
+          PunchLocationResult.ready(
+            snapshot: PunchLocationSnapshot(
+              latitude: -23.55052,
+              longitude: -46.63331,
+              accuracyMeters: 8,
+              capturedAt: DateTime.parse('2026-05-24T13:29:00Z'),
+            ),
+          ),
+        ),
       );
-
-      permission.complete(const PunchLocationResult.ready());
 
       final message = await controller.handlePunch(PunchType.checkIn);
 
-      expect(message, 'Entrada registrado sem localização.');
+      expect(message, 'Entrada registrado com sucesso.');
       expect(api.lastPunchRequest, isNotNull);
-      expect(api.lastPunchRequest?.location, isNull);
+      expect(api.lastPunchRequest?.location, isNotNull);
       expect(controller.isSubmittingPunch, isFalse);
 
-      await Future<void>.delayed(Duration.zero);
       controller.dispose();
     },
   );
@@ -190,25 +194,22 @@ void main() {
   );
 
   test(
-    'handlePunch calls backend without touching captureForPunch',
+    'handlePunch stops when location capture fails',
     () async {
-      final locationService = _HangingPunchLocationService(
-        Completer<PunchLocationResult>(),
-      );
       final api = _FakeBunchinApi(_timeClockState());
       final controller = TimeClockController(
         api: api,
-        punchLocationService: locationService,
+        punchLocationService: const _FailingPunchLocationService(),
+        punchLocationTimeout: const Duration(milliseconds: 1),
       );
 
-      final message = await controller
-          .handlePunch(PunchType.checkIn)
-          .timeout(const Duration(milliseconds: 200));
+      final message = await controller.handlePunch(PunchType.checkIn);
 
-      expect(message, 'Entrada registrado sem localização.');
-      expect(api.lastPunchRequest, isNotNull);
-      expect(api.lastPunchRequest?.type, PunchType.checkIn);
-      expect(locationService.captureCalls, 0);
+      expect(
+        message,
+        'Não foi possível validar a localização a tempo. Tente novamente.',
+      );
+      expect(api.lastPunchRequest, isNull);
 
       controller.dispose();
     },

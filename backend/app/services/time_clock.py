@@ -81,7 +81,7 @@ def _get_company_employee(db: Session, *, company_id: str, employee_id: str) -> 
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise DomainError(ErrorKind.not_found, "Employee not found.")
+        raise DomainError(ErrorKind.not_found, "Funcionário não encontrado.")
     return employee
 
 
@@ -100,7 +100,7 @@ def _get_employee_punch(
         ),
     )
     if record is None:
-        raise DomainError(ErrorKind.not_found, "Punch not found.")
+        raise DomainError(ErrorKind.not_found, "Registro de ponto não encontrado.")
     return record
 
 
@@ -235,15 +235,15 @@ def create_punch(
         raise DomainError(
             ErrorKind.conflict,
             (
-                "Invalid punch transition for the current shift status. "
-                f"Current status: {current_status.value}."
+                "Transição de ponto inválida para o estado atual. "
+                f"Estado atual: {current_status.value}."
             ),
         )
 
     if employee.requires_location_on_punch and payload.location is None:
         raise DomainError(
             ErrorKind.bad_request,
-            "This employee must submit location data when punching.",
+            "Este funcionário precisa enviar dados de localização ao bater ponto.",
         )
 
     if payload.project_id is not None:

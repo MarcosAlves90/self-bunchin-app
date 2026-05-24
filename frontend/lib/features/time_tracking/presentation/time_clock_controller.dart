@@ -11,12 +11,15 @@ class TimeClockController extends ChangeNotifier {
   TimeClockController({
     BunchinApi? api,
     PunchLocationService? punchLocationService,
+    Duration punchLocationTimeout = const Duration(seconds: 6),
   })  : _api = api ?? BunchinApi(),
         _punchLocationService =
-            punchLocationService ?? const PunchLocationService();
+            punchLocationService ?? const PunchLocationService(),
+        _punchLocationTimeout = punchLocationTimeout;
 
   final BunchinApi _api;
   final PunchLocationService _punchLocationService;
+  final Duration _punchLocationTimeout;
 
   DateTime now = DateTime.now();
   List<PunchRecord> records = <PunchRecord>[];
@@ -123,9 +126,28 @@ class TimeClockController extends ChangeNotifier {
     isSubmittingPunch = true;
     notifyListeners();
 
-    final punchLocation = locationState.snapshot;
-
     try {
+      final locationResult =
+          await _punchLocationService.captureForPunch().timeout(
+                _punchLocationTimeout,
+                onTimeout: () => const PunchLocationResult.error(
+                  message:
+                      'Não foi possível validar a localização a tempo. Tente novamente.',
+                ),
+              );
+
+      if (_isDisposed) {
+        return null;
+      }
+
+      locationState = locationResult;
+      notifyListeners();
+
+      final punchLocation = locationResult.snapshot;
+      if (punchLocation == null) {
+        return locationResult.message;
+      }
+
       final punch = await _api.createPunch(
         request: CreatePunchRequest(
           type: type,
@@ -133,9 +155,7 @@ class TimeClockController extends ChangeNotifier {
         ),
       );
       unawaited(loadTimeClockState(showLoading: false));
-      return punchLocation == null
-          ? '${punch.title} registrado sem localização.'
-          : '${punch.title} registrado com sucesso.';
+      return '${punch.title} registrado com sucesso.';
     } on ApiException catch (error) {
       return error.message;
     } catch (_) {

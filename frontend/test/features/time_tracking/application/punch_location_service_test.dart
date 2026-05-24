@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,12 +10,14 @@ class _FakePunchLocationGateway extends PunchLocationGateway {
     required this.checkPermissionResult,
     required this.requestPermissionResult,
     required this.position,
+    this.positionError,
   });
 
   final bool servicesEnabled;
   final LocationPermission checkPermissionResult;
   final LocationPermission requestPermissionResult;
   final Position position;
+  final Object? positionError;
 
   int checkPermissionCalls = 0;
   int requestPermissionCalls = 0;
@@ -39,6 +43,9 @@ class _FakePunchLocationGateway extends PunchLocationGateway {
     required LocationSettings locationSettings,
   }) async {
     getCurrentPositionCalls += 1;
+    if (positionError != null) {
+      throw positionError!;
+    }
     return position;
   }
 }
@@ -59,6 +66,50 @@ Position _position() {
 }
 
 void main() {
+  test(
+    'requestPermission stays in checking state when permission is granted but position is unavailable',
+    () async {
+      final gateway = _FakePunchLocationGateway(
+        servicesEnabled: true,
+        checkPermissionResult: LocationPermission.whileInUse,
+        requestPermissionResult: LocationPermission.whileInUse,
+        position: _position(),
+        positionError: TimeoutException('timeout'),
+      );
+
+      final service = PunchLocationService(gateway: gateway);
+      final result = await service.requestPermission();
+
+      expect(result.status, PunchLocationStatus.checking);
+      expect(result.snapshot, isNull);
+      expect(gateway.checkPermissionCalls, 1);
+      expect(gateway.requestPermissionCalls, 0);
+      expect(gateway.getCurrentPositionCalls, 1);
+    },
+  );
+
+  test(
+    'captureForPunch validates by position even when permission APIs lie',
+    () async {
+      final gateway = _FakePunchLocationGateway(
+        servicesEnabled: true,
+        checkPermissionResult: LocationPermission.denied,
+        requestPermissionResult: LocationPermission.denied,
+        position: _position(),
+      );
+
+      final service = PunchLocationService(gateway: gateway);
+      final result = await service.captureForPunch();
+
+      expect(result.isReady, isTrue);
+      expect(result.snapshot, isNotNull);
+      expect(result.snapshot?.latitude, closeTo(-23.55052, 0.00001));
+      expect(gateway.checkPermissionCalls, 0);
+      expect(gateway.requestPermissionCalls, 0);
+      expect(gateway.getCurrentPositionCalls, 1);
+    },
+  );
+
   test(
     'requestPermission falls back to current position when permission APIs lie',
     () async {
