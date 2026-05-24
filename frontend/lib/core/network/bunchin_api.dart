@@ -139,8 +139,18 @@ class BunchinApi {
     await _client.delete('/employees/$employeeId', withAuth: true);
   }
 
-  Future<TimeClockState> getMyTimeClockState() async {
-    final response = await _client.get('/time-clock/me', withAuth: true);
+  Future<TimeClockState> getMyTimeClockState({
+    int page = 1,
+    int limit = 4,
+  }) async {
+    final response = await _client.get(
+      '/time-clock/me',
+      withAuth: true,
+      queryParameters: <String, Object?>{
+        'page': page,
+        'limit': limit,
+      },
+    );
 
     return _parseContract(
       'time-clock/me',

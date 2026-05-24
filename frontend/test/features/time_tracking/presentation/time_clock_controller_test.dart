@@ -18,7 +18,10 @@ class _FakeBunchinApi extends BunchinApi {
   CreatePunchRequest? lastPunchRequest;
 
   @override
-  Future<TimeClockState> getMyTimeClockState() async {
+  Future<TimeClockState> getMyTimeClockState({
+    int page = 1,
+    int limit = 4,
+  }) async {
     getStateCalls += 1;
     if (getStateCalls > 1 && refreshStateCompleter != null) {
       return refreshStateCompleter!.future;
@@ -90,6 +93,12 @@ TimeClockState _timeClockState() {
     firstCheckInAt: DateTime.parse('2026-05-24T08:00:00Z'),
     lastPunchAt: DateTime.parse('2026-05-24T12:00:00Z'),
     records: const <PunchRecord>[],
+    recordsPage: 1,
+    recordsPageSize: 4,
+    recordsTotal: 0,
+    recordsTotalPages: 1,
+    recordsHasPrevious: false,
+    recordsHasNext: false,
   );
 }
 

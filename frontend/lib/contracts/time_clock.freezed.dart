@@ -815,6 +815,12 @@ mixin _$TimeClockState {
   DateTime? get firstCheckInAt;
   DateTime? get lastPunchAt;
   List<PunchRecord> get records;
+  int get recordsPage;
+  int get recordsPageSize;
+  int get recordsTotal;
+  int get recordsTotalPages;
+  bool get recordsHasPrevious;
+  bool get recordsHasNext;
 
   /// Create a copy of TimeClockState
   /// with the given fields replaced by the non-null parameter values.
@@ -841,7 +847,19 @@ mixin _$TimeClockState {
                 other.firstCheckInAt == firstCheckInAt) &&
             (identical(other.lastPunchAt, lastPunchAt) ||
                 other.lastPunchAt == lastPunchAt) &&
-            const DeepCollectionEquality().equals(other.records, records));
+            const DeepCollectionEquality().equals(other.records, records) &&
+            (identical(other.recordsPage, recordsPage) ||
+                other.recordsPage == recordsPage) &&
+            (identical(other.recordsPageSize, recordsPageSize) ||
+                other.recordsPageSize == recordsPageSize) &&
+            (identical(other.recordsTotal, recordsTotal) ||
+                other.recordsTotal == recordsTotal) &&
+            (identical(other.recordsTotalPages, recordsTotalPages) ||
+                other.recordsTotalPages == recordsTotalPages) &&
+            (identical(other.recordsHasPrevious, recordsHasPrevious) ||
+                other.recordsHasPrevious == recordsHasPrevious) &&
+            (identical(other.recordsHasNext, recordsHasNext) ||
+                other.recordsHasNext == recordsHasNext));
   }
 
   @override
@@ -853,11 +871,17 @@ mixin _$TimeClockState {
       todayBreakMinutes,
       firstCheckInAt,
       lastPunchAt,
-      const DeepCollectionEquality().hash(records));
+      const DeepCollectionEquality().hash(records),
+      recordsPage,
+      recordsPageSize,
+      recordsTotal,
+      recordsTotalPages,
+      recordsHasPrevious,
+      recordsHasNext);
 
   @override
   String toString() {
-    return 'TimeClockState(employee: $employee, currentStatus: $currentStatus, todayWorkedMinutes: $todayWorkedMinutes, todayBreakMinutes: $todayBreakMinutes, firstCheckInAt: $firstCheckInAt, lastPunchAt: $lastPunchAt, records: $records)';
+    return 'TimeClockState(employee: $employee, currentStatus: $currentStatus, todayWorkedMinutes: $todayWorkedMinutes, todayBreakMinutes: $todayBreakMinutes, firstCheckInAt: $firstCheckInAt, lastPunchAt: $lastPunchAt, records: $records, recordsPage: $recordsPage, recordsPageSize: $recordsPageSize, recordsTotal: $recordsTotal, recordsTotalPages: $recordsTotalPages, recordsHasPrevious: $recordsHasPrevious, recordsHasNext: $recordsHasNext)';
   }
 }
 
@@ -874,7 +898,13 @@ abstract mixin class $TimeClockStateCopyWith<$Res> {
       int todayBreakMinutes,
       DateTime? firstCheckInAt,
       DateTime? lastPunchAt,
-      List<PunchRecord> records});
+      List<PunchRecord> records,
+      int recordsPage,
+      int recordsPageSize,
+      int recordsTotal,
+      int recordsTotalPages,
+      bool recordsHasPrevious,
+      bool recordsHasNext});
 
   $TimeClockEmployeeSummaryCopyWith<$Res> get employee;
 }
@@ -899,6 +929,12 @@ class _$TimeClockStateCopyWithImpl<$Res>
     Object? firstCheckInAt = freezed,
     Object? lastPunchAt = freezed,
     Object? records = null,
+    Object? recordsPage = null,
+    Object? recordsPageSize = null,
+    Object? recordsTotal = null,
+    Object? recordsTotalPages = null,
+    Object? recordsHasPrevious = null,
+    Object? recordsHasNext = null,
   }) {
     return _then(_self.copyWith(
       employee: null == employee
@@ -929,6 +965,30 @@ class _$TimeClockStateCopyWithImpl<$Res>
           ? _self.records
           : records // ignore: cast_nullable_to_non_nullable
               as List<PunchRecord>,
+      recordsPage: null == recordsPage
+          ? _self.recordsPage
+          : recordsPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsPageSize: null == recordsPageSize
+          ? _self.recordsPageSize
+          : recordsPageSize // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsTotal: null == recordsTotal
+          ? _self.recordsTotal
+          : recordsTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsTotalPages: null == recordsTotalPages
+          ? _self.recordsTotalPages
+          : recordsTotalPages // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsHasPrevious: null == recordsHasPrevious
+          ? _self.recordsHasPrevious
+          : recordsHasPrevious // ignore: cast_nullable_to_non_nullable
+              as bool,
+      recordsHasNext: null == recordsHasNext
+          ? _self.recordsHasNext
+          : recordsHasNext // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 
@@ -1043,7 +1103,13 @@ extension TimeClockStatePatterns on TimeClockState {
             int todayBreakMinutes,
             DateTime? firstCheckInAt,
             DateTime? lastPunchAt,
-            List<PunchRecord> records)?
+            List<PunchRecord> records,
+            int recordsPage,
+            int recordsPageSize,
+            int recordsTotal,
+            int recordsTotalPages,
+            bool recordsHasPrevious,
+            bool recordsHasNext)?
         $default, {
     required TResult orElse(),
   }) {
@@ -1057,7 +1123,13 @@ extension TimeClockStatePatterns on TimeClockState {
             _that.todayBreakMinutes,
             _that.firstCheckInAt,
             _that.lastPunchAt,
-            _that.records);
+            _that.records,
+            _that.recordsPage,
+            _that.recordsPageSize,
+            _that.recordsTotal,
+            _that.recordsTotalPages,
+            _that.recordsHasPrevious,
+            _that.recordsHasNext);
       case _:
         return orElse();
     }
@@ -1085,7 +1157,13 @@ extension TimeClockStatePatterns on TimeClockState {
             int todayBreakMinutes,
             DateTime? firstCheckInAt,
             DateTime? lastPunchAt,
-            List<PunchRecord> records)
+            List<PunchRecord> records,
+            int recordsPage,
+            int recordsPageSize,
+            int recordsTotal,
+            int recordsTotalPages,
+            bool recordsHasPrevious,
+            bool recordsHasNext)
         $default,
   ) {
     final _that = this;
@@ -1098,7 +1176,13 @@ extension TimeClockStatePatterns on TimeClockState {
             _that.todayBreakMinutes,
             _that.firstCheckInAt,
             _that.lastPunchAt,
-            _that.records);
+            _that.records,
+            _that.recordsPage,
+            _that.recordsPageSize,
+            _that.recordsTotal,
+            _that.recordsTotalPages,
+            _that.recordsHasPrevious,
+            _that.recordsHasNext);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1125,7 +1209,13 @@ extension TimeClockStatePatterns on TimeClockState {
             int todayBreakMinutes,
             DateTime? firstCheckInAt,
             DateTime? lastPunchAt,
-            List<PunchRecord> records)?
+            List<PunchRecord> records,
+            int recordsPage,
+            int recordsPageSize,
+            int recordsTotal,
+            int recordsTotalPages,
+            bool recordsHasPrevious,
+            bool recordsHasNext)?
         $default,
   ) {
     final _that = this;
@@ -1138,7 +1228,13 @@ extension TimeClockStatePatterns on TimeClockState {
             _that.todayBreakMinutes,
             _that.firstCheckInAt,
             _that.lastPunchAt,
-            _that.records);
+            _that.records,
+            _that.recordsPage,
+            _that.recordsPageSize,
+            _that.recordsTotal,
+            _that.recordsTotalPages,
+            _that.recordsHasPrevious,
+            _that.recordsHasNext);
       case _:
         return null;
     }
@@ -1155,7 +1251,13 @@ class _TimeClockState extends TimeClockState {
       required this.todayBreakMinutes,
       required this.firstCheckInAt,
       required this.lastPunchAt,
-      required final List<PunchRecord> records})
+      required final List<PunchRecord> records,
+      required this.recordsPage,
+      required this.recordsPageSize,
+      required this.recordsTotal,
+      required this.recordsTotalPages,
+      required this.recordsHasPrevious,
+      required this.recordsHasNext})
       : _records = records,
         super._();
 
@@ -1178,6 +1280,19 @@ class _TimeClockState extends TimeClockState {
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_records);
   }
+
+  @override
+  final int recordsPage;
+  @override
+  final int recordsPageSize;
+  @override
+  final int recordsTotal;
+  @override
+  final int recordsTotalPages;
+  @override
+  final bool recordsHasPrevious;
+  @override
+  final bool recordsHasNext;
 
   /// Create a copy of TimeClockState
   /// with the given fields replaced by the non-null parameter values.
@@ -1204,7 +1319,19 @@ class _TimeClockState extends TimeClockState {
                 other.firstCheckInAt == firstCheckInAt) &&
             (identical(other.lastPunchAt, lastPunchAt) ||
                 other.lastPunchAt == lastPunchAt) &&
-            const DeepCollectionEquality().equals(other._records, _records));
+            const DeepCollectionEquality().equals(other._records, _records) &&
+            (identical(other.recordsPage, recordsPage) ||
+                other.recordsPage == recordsPage) &&
+            (identical(other.recordsPageSize, recordsPageSize) ||
+                other.recordsPageSize == recordsPageSize) &&
+            (identical(other.recordsTotal, recordsTotal) ||
+                other.recordsTotal == recordsTotal) &&
+            (identical(other.recordsTotalPages, recordsTotalPages) ||
+                other.recordsTotalPages == recordsTotalPages) &&
+            (identical(other.recordsHasPrevious, recordsHasPrevious) ||
+                other.recordsHasPrevious == recordsHasPrevious) &&
+            (identical(other.recordsHasNext, recordsHasNext) ||
+                other.recordsHasNext == recordsHasNext));
   }
 
   @override
@@ -1216,11 +1343,17 @@ class _TimeClockState extends TimeClockState {
       todayBreakMinutes,
       firstCheckInAt,
       lastPunchAt,
-      const DeepCollectionEquality().hash(_records));
+      const DeepCollectionEquality().hash(_records),
+      recordsPage,
+      recordsPageSize,
+      recordsTotal,
+      recordsTotalPages,
+      recordsHasPrevious,
+      recordsHasNext);
 
   @override
   String toString() {
-    return 'TimeClockState(employee: $employee, currentStatus: $currentStatus, todayWorkedMinutes: $todayWorkedMinutes, todayBreakMinutes: $todayBreakMinutes, firstCheckInAt: $firstCheckInAt, lastPunchAt: $lastPunchAt, records: $records)';
+    return 'TimeClockState(employee: $employee, currentStatus: $currentStatus, todayWorkedMinutes: $todayWorkedMinutes, todayBreakMinutes: $todayBreakMinutes, firstCheckInAt: $firstCheckInAt, lastPunchAt: $lastPunchAt, records: $records, recordsPage: $recordsPage, recordsPageSize: $recordsPageSize, recordsTotal: $recordsTotal, recordsTotalPages: $recordsTotalPages, recordsHasPrevious: $recordsHasPrevious, recordsHasNext: $recordsHasNext)';
   }
 }
 
@@ -1239,7 +1372,13 @@ abstract mixin class _$TimeClockStateCopyWith<$Res>
       int todayBreakMinutes,
       DateTime? firstCheckInAt,
       DateTime? lastPunchAt,
-      List<PunchRecord> records});
+      List<PunchRecord> records,
+      int recordsPage,
+      int recordsPageSize,
+      int recordsTotal,
+      int recordsTotalPages,
+      bool recordsHasPrevious,
+      bool recordsHasNext});
 
   @override
   $TimeClockEmployeeSummaryCopyWith<$Res> get employee;
@@ -1265,6 +1404,12 @@ class __$TimeClockStateCopyWithImpl<$Res>
     Object? firstCheckInAt = freezed,
     Object? lastPunchAt = freezed,
     Object? records = null,
+    Object? recordsPage = null,
+    Object? recordsPageSize = null,
+    Object? recordsTotal = null,
+    Object? recordsTotalPages = null,
+    Object? recordsHasPrevious = null,
+    Object? recordsHasNext = null,
   }) {
     return _then(_TimeClockState(
       employee: null == employee
@@ -1295,6 +1440,30 @@ class __$TimeClockStateCopyWithImpl<$Res>
           ? _self._records
           : records // ignore: cast_nullable_to_non_nullable
               as List<PunchRecord>,
+      recordsPage: null == recordsPage
+          ? _self.recordsPage
+          : recordsPage // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsPageSize: null == recordsPageSize
+          ? _self.recordsPageSize
+          : recordsPageSize // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsTotal: null == recordsTotal
+          ? _self.recordsTotal
+          : recordsTotal // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsTotalPages: null == recordsTotalPages
+          ? _self.recordsTotalPages
+          : recordsTotalPages // ignore: cast_nullable_to_non_nullable
+              as int,
+      recordsHasPrevious: null == recordsHasPrevious
+          ? _self.recordsHasPrevious
+          : recordsHasPrevious // ignore: cast_nullable_to_non_nullable
+              as bool,
+      recordsHasNext: null == recordsHasNext
+          ? _self.recordsHasNext
+          : recordsHasNext // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 

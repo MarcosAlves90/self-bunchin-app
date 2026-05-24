@@ -76,7 +76,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
   int get _todayWorkedMinutes => _controller.todayWorkedMinutes;
   int get _todayBreakMinutes => _controller.todayBreakMinutes;
 
-  Future<void> _loadTimeClockState() => _controller.loadTimeClockState();
+  Future<void> _loadTimeClockState() => _controller.loadTimeClockState(
+        page: _controller.recordsPage,
+        limit: _controller.recordsPageSize,
+      );
 
   Future<void> _prepareLocationAccess() => _controller.prepareLocationAccess();
 
@@ -592,6 +595,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
   Widget _buildTimelineCard() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final hasPagination = _controller.hasTimelinePagination;
+    final visibleRecords = _records;
 
     return WorkspaceSectionCard(
       child: Column(
@@ -621,10 +626,116 @@ class _TimeClockPageState extends State<TimeClockPage> {
           else
             Column(
               children: [
-                for (var index = 0; index < _records.length; index++) ...[
-                  _TimelineTile(record: _records[index]),
-                  if (index < _records.length - 1)
+                for (var index = 0; index < visibleRecords.length; index++) ...[
+                  _TimelineTile(record: visibleRecords[index]),
+                  if (index < visibleRecords.length - 1)
                     Divider(color: colorScheme.outlineVariant, height: 20),
+                ],
+                if (hasPagination) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 560;
+
+                        final actions = isCompact
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  FilledButton.tonalIcon(
+                                    onPressed: !_controller.recordsHasPrevious
+                                        ? null
+                                        : _controller.loadPreviousTimelinePage,
+                                    icon:
+                                        const Icon(Icons.chevron_left_rounded),
+                                    label: const Text('Anterior'),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  FilledButton.icon(
+                                    onPressed: !_controller.recordsHasNext
+                                        ? null
+                                        : _controller.loadNextTimelinePage,
+                                    icon:
+                                        const Icon(Icons.chevron_right_rounded),
+                                    label: const Text('Próxima'),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child: FilledButton.tonalIcon(
+                                      onPressed: !_controller.recordsHasPrevious
+                                          ? null
+                                          : _controller
+                                              .loadPreviousTimelinePage,
+                                      icon: const Icon(
+                                        Icons.chevron_left_rounded,
+                                      ),
+                                      label: const Text('Anterior'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: !_controller.recordsHasNext
+                                          ? null
+                                          : _controller.loadNextTimelinePage,
+                                      icon: const Icon(
+                                        Icons.chevron_right_rounded,
+                                      ),
+                                      label: const Text('Próxima'),
+                                    ),
+                                  ),
+                                ],
+                              );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Mostrando ${_controller.recordsStartIndex} a ${_controller.recordsEndIndex} de ${_controller.recordsTotal} registros',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                minHeight: 7,
+                                value: _controller.recordsTotalPages == 0
+                                    ? 0
+                                    : _controller.recordsPage /
+                                        _controller.recordsTotalPages,
+                                backgroundColor: colorScheme.outlineVariant
+                                    .withValues(alpha: 0.35),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Página ${_controller.recordsPage} de ${_controller.recordsTotalPages}',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            actions,
+                          ],
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ],
             ),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import ceil
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -178,6 +179,23 @@ def get_employee_records(db: Session, *, employee_id: str) -> list[Punch]:
 
 
 def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> TimeClockStateResponse:
+    return time_clock_state_page(
+        db,
+        employee=employee,
+        timezone_name=timezone_name,
+        page=1,
+        page_size=4,
+    )
+
+
+def time_clock_state_page(
+    db: Session,
+    *,
+    employee: Employee,
+    timezone_name: str,
+    page: int,
+    page_size: int,
+) -> TimeClockStateResponse:
     cipher = _cipher()
     all_records = get_employee_records(db, employee_id=employee.id)
     today_records = group_today_records(
@@ -185,6 +203,13 @@ def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> 
         company_id=employee.company_id,
         timezone_name=timezone_name,
     ).get(employee.id, [])
+    normalized_page_size = max(page_size, 1)
+    total_records = len(today_records)
+    total_pages = max(ceil(total_records / normalized_page_size), 1)
+    normalized_page = min(max(page, 1), total_pages)
+    start_index = (normalized_page - 1) * normalized_page_size
+    end_index = start_index + normalized_page_size
+    page_records = today_records[start_index:end_index]
 
     first_check_in_at = next(
         (
@@ -211,7 +236,13 @@ def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> 
         today_break_minutes=calculate_break_minutes(today_records),
         first_check_in_at=first_check_in_at,
         last_punch_at=last_punch_at,
-        records=[serialize_record(record, cipher=cipher) for record in today_records],
+        records=[serialize_record(record, cipher=cipher) for record in page_records],
+        records_page=normalized_page,
+        records_page_size=normalized_page_size,
+        records_total=total_records,
+        records_total_pages=total_pages,
+        records_has_previous=normalized_page > 1,
+        records_has_next=normalized_page < total_pages,
     )
 
 

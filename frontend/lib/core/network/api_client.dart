@@ -46,9 +46,17 @@ class ApiClient {
     return headers;
   }
 
-  Future<dynamic> get(String path, {bool withAuth = false}) async {
+  Future<dynamic> get(
+    String path, {
+    bool withAuth = false,
+    Map<String, Object?>? queryParameters,
+  }) async {
     final response = await _client.get(
-      _uri(path),
+      _uri(path).replace(
+        queryParameters: queryParameters?.map(
+          (key, value) => MapEntry(key, value?.toString()),
+        ),
+      ),
       headers: await _headers(withAuth: withAuth),
     );
     return _decodeResponse(response);

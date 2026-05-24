@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
@@ -32,6 +33,30 @@ class TimeClockController extends ChangeNotifier {
   String employeeUnit = '-';
   int todayWorkedMinutes = 0;
   int todayBreakMinutes = 0;
+  int recordsPage = 1;
+  int recordsPageSize = 4;
+  int recordsTotal = 0;
+  int recordsTotalPages = 1;
+  bool recordsHasPrevious = false;
+  bool recordsHasNext = false;
+
+  bool get hasTimelinePagination => recordsTotalPages > 1;
+
+  int get recordsStartIndex {
+    if (recordsTotal == 0) {
+      return 0;
+    }
+
+    return ((recordsPage - 1) * recordsPageSize) + 1;
+  }
+
+  int get recordsEndIndex {
+    if (recordsTotal == 0) {
+      return 0;
+    }
+
+    return min(recordsStartIndex + records.length - 1, recordsTotal);
+  }
 
   Timer? _clockTimer;
   bool _isDisposed = false;
@@ -48,7 +73,7 @@ class TimeClockController extends ChangeNotifier {
     });
 
     unawaited(prepareLocationAccess());
-    await loadTimeClockState();
+    await loadTimeClockState(page: recordsPage, limit: recordsPageSize);
   }
 
   @override
@@ -58,7 +83,11 @@ class TimeClockController extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> loadTimeClockState({bool showLoading = true}) async {
+  Future<void> loadTimeClockState({
+    int page = 1,
+    int limit = 4,
+    bool showLoading = true,
+  }) async {
     if (_isDisposed) {
       return;
     }
@@ -70,7 +99,7 @@ class TimeClockController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final state = await _api.getMyTimeClockState();
+      final state = await _api.getMyTimeClockState(page: page, limit: limit);
       if (_isDisposed) {
         return;
       }
@@ -81,6 +110,12 @@ class TimeClockController extends ChangeNotifier {
       todayWorkedMinutes = state.todayWorkedMinutes;
       todayBreakMinutes = state.todayBreakMinutes;
       records = state.records;
+      recordsPage = state.recordsPage;
+      recordsPageSize = state.recordsPageSize;
+      recordsTotal = state.recordsTotal;
+      recordsTotalPages = state.recordsTotalPages;
+      recordsHasPrevious = state.recordsHasPrevious;
+      recordsHasNext = state.recordsHasNext;
       isLoadingState = false;
       notifyListeners();
     } on ApiException catch (error) {
@@ -98,6 +133,30 @@ class TimeClockController extends ChangeNotifier {
       loadError = 'Não foi possível carregar o estado de ponto.';
       notifyListeners();
     }
+  }
+
+  Future<void> loadPreviousTimelinePage() async {
+    if (!recordsHasPrevious) {
+      return;
+    }
+
+    await loadTimeClockState(
+      page: recordsPage - 1,
+      limit: recordsPageSize,
+      showLoading: false,
+    );
+  }
+
+  Future<void> loadNextTimelinePage() async {
+    if (!recordsHasNext) {
+      return;
+    }
+
+    await loadTimeClockState(
+      page: recordsPage + 1,
+      limit: recordsPageSize,
+      showLoading: false,
+    );
   }
 
   Future<void> prepareLocationAccess() async {
@@ -154,7 +213,13 @@ class TimeClockController extends ChangeNotifier {
           location: punchLocation,
         ),
       );
-      unawaited(loadTimeClockState(showLoading: false));
+      unawaited(
+        loadTimeClockState(
+          page: recordsPage,
+          limit: recordsPageSize,
+          showLoading: false,
+        ),
+      );
       return '${punch.title} registrado com sucesso.';
     } on ApiException catch (error) {
       return error.message;
