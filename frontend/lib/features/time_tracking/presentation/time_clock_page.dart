@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/location.dart';
+import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
+import 'package:bunchin_flutter/features/shared/presentation/widgets/pagination_controls.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -625,113 +626,13 @@ class _TimeClockPageState extends State<TimeClockPage> {
                 ],
                 if (hasPagination) ...[
                   const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.55),
-                      border: Border.all(color: colorScheme.outlineVariant),
-                    ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isCompact = constraints.maxWidth < 560;
-                        final buttonStyle = FilledButton.styleFrom(
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                          ),
-                        );
-
-                        final actions = isCompact
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  FilledButton.tonalIcon(
-                                    style: buttonStyle,
-                                    onPressed: !_controller.recordsHasPrevious
-                                        ? null
-                                        : _controller.loadPreviousTimelinePage,
-                                    icon:
-                                        const Icon(Icons.chevron_left_rounded),
-                                    label: const Text('Anterior'),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  FilledButton.icon(
-                                    style: buttonStyle,
-                                    onPressed: !_controller.recordsHasNext
-                                        ? null
-                                        : _controller.loadNextTimelinePage,
-                                    icon:
-                                        const Icon(Icons.chevron_right_rounded),
-                                    label: const Text('Próxima'),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  Expanded(
-                                    child: FilledButton.tonalIcon(
-                                      style: buttonStyle,
-                                      onPressed: !_controller.recordsHasPrevious
-                                          ? null
-                                          : _controller
-                                              .loadPreviousTimelinePage,
-                                      icon: const Icon(
-                                        Icons.chevron_left_rounded,
-                                      ),
-                                      label: const Text('Anterior'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: FilledButton.icon(
-                                      style: buttonStyle,
-                                      onPressed: !_controller.recordsHasNext
-                                          ? null
-                                          : _controller.loadNextTimelinePage,
-                                      icon: const Icon(
-                                        Icons.chevron_right_rounded,
-                                      ),
-                                      label: const Text('Próxima'),
-                                    ),
-                                  ),
-                                ],
-                              );
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Mostrando ${_controller.recordsStartIndex} a ${_controller.recordsEndIndex} de ${_controller.recordsTotal} registros',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            LinearProgressIndicator(
-                              minHeight: 7,
-                              value: _controller.recordsTotalPages == 0
-                                  ? 0
-                                  : _controller.recordsPage /
-                                      _controller.recordsTotalPages,
-                              backgroundColor: colorScheme.outlineVariant
-                                  .withValues(alpha: 0.35),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Página ${_controller.recordsPage} de ${_controller.recordsTotalPages}',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            actions,
-                          ],
-                        );
-                      },
-                    ),
+                  PaginationControls(
+                    page: _controller.recordsPage,
+                    totalPages: _controller.recordsTotalPages,
+                    hasPrevious: _controller.recordsHasPrevious,
+                    hasNext: _controller.recordsHasNext,
+                    onPrevious: _controller.loadPreviousTimelinePage,
+                    onNext: _controller.loadNextTimelinePage,
                   ),
                 ],
               ],

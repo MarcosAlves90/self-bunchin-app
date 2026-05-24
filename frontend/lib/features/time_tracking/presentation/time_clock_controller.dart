@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
@@ -43,22 +42,6 @@ class TimeClockController extends ChangeNotifier {
   bool recordsHasNext = false;
 
   bool get hasTimelinePagination => recordsTotalPages > 1;
-
-  int get recordsStartIndex {
-    if (recordsTotal == 0) {
-      return 0;
-    }
-
-    return ((recordsPage - 1) * recordsPageSize) + 1;
-  }
-
-  int get recordsEndIndex {
-    if (recordsTotal == 0) {
-      return 0;
-    }
-
-    return min(recordsStartIndex + records.length - 1, recordsTotal);
-  }
 
   Timer? _clockTimer;
   bool _isDisposed = false;
