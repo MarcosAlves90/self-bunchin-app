@@ -836,7 +836,7 @@ class _PunchLocationPermissionDenied extends PunchLocationResult {
 class _PunchLocationPermissionDeniedForever extends PunchLocationResult {
   const _PunchLocationPermissionDeniedForever(
       {this.message =
-          'A permissão de localização foi bloqueada. Reabilite o acesso nas configuracoes do dispositivo ou do navegador.'})
+          'A permissão de localização foi bloqueada. Reabilite o acesso nas configurações do dispositivo ou do navegador.'})
       : super._();
 
   @JsonKey()

@@ -31,11 +31,15 @@ class TimeClockController extends ChangeNotifier {
   int todayBreakMinutes = 0;
 
   Timer? _clockTimer;
+  bool _isDisposed = false;
 
   Future<void> start() async {
     now = DateTime.now();
     _clockTimer?.cancel();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_isDisposed) {
+        return;
+      }
       now = DateTime.now();
       notifyListeners();
     });
@@ -46,17 +50,27 @@ class TimeClockController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _clockTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> loadTimeClockState() async {
-    isLoadingState = true;
+  Future<void> loadTimeClockState({bool showLoading = true}) async {
+    if (_isDisposed) {
+      return;
+    }
+
+    if (showLoading) {
+      isLoadingState = true;
+    }
     loadError = null;
     notifyListeners();
 
     try {
       final state = await _api.getMyTimeClockState();
+      if (_isDisposed) {
+        return;
+      }
 
       employeeName = state.employee.name;
       employeeUnit = state.employee.unit;
@@ -67,10 +81,16 @@ class TimeClockController extends ChangeNotifier {
       isLoadingState = false;
       notifyListeners();
     } on ApiException catch (error) {
+      if (_isDisposed) {
+        return;
+      }
       isLoadingState = false;
       loadError = error.message;
       notifyListeners();
     } catch (_) {
+      if (_isDisposed) {
+        return;
+      }
       isLoadingState = false;
       loadError = 'Não foi possível carregar o estado de ponto.';
       notifyListeners();
@@ -78,12 +98,24 @@ class TimeClockController extends ChangeNotifier {
   }
 
   Future<void> prepareLocationAccess() async {
+    if (_isDisposed) {
+      return;
+    }
+
     final result = await _punchLocationService.requestPermission();
+    if (_isDisposed) {
+      return;
+    }
+
     locationState = result;
     notifyListeners();
   }
 
   Future<String?> handlePunch(PunchType type) async {
+    if (_isDisposed) {
+      return null;
+    }
+
     if (isSubmittingPunch) {
       return null;
     }
@@ -91,19 +123,17 @@ class TimeClockController extends ChangeNotifier {
     isSubmittingPunch = true;
     notifyListeners();
 
-    try {
-      final locationResult = await _punchLocationService.captureForPunch();
-      locationState = locationResult;
-      notifyListeners();
+    final punchLocation = locationState.snapshot;
 
+    try {
       final punch = await _api.createPunch(
         request: CreatePunchRequest(
           type: type,
-          location: locationResult.snapshot,
+          location: punchLocation,
         ),
       );
-      await loadTimeClockState();
-      return locationResult.snapshot == null
+      unawaited(loadTimeClockState(showLoading: false));
+      return punchLocation == null
           ? '${punch.title} registrado sem localização.'
           : '${punch.title} registrado com sucesso.';
     } on ApiException catch (error) {
@@ -111,8 +141,10 @@ class TimeClockController extends ChangeNotifier {
     } catch (_) {
       return 'Não foi possível registrar o ponto.';
     } finally {
-      isSubmittingPunch = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        isSubmittingPunch = false;
+        notifyListeners();
+      }
     }
   }
 }

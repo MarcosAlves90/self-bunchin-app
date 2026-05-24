@@ -10,15 +10,19 @@ import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_c
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeBunchinApi extends BunchinApi {
-  _FakeBunchinApi(this.state);
+  _FakeBunchinApi(this.state, {this.refreshStateCompleter});
 
   final TimeClockState state;
+  final Completer<TimeClockState>? refreshStateCompleter;
   int getStateCalls = 0;
   CreatePunchRequest? lastPunchRequest;
 
   @override
   Future<TimeClockState> getMyTimeClockState() async {
     getStateCalls += 1;
+    if (getStateCalls > 1 && refreshStateCompleter != null) {
+      return refreshStateCompleter!.future;
+    }
     return state;
   }
 
@@ -43,6 +47,31 @@ class _BlockingPunchLocationService extends PunchLocationService {
 
   @override
   Future<PunchLocationResult> requestPermission() => permission.future;
+}
+
+class _ReadyPunchLocationService extends PunchLocationService {
+  _ReadyPunchLocationService(this.result);
+
+  final PunchLocationResult result;
+
+  @override
+  Future<PunchLocationResult> requestPermission() async => result;
+
+  @override
+  Future<PunchLocationResult> captureForPunch() async => result;
+}
+
+class _HangingPunchLocationService extends PunchLocationService {
+  _HangingPunchLocationService(this.captureCompleter);
+
+  final Completer<PunchLocationResult> captureCompleter;
+  int captureCalls = 0;
+
+  @override
+  Future<PunchLocationResult> captureForPunch() {
+    captureCalls += 1;
+    return captureCompleter.future;
+  }
 }
 
 TimeClockState _timeClockState() {
@@ -109,6 +138,77 @@ void main() {
       expect(api.lastPunchRequest, isNotNull);
       expect(api.lastPunchRequest?.location, isNull);
       expect(controller.isSubmittingPunch, isFalse);
+
+      await Future<void>.delayed(Duration.zero);
+      controller.dispose();
+    },
+  );
+
+  test(
+    'handlePunch returns without waiting for the refresh load',
+    () async {
+      final refreshCompleter = Completer<TimeClockState>();
+      final api = _FakeBunchinApi(
+        _timeClockState(),
+        refreshStateCompleter: refreshCompleter,
+      );
+      final controller = TimeClockController(
+        api: api,
+        punchLocationService: _ReadyPunchLocationService(
+          PunchLocationResult.ready(
+            snapshot: PunchLocationSnapshot(
+              latitude: -23.55052,
+              longitude: -46.63331,
+              accuracyMeters: 8,
+              capturedAt: DateTime.parse('2026-05-24T13:29:00Z'),
+            ),
+          ),
+        ),
+      );
+      controller.isLoadingState = false;
+      controller.locationState = PunchLocationResult.ready(
+        snapshot: PunchLocationSnapshot(
+          latitude: -23.55052,
+          longitude: -46.63331,
+          accuracyMeters: 8,
+          capturedAt: DateTime.parse('2026-05-24T13:29:00Z'),
+        ),
+      );
+
+      final message = await controller.handlePunch(PunchType.checkIn);
+
+      expect(message, 'Entrada registrado com sucesso.');
+      expect(api.lastPunchRequest?.location, isNotNull);
+      expect(controller.isSubmittingPunch, isFalse);
+      expect(controller.isLoadingState, isFalse);
+
+      refreshCompleter.complete(_timeClockState());
+      await Future<void>.delayed(Duration.zero);
+
+      controller.dispose();
+    },
+  );
+
+  test(
+    'handlePunch calls backend without touching captureForPunch',
+    () async {
+      final locationService = _HangingPunchLocationService(
+        Completer<PunchLocationResult>(),
+      );
+      final api = _FakeBunchinApi(_timeClockState());
+      final controller = TimeClockController(
+        api: api,
+        punchLocationService: locationService,
+      );
+
+      final message = await controller
+          .handlePunch(PunchType.checkIn)
+          .timeout(const Duration(milliseconds: 200));
+
+      expect(message, 'Entrada registrado sem localização.');
+      expect(api.lastPunchRequest, isNotNull);
+      expect(api.lastPunchRequest?.type, PunchType.checkIn);
+      expect(locationService.captureCalls, 0);
 
       controller.dispose();
     },
