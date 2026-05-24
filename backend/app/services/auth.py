@@ -129,6 +129,22 @@ def _issue_session(
     return token, session
 
 
+def _build_auth_response(
+    token: str,
+    auth_session: AuthSession,
+    user: UserAccount,
+    company: Company,
+    cipher: FieldCipher,
+) -> AuthSessionResponse:
+    return AuthSessionResponse(
+        access_token=token,
+        expires_at=ensure_utc(auth_session.expires_at),
+        must_change_password=user.must_change_password,
+        company=summarize_company(company, cipher),
+        user=_user_summary(user, cipher),
+    )
+
+
 def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessionResponse:
     settings = get_settings()
     cipher = _cipher()
@@ -181,12 +197,7 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
     db.refresh(company)
     db.refresh(user)
     db.refresh(auth_session)
-    return AuthSessionResponse(
-        access_token=token,
-        expires_at=ensure_utc(auth_session.expires_at),
-        company=summarize_company(company, cipher),
-        user=_user_summary(user, cipher),
-    )
+    return _build_auth_response(token, auth_session, user, company, cipher)
 
 
 def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
@@ -212,12 +223,7 @@ def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
     )
     db.commit()
     db.refresh(auth_session)
-    return AuthSessionResponse(
-        access_token=token,
-        expires_at=ensure_utc(auth_session.expires_at),
-        company=summarize_company(company, cipher),
-        user=_user_summary(user, cipher),
-    )
+    return _build_auth_response(token, auth_session, user, company, cipher)
 
 
 def reset_password(
@@ -241,6 +247,7 @@ def reset_password(
 
     temp_password = generate_temp_password()
     user.password_hash = hash_password(temp_password)
+    user.must_change_password = True
     db.commit()
 
     recipient_email = cipher.decrypt(user.email_ciphertext) or normalized_email
@@ -261,6 +268,7 @@ def change_password(
         raise DomainError(ErrorKind.unauthorized, "Invalid password.")
 
     user.password_hash = hash_password(new_password)
+    user.must_change_password = False
     db.commit()
 
     recipient_email = cipher.decrypt(user.email_ciphertext) or ""

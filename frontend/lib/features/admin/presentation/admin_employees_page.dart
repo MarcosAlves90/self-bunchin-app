@@ -578,8 +578,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   Widget _buildMetricGrid(bool isWide) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final theme = Theme.of(context);
-        final colorScheme = theme.colorScheme;
         final useSingleRow = isWide && constraints.maxWidth >= 980;
         final useTwoColumns = !useSingleRow && constraints.maxWidth >= 500;
         final itemWidth = useTwoColumns

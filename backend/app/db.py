@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import overload
 
 from sqlalchemy import inspect, text
 from sqlalchemy import create_engine
@@ -12,6 +13,12 @@ from app.config import get_settings
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+@overload
+def ensure_utc(value: datetime) -> datetime: ...
+@overload
+def ensure_utc(value: None) -> None: ...
 
 
 def ensure_utc(value: datetime | None) -> datetime | None:

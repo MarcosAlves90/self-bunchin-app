@@ -74,6 +74,20 @@ class BunchinApi {
     return requireString(map, 'message');
   }
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    await _client.post(
+      '/auth/change-password',
+      withAuth: true,
+      body: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      },
+    );
+  }
+
   Future<List<EmployeeProfile>> listEmployees() async {
     final response = await _client.get('/employees', withAuth: true);
     return _parseContract('employees', () {
