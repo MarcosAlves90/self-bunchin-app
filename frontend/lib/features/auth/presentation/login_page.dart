@@ -244,12 +244,6 @@ class _LoginPageState extends State<LoginPage> {
                     )
                   : const Text('Entrar'),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Entrar com Google'),
-            ),
             const SizedBox(height: 20),
             Center(
               child: Column(
