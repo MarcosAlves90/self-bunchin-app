@@ -234,6 +234,18 @@ def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
             role="employee",
         ),
         UserAccount(
+            id="user-bianca",
+            company_id=company_id,
+            employee_id="emp-03",
+            email_ciphertext=cipher.encrypt("bianca.nogueira@bunchin.com") or "",
+            email_hash=lookup_digest(
+                "bianca.nogueira@bunchin.com",
+                settings.encryption_secret or "",
+            ),
+            password_hash=hash_password(settings.seed_admin_password),
+            role="employee",
+        ),
+        UserAccount(
             id="user-super-admin",
             company_id=company_id,
             employee_id=None,

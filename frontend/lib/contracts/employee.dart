@@ -12,6 +12,8 @@ enum EmployeeWorkMode { onsite, hybrid, remote }
 
 enum RoleLevel { staff, specialist, leadership }
 
+enum EmployeeAccessRole { employee, manager }
+
 EmployeeStatus employeeStatusFromApi(String value) {
   return switch (value) {
     'active' => EmployeeStatus.active,
@@ -68,6 +70,23 @@ String roleLevelToApi(RoleLevel value) {
     RoleLevel.staff => 'staff',
     RoleLevel.specialist => 'specialist',
     RoleLevel.leadership => 'leadership',
+  };
+}
+
+EmployeeAccessRole employeeAccessRoleFromApi(String value) {
+  return switch (value) {
+    'employee' => EmployeeAccessRole.employee,
+    'manager' => EmployeeAccessRole.manager,
+    _ => throw ContractParsingException(
+        'Unsupported employee access role value: $value',
+      ),
+  };
+}
+
+String employeeAccessRoleToApi(EmployeeAccessRole value) {
+  return switch (value) {
+    EmployeeAccessRole.employee => 'employee',
+    EmployeeAccessRole.manager => 'manager',
   };
 }
 
@@ -211,6 +230,7 @@ class EmployeeDraft {
     required this.status,
     required this.workMode,
     required this.roleLevel,
+    this.accessRole,
     required this.requiresLocationOnPunch,
     required this.trustedDeviceRequired,
     required this.notes,
@@ -227,6 +247,7 @@ class EmployeeDraft {
   final EmployeeStatus status;
   final EmployeeWorkMode workMode;
   final RoleLevel roleLevel;
+  final EmployeeAccessRole? accessRole;
   final bool requiresLocationOnPunch;
   final bool trustedDeviceRequired;
   final String notes;
@@ -244,6 +265,7 @@ class EmployeeDraft {
       status: employee.status,
       workMode: employee.workMode,
       roleLevel: employee.roleLevel,
+      accessRole: null,
       requiresLocationOnPunch: employee.requiresLocationOnPunch,
       trustedDeviceRequired: employee.trustedDeviceRequired,
       notes: employee.notes,
@@ -262,6 +284,7 @@ class EmployeeDraft {
     EmployeeStatus? status,
     EmployeeWorkMode? workMode,
     RoleLevel? roleLevel,
+    EmployeeAccessRole? accessRole,
     bool? requiresLocationOnPunch,
     bool? trustedDeviceRequired,
     String? notes,
@@ -278,6 +301,7 @@ class EmployeeDraft {
       status: status ?? this.status,
       workMode: workMode ?? this.workMode,
       roleLevel: roleLevel ?? this.roleLevel,
+      accessRole: accessRole ?? this.accessRole,
       requiresLocationOnPunch:
           requiresLocationOnPunch ?? this.requiresLocationOnPunch,
       trustedDeviceRequired:
@@ -299,6 +323,8 @@ class EmployeeDraft {
       'status': employeeStatusToApi(status),
       'workMode': employeeWorkModeToApi(workMode),
       'roleLevel': roleLevelToApi(roleLevel),
+      if (accessRole != null)
+        'accessRole': employeeAccessRoleToApi(accessRole!),
       'requiresLocationOnPunch': requiresLocationOnPunch,
       'trustedDeviceRequired': trustedDeviceRequired,
       'notes': notes,

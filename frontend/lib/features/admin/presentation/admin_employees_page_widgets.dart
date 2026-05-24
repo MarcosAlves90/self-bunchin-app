@@ -25,6 +25,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
   late EmployeeStatus _status;
   late EmployeeWorkMode _workMode;
   late RoleLevel _roleLevel;
+  late EmployeeAccessRole? _accessRole;
   late bool _requiresLocationOnPunch;
   late bool _trustedDeviceRequired;
 
@@ -70,6 +71,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     _status = draft.status;
     _workMode = draft.workMode;
     _roleLevel = draft.roleLevel;
+    _accessRole = draft.accessRole;
     _requiresLocationOnPunch = draft.requiresLocationOnPunch;
     _trustedDeviceRequired = draft.trustedDeviceRequired;
   }
@@ -106,6 +108,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
         status: _status,
         workMode: _workMode,
         roleLevel: _roleLevel,
+        accessRole: _accessRole,
         requiresLocationOnPunch: _requiresLocationOnPunch,
         trustedDeviceRequired: _trustedDeviceRequired,
         notes: _notesController.text.trim(),
@@ -142,7 +145,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Atualize dados mestres, políticas de ponto e contexto operacional do colaborador.',
+                    'Preencha o payload do backend: dados principais, jornada, acesso, políticas e observações.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.45,
@@ -151,10 +154,10 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   const SizedBox(height: 24),
                   _buildTextField(
                     controller: _nameController,
-                    label: 'Nome completo',
+                    label: 'Nome',
                     hintText: 'Ex.: Maria da Silva',
                     icon: Icons.person_outline_rounded,
-                    validatorMessage: 'Informe o nome do funcionário.',
+                    validatorMessage: 'Informe o nome.',
                   ),
                   const SizedBox(height: 16),
                   _buildTextField(
@@ -177,7 +180,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(
-                      labelText: 'E-mail corporativo',
+                      labelText: 'E-mail',
                       hintText: 'Ex.: maria@empresa.com.br',
                       prefixIcon: Icon(Icons.alternate_email_rounded),
                     ),
@@ -244,6 +247,8 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  _buildAccessRoleDropdown(),
+                  const SizedBox(height: 16),
                   _buildStatusDropdown(),
                   const SizedBox(height: 16),
                   _buildWorkModeDropdown(),
@@ -253,9 +258,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   SwitchListTile(
                     value: _requiresLocationOnPunch,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text(
-                      'Exigir localização no registro de ponto',
-                    ),
+                    title: const Text('Exigir localização no ponto'),
                     onChanged: (value) {
                       setState(() {
                         _requiresLocationOnPunch = value;
@@ -265,7 +268,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                   SwitchListTile(
                     value: _trustedDeviceRequired,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Restringir a dispositivo confiável'),
+                    title: const Text('Exigir dispositivo confiável'),
                     onChanged: (value) {
                       setState(() {
                         _trustedDeviceRequired = value;
@@ -278,7 +281,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
                     minLines: 3,
                     maxLines: 5,
                     decoration: const InputDecoration(
-                      labelText: 'Contexto administrativo',
+                      labelText: 'Observações',
                       hintText: 'Ex.: Responsável pela operação da unidade.',
                       alignLabelWithHint: true,
                       prefixIcon: Icon(Icons.notes_rounded),
@@ -444,7 +447,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     return DropdownButtonFormField<EmployeeStatus>(
       initialValue: _status,
       decoration: const InputDecoration(
-        labelText: 'Status do colaborador',
+        labelText: 'Status',
         prefixIcon: Icon(Icons.flag_outlined),
       ),
       items: EmployeeStatus.values.map((status) {
@@ -494,7 +497,7 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
     return DropdownButtonFormField<RoleLevel>(
       initialValue: _roleLevel,
       decoration: const InputDecoration(
-        labelText: 'Nível de acesso',
+        labelText: 'Nível',
         prefixIcon: Icon(Icons.shield_outlined),
       ),
       items: RoleLevel.values.map((roleLevel) {
@@ -510,6 +513,29 @@ class _EmployeeEditorDialogState extends State<_EmployeeEditorDialog> {
 
         setState(() {
           _roleLevel = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildAccessRoleDropdown() {
+    return DropdownButtonFormField<EmployeeAccessRole?>(
+      initialValue: _accessRole ?? EmployeeAccessRole.employee,
+      decoration: const InputDecoration(
+        labelText: 'Perfil de acesso',
+        prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+      ),
+      items: <DropdownMenuItem<EmployeeAccessRole?>>[
+        ...EmployeeAccessRole.values.map((accessRole) {
+          return DropdownMenuItem<EmployeeAccessRole?>(
+            value: accessRole,
+            child: Text(_accessRoleLabelForForm(accessRole)),
+          );
+        }),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _accessRole = value;
         });
       },
     );
@@ -538,6 +564,13 @@ String _roleLevelLabel(RoleLevel roleLevel) {
     RoleLevel.staff => 'Operacional',
     RoleLevel.specialist => 'Especialista',
     RoleLevel.leadership => 'Liderança',
+  };
+}
+
+String _accessRoleLabelForForm(EmployeeAccessRole accessRole) {
+  return switch (accessRole) {
+    EmployeeAccessRole.employee => 'Funcionário',
+    EmployeeAccessRole.manager => 'Gestor',
   };
 }
 
