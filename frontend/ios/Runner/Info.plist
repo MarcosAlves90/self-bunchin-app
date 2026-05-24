@@ -27,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Precisamos da sua localizacao para validar e auditar cada batida de ponto.</string>
+	<string>Precisamos da sua localização para validar e auditar cada batida de ponto.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

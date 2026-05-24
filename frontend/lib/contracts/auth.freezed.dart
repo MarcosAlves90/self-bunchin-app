@@ -1507,6 +1507,7 @@ mixin _$AuthSession {
   String get accessToken;
   String get tokenType;
   DateTime get expiresAt;
+  bool get mustChangePassword;
   AuthCompanySummary get company;
   AuthUserSummary get user;
 
@@ -1528,17 +1529,19 @@ mixin _$AuthSession {
                 other.tokenType == tokenType) &&
             (identical(other.expiresAt, expiresAt) ||
                 other.expiresAt == expiresAt) &&
+            (identical(other.mustChangePassword, mustChangePassword) ||
+                other.mustChangePassword == mustChangePassword) &&
             (identical(other.company, company) || other.company == company) &&
             (identical(other.user, user) || other.user == user));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, accessToken, tokenType, expiresAt, company, user);
+  int get hashCode => Object.hash(runtimeType, accessToken, tokenType,
+      expiresAt, mustChangePassword, company, user);
 
   @override
   String toString() {
-    return 'AuthSession(accessToken: $accessToken, tokenType: $tokenType, expiresAt: $expiresAt, company: $company, user: $user)';
+    return 'AuthSession(accessToken: $accessToken, tokenType: $tokenType, expiresAt: $expiresAt, mustChangePassword: $mustChangePassword, company: $company, user: $user)';
   }
 }
 
@@ -1552,6 +1555,7 @@ abstract mixin class $AuthSessionCopyWith<$Res> {
       {String accessToken,
       String tokenType,
       DateTime expiresAt,
+      bool mustChangePassword,
       AuthCompanySummary company,
       AuthUserSummary user});
 
@@ -1574,6 +1578,7 @@ class _$AuthSessionCopyWithImpl<$Res> implements $AuthSessionCopyWith<$Res> {
     Object? accessToken = null,
     Object? tokenType = null,
     Object? expiresAt = null,
+    Object? mustChangePassword = null,
     Object? company = null,
     Object? user = null,
   }) {
@@ -1590,6 +1595,10 @@ class _$AuthSessionCopyWithImpl<$Res> implements $AuthSessionCopyWith<$Res> {
           ? _self.expiresAt
           : expiresAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      mustChangePassword: null == mustChangePassword
+          ? _self.mustChangePassword
+          : mustChangePassword // ignore: cast_nullable_to_non_nullable
+              as bool,
       company: null == company
           ? _self.company
           : company // ignore: cast_nullable_to_non_nullable
@@ -1715,8 +1724,13 @@ extension AuthSessionPatterns on AuthSession {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String accessToken, String tokenType, DateTime expiresAt,
-            AuthCompanySummary company, AuthUserSummary user)?
+    TResult Function(
+            String accessToken,
+            String tokenType,
+            DateTime expiresAt,
+            bool mustChangePassword,
+            AuthCompanySummary company,
+            AuthUserSummary user)?
         $default, {
     required TResult orElse(),
   }) {
@@ -1724,7 +1738,7 @@ extension AuthSessionPatterns on AuthSession {
     switch (_that) {
       case _AuthSession() when $default != null:
         return $default(_that.accessToken, _that.tokenType, _that.expiresAt,
-            _that.company, _that.user);
+            _that.mustChangePassword, _that.company, _that.user);
       case _:
         return orElse();
     }
@@ -1745,15 +1759,20 @@ extension AuthSessionPatterns on AuthSession {
 
   @optionalTypeArgs
   TResult when<TResult extends Object?>(
-    TResult Function(String accessToken, String tokenType, DateTime expiresAt,
-            AuthCompanySummary company, AuthUserSummary user)
+    TResult Function(
+            String accessToken,
+            String tokenType,
+            DateTime expiresAt,
+            bool mustChangePassword,
+            AuthCompanySummary company,
+            AuthUserSummary user)
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AuthSession():
         return $default(_that.accessToken, _that.tokenType, _that.expiresAt,
-            _that.company, _that.user);
+            _that.mustChangePassword, _that.company, _that.user);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -1773,15 +1792,20 @@ extension AuthSessionPatterns on AuthSession {
 
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String accessToken, String tokenType, DateTime expiresAt,
-            AuthCompanySummary company, AuthUserSummary user)?
+    TResult? Function(
+            String accessToken,
+            String tokenType,
+            DateTime expiresAt,
+            bool mustChangePassword,
+            AuthCompanySummary company,
+            AuthUserSummary user)?
         $default,
   ) {
     final _that = this;
     switch (_that) {
       case _AuthSession() when $default != null:
         return $default(_that.accessToken, _that.tokenType, _that.expiresAt,
-            _that.company, _that.user);
+            _that.mustChangePassword, _that.company, _that.user);
       case _:
         return null;
     }
@@ -1795,6 +1819,7 @@ class _AuthSession extends AuthSession {
       {required this.accessToken,
       required this.tokenType,
       required this.expiresAt,
+      this.mustChangePassword = false,
       required this.company,
       required this.user})
       : super._();
@@ -1805,6 +1830,9 @@ class _AuthSession extends AuthSession {
   final String tokenType;
   @override
   final DateTime expiresAt;
+  @override
+  @JsonKey()
+  final bool mustChangePassword;
   @override
   final AuthCompanySummary company;
   @override
@@ -1829,17 +1857,19 @@ class _AuthSession extends AuthSession {
                 other.tokenType == tokenType) &&
             (identical(other.expiresAt, expiresAt) ||
                 other.expiresAt == expiresAt) &&
+            (identical(other.mustChangePassword, mustChangePassword) ||
+                other.mustChangePassword == mustChangePassword) &&
             (identical(other.company, company) || other.company == company) &&
             (identical(other.user, user) || other.user == user));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType, accessToken, tokenType, expiresAt, company, user);
+  int get hashCode => Object.hash(runtimeType, accessToken, tokenType,
+      expiresAt, mustChangePassword, company, user);
 
   @override
   String toString() {
-    return 'AuthSession(accessToken: $accessToken, tokenType: $tokenType, expiresAt: $expiresAt, company: $company, user: $user)';
+    return 'AuthSession(accessToken: $accessToken, tokenType: $tokenType, expiresAt: $expiresAt, mustChangePassword: $mustChangePassword, company: $company, user: $user)';
   }
 }
 
@@ -1855,6 +1885,7 @@ abstract mixin class _$AuthSessionCopyWith<$Res>
       {String accessToken,
       String tokenType,
       DateTime expiresAt,
+      bool mustChangePassword,
       AuthCompanySummary company,
       AuthUserSummary user});
 
@@ -1879,6 +1910,7 @@ class __$AuthSessionCopyWithImpl<$Res> implements _$AuthSessionCopyWith<$Res> {
     Object? accessToken = null,
     Object? tokenType = null,
     Object? expiresAt = null,
+    Object? mustChangePassword = null,
     Object? company = null,
     Object? user = null,
   }) {
@@ -1895,6 +1927,10 @@ class __$AuthSessionCopyWithImpl<$Res> implements _$AuthSessionCopyWith<$Res> {
           ? _self.expiresAt
           : expiresAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      mustChangePassword: null == mustChangePassword
+          ? _self.mustChangePassword
+          : mustChangePassword // ignore: cast_nullable_to_non_nullable
+              as bool,
       company: null == company
           ? _self.company
           : company // ignore: cast_nullable_to_non_nullable

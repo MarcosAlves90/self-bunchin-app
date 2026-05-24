@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from sqlalchemy import select
 
 from app.api.routes import auth as auth_routes
+from app.api.routes import employees as employees_routes
+from app.config import get_settings
+from app.events import get_event_bus
 from app.db import SessionLocal
-from app.models import Employee
+from app.models import Employee, UserAccount
 from app.services.employees import _cipher
 
-TEST_SEED_SECRET = "Bunchin@123"
-TEST_REGISTER_SECRET = "Acme@1234"
+TEST_SEED_SECRET = get_settings().seed_admin_password
+TEST_REGISTER_SECRET = f"test-register-{uuid4().hex}"
 
 
 def login_headers(client):
@@ -83,6 +88,7 @@ def test_create_and_update_employee(client):
             "status": "active",
             "workMode": "hybrid",
             "roleLevel": "specialist",
+            "accessRole": "manager",
             "requiresLocationOnPunch": False,
             "trustedDeviceRequired": True,
             "notes": "Nova contratacao para apoiar o fechamento mensal.",
@@ -94,6 +100,13 @@ def test_create_and_update_employee(client):
     assert employee["expectedShiftStart"] == "08:00:00"
     assert employee["expectedShiftEnd"] == "17:00:00"
     assert employee["todayWorkedMinutes"] == 0
+
+    with SessionLocal() as db:
+        user = db.scalar(select(UserAccount).where(UserAccount.employee_id == employee["id"]))
+        assert user is not None
+        cipher = _cipher()
+        assert cipher.decrypt(user.email_ciphertext) == "renata.souza@bunchin.com"
+        assert user.role == "manager"
 
     update_response = client.put(
         f"/api/v1/employees/{employee['id']}",
@@ -110,6 +123,7 @@ def test_create_and_update_employee(client):
             "status": "active",
             "workMode": "remote",
             "roleLevel": "specialist",
+            "accessRole": "employee",
             "requiresLocationOnPunch": False,
             "trustedDeviceRequired": True,
             "notes": "Atualizada para operacao remota.",
@@ -119,6 +133,224 @@ def test_create_and_update_employee(client):
     updated = update_response.json()
     assert updated["role"] == "Analista Financeira Senior"
     assert updated["workMode"] == "remote"
+
+    patch_response = client.patch(
+        f"/api/v1/employees/{employee['id']}",
+        headers=headers,
+        json={
+            "name": "Renata Souza",
+            "role": "Analista Financeira Lead",
+            "department": "Financeiro",
+            "email": "renata.souza@bunchin.com",
+            "phone": "(11) 94444-6060",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "hybrid",
+            "roleLevel": "specialist",
+            "accessRole": "employee",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Atualizada via patch.",
+        },
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["role"] == "Analista Financeira Lead"
+
+    with SessionLocal() as db:
+        user = db.scalar(select(UserAccount).where(UserAccount.employee_id == employee["id"]))
+        assert user is not None
+        assert user.role == "employee"
+
+
+def test_admin_can_edit_self(client):
+    headers = login_headers(client)
+    response = client.put(
+        "/api/v1/employees/emp-01",
+        headers=headers,
+        json={
+            "name": "Marina Costa",
+            "role": "Coordenadora de Operacoes",
+            "department": "Operacoes",
+            "email": "marina.costa@bunchin.com",
+            "phone": "(11) 99123-1001",
+            "unit": "Unidade Paulista",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "onsite",
+            "roleLevel": "leadership",
+            "requiresLocationOnPunch": True,
+            "trustedDeviceRequired": True,
+            "notes": "Atualizacao do proprio cadastro.",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["notes"] == "Atualizacao do proprio cadastro."
+
+
+def test_manager_cannot_edit_self_or_admin(client):
+    headers = login_headers_for(
+        client,
+        email="caio.martins@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+
+    self_response = client.put(
+        "/api/v1/employees/emp-02",
+        headers=headers,
+        json={
+            "name": "Caio Martins",
+            "role": "Analista de RH",
+            "department": "People Ops",
+            "email": "caio.martins@bunchin.com",
+            "phone": "(11) 98888-2020",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "09:00",
+            "expectedShiftEnd": "18:00",
+            "status": "active",
+            "workMode": "hybrid",
+            "roleLevel": "specialist",
+            "accessRole": "manager",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Tentativa de autoedicao.",
+        },
+    )
+    assert self_response.status_code == 403
+
+    admin_response = client.put(
+        "/api/v1/employees/emp-01",
+        headers=headers,
+        json={
+            "name": "Marina Costa",
+            "role": "Coordenadora de Operacoes",
+            "department": "Operacoes",
+            "email": "marina.costa@bunchin.com",
+            "phone": "(11) 99123-1001",
+            "unit": "Unidade Paulista",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "onsite",
+            "roleLevel": "leadership",
+            "requiresLocationOnPunch": True,
+            "trustedDeviceRequired": True,
+            "notes": "Tentativa de editar admin.",
+        },
+    )
+    assert admin_response.status_code == 403
+
+
+def test_manager_can_edit_other_manager(client):
+    admin_headers = login_headers(client)
+    create_response = client.post(
+        "/api/v1/employees",
+        headers=admin_headers,
+        json={
+            "name": "Renata Souza",
+            "role": "Analista Financeira",
+            "department": "Financeiro",
+            "email": "renata.souza@bunchin.com",
+            "phone": "(11) 94444-6060",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "hybrid",
+            "roleLevel": "specialist",
+            "accessRole": "manager",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Cadastro para teste de edicao por gestor.",
+        },
+    )
+    assert create_response.status_code == 201
+    employee = create_response.json()
+
+    manager_headers = login_headers_for(
+        client,
+        email="caio.martins@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    update_response = client.put(
+        f"/api/v1/employees/{employee['id']}",
+        headers=manager_headers,
+        json={
+            "name": "Renata Souza",
+            "role": "Analista Financeira Senior",
+            "department": "Financeiro",
+            "email": "renata.souza@bunchin.com",
+            "phone": "(11) 94444-6060",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "remote",
+            "roleLevel": "specialist",
+            "accessRole": "manager",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Edicao feita pelo gestor.",
+        },
+    )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["workMode"] == "remote"
+
+
+def test_create_employee_triggers_credentials_email_task(client, monkeypatch):
+    calls: list[dict[str, str]] = []
+
+    def fake_send_employee_credentials_email(
+        *,
+        recipient_email: str,
+        employee_name: str,
+        temp_password: str,
+    ) -> None:
+        calls.append(
+            {
+                "recipient_email": recipient_email,
+                "employee_name": employee_name,
+                "temp_password": temp_password,
+            },
+        )
+
+    monkeypatch.setattr(
+        employees_routes,
+        "send_employee_credentials_email",
+        fake_send_employee_credentials_email,
+    )
+
+    headers = login_headers(client)
+    response = client.post(
+        "/api/v1/employees",
+        headers=headers,
+        json={
+            "name": "Gabriel Paiva",
+            "role": "Analista de Operacoes",
+            "department": "Operacoes",
+            "email": "gabriel.paiva@bunchin.com",
+            "phone": "(11) 95555-7070",
+            "unit": "Operacoes Central",
+            "expectedShiftStart": "09:00",
+            "expectedShiftEnd": "18:00",
+            "status": "active",
+            "workMode": "onsite",
+            "roleLevel": "staff",
+            "requiresLocationOnPunch": True,
+            "trustedDeviceRequired": False,
+            "notes": "Entrada para reforcar a equipe de operacoes.",
+        },
+    )
+
+    assert response.status_code == 201
+    assert len(calls) == 1
+    assert calls[0]["recipient_email"] == "gabriel.paiva@bunchin.com"
+    assert calls[0]["employee_name"] == "Gabriel Paiva"
+    assert len(calls[0]["temp_password"]) >= 12
 
 
 def test_delete_employee(client):
@@ -233,6 +465,14 @@ def test_manager_can_manage_employee_punches(client):
     assert update_response.status_code == 200
     assert update_response.json()["detail"] == "Ajuste revisado pelo gestor."
 
+    patch_response = client.patch(
+        f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
+        headers=headers,
+        json={"detail": "Ajuste final via patch."},
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["detail"] == "Ajuste final via patch."
+
     delete_response = client.delete(
         f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
         headers=headers,
@@ -298,11 +538,11 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             },
         )
 
-    monkeypatch.setattr(
-        auth_routes,
-        "send_company_welcome_email",
-        fake_send_company_welcome_email,
-    )
+    monkeypatch.setattr("app.services.brevo.send_company_welcome_email", fake_send_company_welcome_email)
+    get_event_bus().reset()
+    from app.events.handlers import register_event_handlers
+
+    register_event_handlers()
 
     response = client.post(
         "/api/v1/auth/register-company",
@@ -325,3 +565,98 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             "trade_name": "Acme Tech",
         },
     ]
+
+
+def test_reset_password_triggers_email_task(client, monkeypatch):
+    calls: list[dict[str, str]] = []
+
+    def fake_send_password_reset_email(
+        *,
+        recipient_email: str,
+        display_name: str,
+        temp_password: str,
+    ) -> None:
+        calls.append(
+            {
+                "recipient_email": recipient_email,
+                "display_name": display_name,
+                "temp_password": temp_password,
+            },
+        )
+
+    monkeypatch.setattr(
+        auth_routes,
+        "send_password_reset_email",
+        fake_send_password_reset_email,
+    )
+
+    response = client.post(
+        "/api/v1/auth/reset-password",
+        json={"email": "marina.costa@bunchin.com"},
+    )
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert calls[0]["recipient_email"] == "marina.costa@bunchin.com"
+    assert len(calls[0]["temp_password"]) >= 12
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "marina.costa@bunchin.com",
+            "password": calls[0]["temp_password"],
+            "keepConnected": True,
+        },
+    )
+    assert login_response.status_code == 200
+
+
+def test_change_password_triggers_email_task(client, monkeypatch):
+    calls: list[dict[str, str]] = []
+    new_password = f"test-new-password-{uuid4().hex[:8]}@123"
+
+    def fake_send_password_changed_email(
+        *,
+        recipient_email: str,
+        display_name: str,
+    ) -> None:
+        calls.append(
+            {
+                "recipient_email": recipient_email,
+                "display_name": display_name,
+            },
+        )
+
+    monkeypatch.setattr(
+        auth_routes,
+        "send_password_changed_email",
+        fake_send_password_changed_email,
+    )
+
+    headers = login_headers(client)
+    response = client.post(
+        "/api/v1/auth/change-password",
+        headers=headers,
+        json={
+            "currentPassword": TEST_SEED_SECRET,
+            "newPassword": new_password,
+        },
+    )
+
+    assert response.status_code == 200
+    assert calls == [
+        {
+            "recipient_email": "marina.costa@bunchin.com",
+            "display_name": "Marina Costa",
+        },
+    ]
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "marina.costa@bunchin.com",
+            "password": new_password,
+            "keepConnected": True,
+        },
+    )
+    assert login_response.status_code == 200

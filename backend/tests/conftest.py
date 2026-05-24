@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 os.environ["BUNCHIN_DATABASE_URL"] = "sqlite://"
 os.environ["BUNCHIN_TOKEN_SECRET"] = "tests-token-secret"
 os.environ["BUNCHIN_ENCRYPTION_SECRET"] = "tests-encryption-secret"
+os.environ["BUNCHIN_SEED_ADMIN_PASSWORD"] = "tests-seed-admin-password"
 os.environ["BUNCHIN_SEED_ON_STARTUP"] = "true"
 
 from app.db import Base, SessionLocal, engine  # noqa: E402

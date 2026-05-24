@@ -71,6 +71,20 @@ def test_project_crud_encrypts_fields_and_soft_deletes(client):
     assert inactive_response.status_code == 200
     assert [item["id"] for item in inactive_response.json()] == [created["id"]]
 
+    patch_response = client.patch(
+        f"/api/v1/projects/{created['id']}",
+        headers=headers,
+        json={
+            "name": "Implantacao ERP - fase 3",
+            "description": "Descricao ajustada via patch.",
+            "status": "active",
+        },
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["name"] == "Implantacao ERP - fase 3"
+    assert patch_response.json()["description"] == "Descricao ajustada via patch."
+    assert patch_response.json()["status"] == "active"
+
     delete_response = client.delete(f"/api/v1/projects/{created['id']}", headers=headers)
     assert delete_response.status_code == 204
 
@@ -138,7 +152,7 @@ def test_employee_can_read_but_cannot_create_projects(client):
     create_response = client.post(
         "/api/v1/projects",
         headers=employee_headers,
-        json={"name": "Projeto sem permissao", "description": None},
+        json={"name": "Projeto sem permissão", "description": None},
     )
     assert create_response.status_code == 403
 

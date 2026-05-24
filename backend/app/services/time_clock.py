@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.crypto import FieldCipher
 from app.db import ensure_utc, utcnow
 from app.errors import DomainError, ErrorKind
+from app.domain.project_policy import validate_project_for_punch
 from app.models import Employee, Punch
 from app.schemas.punch import (
     CreatePunchRequest,
@@ -24,9 +25,6 @@ from app.schemas.punch import (
     TimeClockStateResponse,
     UpdateManagedPunchRequest,
 )
-from app.services.projects import validate_project_for_punch
-
-
 def _cipher() -> FieldCipher:
     settings = get_settings()
     return FieldCipher(settings.encryption_secret or "")
@@ -257,10 +255,10 @@ def create_punch(
         )
 
     detail = {
-        PunchType.check_in: "Entrada registrada com localizacao validada.",
-        PunchType.break_start: "Pausa iniciada com localizacao capturada.",
-        PunchType.break_end: "Jornada retomada com localizacao capturada.",
-        PunchType.check_out: "Saida registrada com localizacao validada.",
+        PunchType.check_in: "Entrada registrada com localização validada.",
+        PunchType.break_start: "Pausa iniciada com localização capturada.",
+        PunchType.break_end: "Jornada retomada com localização capturada.",
+        PunchType.check_out: "Saída registrada com localização validada.",
     }[punch_type]
     record = Punch(
         company_id=employee.company_id,

@@ -120,7 +120,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
       setState(() {
         _isLoadingState = false;
-        _loadError = 'Nao foi possivel carregar o estado de ponto.';
+        _loadError = 'Não foi possível carregar o estado de ponto.';
       });
     }
   }
@@ -701,7 +701,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Histórico cronolóco das batidas com contexto suficiente para auditoria operacional.',
+            'Histórico cronológico das batidas com contexto suficiente para auditoria operacional.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -745,7 +745,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                 : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
           ),
           _InfoFlag(
-            label: 'Precisã',
+            label: 'Precisão',
             value: lastLocation == null
                 ? '--'
                 : _formatAccuracy(lastLocation.accuracyMeters),
@@ -812,7 +812,7 @@ class _TimelineTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Precisã estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
+                  'Precisão estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
