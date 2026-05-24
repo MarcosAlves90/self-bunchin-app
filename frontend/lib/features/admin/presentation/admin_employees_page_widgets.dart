@@ -550,6 +550,8 @@ class _EmployeeListTile extends StatelessWidget {
     required this.statusLabel,
     required this.needsAttention,
     required this.onTap,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final EmployeeProfile employee;
@@ -559,6 +561,8 @@ class _EmployeeListTile extends StatelessWidget {
   final String statusLabel;
   final bool needsAttention;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -640,13 +644,46 @@ class _EmployeeListTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    employee.name,
-                    maxLines: isCompact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          employee.name,
+                          maxLines: isCompact ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: onEdit,
+                        tooltip: 'Editar funcionário',
+                        icon: const Icon(Icons.edit_outlined),
+                        color: AppTheme.accent,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: onDelete,
+                        tooltip: 'Remover funcionário',
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        color: const Color(0xFFE53935),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
