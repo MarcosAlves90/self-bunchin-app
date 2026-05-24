@@ -418,7 +418,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
           const SizedBox(height: 20),
           _buildTimelineCard(),
           const SizedBox(height: 20),
-          _buildContextCard(),
+          _buildContextCard(isWide),
         ],
       ),
     );
@@ -729,30 +729,53 @@ class _TimeClockPageState extends State<TimeClockPage> {
     );
   }
 
-  Widget _buildContextCard() {
+  Widget _buildContextCard(bool isWide) {
     final lastLocation = _lastRegisteredLocation;
 
     return WorkspaceSectionCard(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
-          _InfoFlag(
-            label: 'Última coordenada',
-            value: lastLocation == null
-                ? 'Aguardando batida'
-                : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
-          ),
-          _InfoFlag(
-            label: 'Precisão',
-            value: lastLocation == null
-                ? '--'
-                : _formatAccuracy(lastLocation.accuracyMeters),
-          ),
-          const _InfoFlag(label: 'Modo', value: 'Presencial rastreado'),
-        ],
-      ),
+      child: isWide
+          ? Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
+                _InfoFlag(
+                  label: 'Última coordenada',
+                  value: lastLocation == null
+                      ? 'Aguardando batida'
+                      : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
+                ),
+                _InfoFlag(
+                  label: 'Precisão',
+                  value: lastLocation == null
+                      ? '--'
+                      : _formatAccuracy(lastLocation.accuracyMeters),
+                ),
+                const _InfoFlag(label: 'Modo', value: 'Presencial rastreado'),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _InfoFlag(label: 'Permissão', value: _locationStatusLabel()),
+                const SizedBox(height: 12),
+                _InfoFlag(
+                  label: 'Última coordenada',
+                  value: lastLocation == null
+                      ? 'Aguardando batida'
+                      : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
+                ),
+                const SizedBox(height: 12),
+                _InfoFlag(
+                  label: 'Precisão',
+                  value: lastLocation == null
+                      ? '--'
+                      : _formatAccuracy(lastLocation.accuracyMeters),
+                ),
+                const SizedBox(height: 12),
+                const _InfoFlag(label: 'Modo', value: 'Presencial rastreado'),
+              ],
+            ),
     );
   }
 }
