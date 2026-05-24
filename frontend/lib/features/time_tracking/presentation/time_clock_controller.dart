@@ -33,6 +33,8 @@ class TimeClockController extends ChangeNotifier {
   String employeeUnit = '-';
   int todayWorkedMinutes = 0;
   int todayBreakMinutes = 0;
+  DateTime? firstCheckInAt;
+  DateTime? lastPunchAt;
   int recordsPage = 1;
   int recordsPageSize = 4;
   int recordsTotal = 0;
@@ -109,6 +111,8 @@ class TimeClockController extends ChangeNotifier {
       status = state.currentStatus;
       todayWorkedMinutes = state.todayWorkedMinutes;
       todayBreakMinutes = state.todayBreakMinutes;
+      firstCheckInAt = state.firstCheckInAt;
+      lastPunchAt = state.lastPunchAt;
       records = state.records;
       recordsPage = state.recordsPage;
       recordsPageSize = state.recordsPageSize;

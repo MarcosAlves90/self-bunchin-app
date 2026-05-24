@@ -75,6 +75,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
   String get _employeeUnit => _controller.employeeUnit;
   int get _todayWorkedMinutes => _controller.todayWorkedMinutes;
   int get _todayBreakMinutes => _controller.todayBreakMinutes;
+  DateTime? get _firstCheckInAt => _controller.firstCheckInAt;
+  DateTime? get _lastPunchAt => _controller.lastPunchAt;
 
   Future<void> _loadTimeClockState() => _controller.loadTimeClockState(
         page: _controller.recordsPage,
@@ -94,19 +96,8 @@ class _TimeClockPageState extends State<TimeClockPage> {
     );
   }
 
-  PunchRecord? get _firstCheckIn {
-    for (final record in _records) {
-      if (record.type == PunchType.checkIn) {
-        return record;
-      }
-    }
-    return null;
-  }
-
-  PunchRecord? get _lastRecord => _records.isEmpty ? null : _records.last;
-
   PunchLocationSnapshot? get _lastRegisteredLocation {
-    for (final record in _records.reversed) {
+    for (final record in _records) {
       final location = record.location;
       if (location != null) {
         return location;
@@ -265,10 +256,10 @@ class _TimeClockPageState extends State<TimeClockPage> {
         ),
         WorkspaceSummaryStripe(
           label: 'Última batida',
-          value: _lastRecord == null
-              ? '--:--'
-              : _formatTime(_lastRecord!.timestamp),
-          helper: _lastRecord?.title ?? 'Nenhum registro no dia',
+          value: _lastPunchAt == null ? '--:--' : _formatTime(_lastPunchAt!),
+          helper: _lastPunchAt == null
+              ? 'Nenhum registro no dia'
+              : 'Último evento recebido',
         ),
       ],
       highlightChips: <Widget>[
@@ -570,9 +561,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
               width: width,
               child: WorkspaceMetricCard(
                 label: 'Primeira entrada',
-                value: _firstCheckIn == null
+                value: _firstCheckInAt == null
                     ? '--:--'
-                    : _formatTime(_firstCheckIn!.timestamp),
+                    : _formatTime(_firstCheckInAt!),
                 helper: 'Primeiro registro válido de hoje',
               ),
             ),
@@ -580,10 +571,11 @@ class _TimeClockPageState extends State<TimeClockPage> {
               width: width,
               child: WorkspaceMetricCard(
                 label: 'Útimo evento',
-                value: _lastRecord == null
-                    ? '--:--'
-                    : _formatTime(_lastRecord!.timestamp),
-                helper: _lastRecord?.title ?? 'Sem eventos registrados',
+                value:
+                    _lastPunchAt == null ? '--:--' : _formatTime(_lastPunchAt!),
+                helper: _lastPunchAt == null
+                    ? 'Sem eventos registrados'
+                    : 'Último ponto enviado hoje',
               ),
             ),
           ],
@@ -639,18 +631,23 @@ class _TimeClockPageState extends State<TimeClockPage> {
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: colorScheme.outlineVariant),
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final isCompact = constraints.maxWidth < 560;
+                        final buttonStyle = FilledButton.styleFrom(
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                        );
 
                         final actions = isCompact
                             ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   FilledButton.tonalIcon(
+                                    style: buttonStyle,
                                     onPressed: !_controller.recordsHasPrevious
                                         ? null
                                         : _controller.loadPreviousTimelinePage,
@@ -660,6 +657,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                                   ),
                                   const SizedBox(height: 8),
                                   FilledButton.icon(
+                                    style: buttonStyle,
                                     onPressed: !_controller.recordsHasNext
                                         ? null
                                         : _controller.loadNextTimelinePage,
@@ -673,6 +671,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                                 children: [
                                   Expanded(
                                     child: FilledButton.tonalIcon(
+                                      style: buttonStyle,
                                       onPressed: !_controller.recordsHasPrevious
                                           ? null
                                           : _controller
@@ -686,6 +685,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: FilledButton.icon(
+                                      style: buttonStyle,
                                       onPressed: !_controller.recordsHasNext
                                           ? null
                                           : _controller.loadNextTimelinePage,
@@ -709,17 +709,14 @@ class _TimeClockPageState extends State<TimeClockPage> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(999),
-                              child: LinearProgressIndicator(
-                                minHeight: 7,
-                                value: _controller.recordsTotalPages == 0
-                                    ? 0
-                                    : _controller.recordsPage /
-                                        _controller.recordsTotalPages,
-                                backgroundColor: colorScheme.outlineVariant
-                                    .withValues(alpha: 0.35),
-                              ),
+                            LinearProgressIndicator(
+                              minHeight: 7,
+                              value: _controller.recordsTotalPages == 0
+                                  ? 0
+                                  : _controller.recordsPage /
+                                      _controller.recordsTotalPages,
+                              backgroundColor: colorScheme.outlineVariant
+                                  .withValues(alpha: 0.35),
                             ),
                             const SizedBox(height: 12),
                             Text(

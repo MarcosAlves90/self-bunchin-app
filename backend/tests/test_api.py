@@ -472,7 +472,7 @@ def test_time_clock_state_paginates_records(client):
     assert payload["recordsHasPrevious"] is False
     assert payload["recordsHasNext"] is True
     assert [item["type"] for item in payload["records"]] == [
-        "checkIn",
+        "breakEnd",
         "breakStart",
     ]
 
@@ -485,7 +485,7 @@ def test_time_clock_state_paginates_records(client):
     assert payload["recordsPage"] == 3
     assert payload["recordsHasPrevious"] is True
     assert payload["recordsHasNext"] is False
-    assert [item["type"] for item in payload["records"]] == ["breakEnd"]
+    assert [item["type"] for item in payload["records"]] == ["checkIn"]
 
 
 def test_employee_cannot_manage_employee_punches(client):

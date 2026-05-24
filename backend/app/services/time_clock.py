@@ -203,13 +203,14 @@ def time_clock_state_page(
         company_id=employee.company_id,
         timezone_name=timezone_name,
     ).get(employee.id, [])
+    display_records = list(reversed(today_records))
     normalized_page_size = max(page_size, 1)
-    total_records = len(today_records)
+    total_records = len(display_records)
     total_pages = max(ceil(total_records / normalized_page_size), 1)
     normalized_page = min(max(page, 1), total_pages)
     start_index = (normalized_page - 1) * normalized_page_size
     end_index = start_index + normalized_page_size
-    page_records = today_records[start_index:end_index]
+    page_records = display_records[start_index:end_index]
 
     first_check_in_at = next(
         (

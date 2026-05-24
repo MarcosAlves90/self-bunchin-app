@@ -36,6 +36,8 @@ class _FakeTimeClockController extends TimeClockController {
     status = state.currentStatus;
     todayWorkedMinutes = state.todayWorkedMinutes;
     todayBreakMinutes = state.todayBreakMinutes;
+    firstCheckInAt = state.firstCheckInAt;
+    lastPunchAt = state.lastPunchAt;
     records = state.records;
     recordsPage = state.recordsPage;
     recordsPageSize = state.recordsPageSize;
@@ -134,15 +136,16 @@ void main() {
 
   testWidgets('paginates the daily timeline card', (WidgetTester tester) async {
     final timelineRecords = _buildTimelineRecords();
+    final descendingRecords = timelineRecords.reversed.toList(growable: false);
     final controller = _FakeTimeClockController(<int, TimeClockState>{
       1: _timelineState(
         page: 1,
-        records: timelineRecords.sublist(0, 4),
+        records: descendingRecords.sublist(0, 4),
         totalPages: 2,
       ),
       2: _timelineState(
         page: 2,
-        records: timelineRecords.sublist(4),
+        records: descendingRecords.sublist(4),
         totalPages: 2,
       ),
     })
@@ -152,7 +155,7 @@ void main() {
       ..status = ShiftStatus.working
       ..todayWorkedMinutes = 240
       ..todayBreakMinutes = 30
-      ..records = timelineRecords.sublist(0, 4)
+      ..records = descendingRecords.sublist(0, 4)
       ..recordsPage = 1
       ..recordsPageSize = 4
       ..recordsTotal = 5
@@ -171,16 +174,16 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('Registro 1'), findsOneWidget);
-    expect(find.text('Registro 4'), findsOneWidget);
-    expect(find.text('Registro 5'), findsNothing);
+    expect(find.text('Registro 5'), findsOneWidget);
+    expect(find.text('Registro 2'), findsOneWidget);
+    expect(find.text('Registro 1'), findsNothing);
     expect(find.text('Página 1 de 2'), findsOneWidget);
 
     await tester.tap(find.text('Próxima'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Registro 1'), findsNothing);
-    expect(find.text('Registro 5'), findsOneWidget);
+    expect(find.text('Registro 5'), findsNothing);
+    expect(find.text('Registro 1'), findsOneWidget);
     expect(find.text('Página 2 de 2'), findsOneWidget);
   });
 }
