@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from fastapi import Response
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.authorization import require_permission
@@ -9,6 +8,7 @@ from app.dependencies import get_db
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.schemas.project import ProjectResponse
 from app.services.auth import AuthenticatedContext
+from app.services.brevo import send_employee_credentials_email
 from app.services.employees import create_employee, delete_employee, get_employee, list_employees, update_employee
 from app.services.projects import list_employee_projects
 
@@ -62,15 +62,23 @@ def list_employee_projects_route(
 )
 def create_employee_route(
     payload: EmployeeDraftPayload,
+    background_tasks: BackgroundTasks,
     context: AuthenticatedContext = Depends(require_permission("employees.create")),
     db: Session = Depends(get_db),
 ) -> EmployeeProfileResponse:
-    return create_employee(
+    employee, temp_password = create_employee(
         db,
         company_id=context.company.id,
         payload=payload,
         timezone_name=context.company.timezone,
     )
+    background_tasks.add_task(
+        send_employee_credentials_email,
+        recipient_email=str(payload.email).strip(),
+        employee_name=payload.name,
+        temp_password=temp_password,
+    )
+    return employee
 
 
 @router.put("/{employee_id}", response_model=EmployeeProfileResponse)
@@ -83,6 +91,7 @@ def update_employee_route(
 ) -> EmployeeProfileResponse:
     return update_employee(
         db,
+        context=context,
         company_id=context.company.id,
         employee_id=employee_id,
         payload=payload,

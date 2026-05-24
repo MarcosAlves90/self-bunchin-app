@@ -7,6 +7,7 @@ import secrets
 
 
 PBKDF2_ITERATIONS = 310_000
+_TEMP_PASSWORD_BYTES = 12
 
 
 def hash_password(password: str) -> str:
@@ -48,3 +49,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 def issue_bearer_token() -> str:
     return secrets.token_urlsafe(32)
+
+
+def generate_temp_password() -> str:
+    return secrets.token_urlsafe(_TEMP_PASSWORD_BYTES)
