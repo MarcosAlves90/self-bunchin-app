@@ -100,12 +100,12 @@ abstract class PunchLocationResult with _$PunchLocationResult {
       );
 
   String get message => when(
-        checking: () => 'Validando permissao de localizacao.',
+        checking: () => 'Validando permissão de localização.',
         ready: (message, _) => message,
         serviceDisabled: () =>
-            'Os servicos de localizacao estao desativados. Ative-os para registrar o ponto.',
+            'Os serviços de localização estão desativados. Ative-os para registrar o ponto.',
         permissionDenied: () =>
-            'A permissao de localizacao foi negada. Sem ela, a batida nao e registrada.',
+            'A permissão de localização foi negada. Sem ela, a batida nao é registrada.',
         permissionDeniedForever: (message) => message,
         unsupported: (message) => message,
         error: (message, _) => message,
