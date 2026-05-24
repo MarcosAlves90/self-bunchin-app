@@ -701,7 +701,7 @@ class _PunchLocationChecking extends PunchLocationResult {
 class _PunchLocationReady extends PunchLocationResult {
   const _PunchLocationReady(
       {this.message =
-          'Permissão concedida. A localização sera anexada nas proximas batidas.',
+          'Permissão concedida. A localização será anexada nas próximas batidas.',
       this.snapshot})
       : super._();
 
