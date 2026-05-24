@@ -1,9 +1,9 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/features/auth/presentation/forgot_password_page.dart';
 import 'package:bunchin_flutter/features/auth/presentation/register_page.dart';
-import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/auth/presentation/auth_session_navigation.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_submission_mixin.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +14,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with AuthSubmissionMixin<LoginPage> {
   final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -22,7 +23,6 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _keepConnected = true;
   bool _obscurePassword = true;
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -38,51 +38,24 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      final session = await _api.login(
-        credentials: LoginCredentials(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-          keepConnected: _keepConnected,
-        ),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      Navigator.of(context).pushReplacement(
-        buildAuthenticatedWorkspaceRoute(session),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível concluir o login.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
+    await submitAuthAction(
+      action: () {
+        return _api.login(
+          credentials: LoginCredentials(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            keepConnected: _keepConnected,
+          ),
+        );
+      },
+      onSuccess: (session) {
+        final authSession = session!;
+        Navigator.of(context).pushReplacement(
+          buildAuthenticatedWorkspaceRoute(authSession),
+        );
+      },
+      genericErrorMessage: 'Não foi possível concluir o login.',
+    );
   }
 
   @override
@@ -223,12 +196,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _isSubmitting
+              onPressed: isSubmitting
                   ? null
                   : () {
                       _submit();
                     },
-              child: _isSubmitting
+              child: isSubmitting
                   ? const SizedBox(
                       height: 18,
                       width: 18,

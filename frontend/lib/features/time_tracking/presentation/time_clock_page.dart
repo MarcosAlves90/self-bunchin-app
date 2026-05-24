@@ -1,23 +1,23 @@
 import 'dart:async';
 
 import 'package:bunchin_flutter/contracts/punch.dart';
+import 'package:bunchin_flutter/contracts/location.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
-import 'package:bunchin_flutter/core/network/api_client.dart';
-import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
-import 'package:bunchin_flutter/features/time_tracking/application/punch_location_service.dart';
+import 'package:bunchin_flutter/features/time_tracking/presentation/time_clock_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class TimeClockPage extends StatefulWidget {
-  const TimeClockPage({super.key});
+  const TimeClockPage({super.key, this.controller});
+
+  final TimeClockController? controller;
 
   @override
   State<TimeClockPage> createState() => _TimeClockPageState();
 }
 
 class _TimeClockPageState extends State<TimeClockPage> {
-  final BunchinApi _api = BunchinApi();
   static const List<String> _weekdays = <String>[
     'segunda-feira',
     'terça-feira',
@@ -43,153 +43,52 @@ class _TimeClockPageState extends State<TimeClockPage> {
     'dezembro',
   ];
 
-  final PunchLocationService _punchLocationService =
-      const PunchLocationService();
-
-  late DateTime _now;
-  late List<PunchRecord> _records;
-  late ShiftStatus _status;
-  Timer? _clockTimer;
-  PunchLocationResult _locationState = const PunchLocationResult.checking();
-  bool _isSubmittingPunch = false;
-  bool _isLoadingState = true;
-  String? _loadError;
-  String _employeeName = 'Funcionario';
-  String _employeeUnit = '-';
-  int _todayWorkedMinutes = 0;
-  int _todayBreakMinutes = 0;
+  late final TimeClockController _controller;
+  late final bool _ownsController;
 
   @override
   void initState() {
     super.initState();
-    _now = DateTime.now();
-    _records = <PunchRecord>[];
-    _status = ShiftStatus.checkedOut;
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        _now = DateTime.now();
-      });
-    });
-
+    _controller = widget.controller ?? TimeClockController();
+    _ownsController = widget.controller == null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_prepareLocationAccess());
-      unawaited(_loadTimeClockState());
+      _controller.start();
     });
   }
 
   @override
   void dispose() {
-    _clockTimer?.cancel();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _loadTimeClockState() async {
-    setState(() {
-      _isLoadingState = true;
-      _loadError = null;
-    });
+  DateTime get _now => _controller.now;
+  List<PunchRecord> get _records => _controller.records;
+  ShiftStatus get _status => _controller.status;
+  PunchLocationResult get _locationState => _controller.locationState;
+  bool get _isSubmittingPunch => _controller.isSubmittingPunch;
+  bool get _isLoadingState => _controller.isLoadingState;
+  String? get _loadError => _controller.loadError;
+  String get _employeeName => _controller.employeeName;
+  String get _employeeUnit => _controller.employeeUnit;
+  int get _todayWorkedMinutes => _controller.todayWorkedMinutes;
+  int get _todayBreakMinutes => _controller.todayBreakMinutes;
 
-    try {
-      final state = await _api.getMyTimeClockState();
-      if (!mounted) {
-        return;
-      }
+  Future<void> _loadTimeClockState() => _controller.loadTimeClockState();
 
-      setState(() {
-        _employeeName = state.employee.name;
-        _employeeUnit = state.employee.unit;
-        _status = state.currentStatus;
-        _todayWorkedMinutes = state.todayWorkedMinutes;
-        _todayBreakMinutes = state.todayBreakMinutes;
-        _records = state.records;
-        _isLoadingState = false;
-      });
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoadingState = false;
-        _loadError = error.message;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoadingState = false;
-        _loadError = 'Não foi possível carregar o estado de ponto.';
-      });
-    }
-  }
-
-  Future<void> _prepareLocationAccess() async {
-    final result = await _punchLocationService.requestPermission();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _locationState = result;
-    });
-  }
+  Future<void> _prepareLocationAccess() => _controller.prepareLocationAccess();
 
   Future<void> _handlePunch(PunchType type) async {
-    if (_isSubmittingPunch) {
+    final message = await _controller.handlePunch(type);
+    if (!mounted || message == null) {
       return;
     }
 
-    setState(() {
-      _isSubmittingPunch = true;
-    });
-
-    final locationResult = await _punchLocationService.captureForPunch();
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSubmittingPunch = false;
-      _locationState = locationResult;
-    });
-
-    final location = locationResult.snapshot;
-    if (location == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(locationResult.message)));
-      return;
-    }
-
-    await _registerPunch(type, location: location);
-  }
-
-  Future<void> _registerPunch(
-    PunchType type, {
-    required PunchLocationSnapshot location,
-  }) async {
-    try {
-      final punch = await _api.createPunch(
-        request: CreatePunchRequest(type: type, location: location),
-      );
-      await _loadTimeClockState();
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${punch.title} registrado com sucesso.')),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   PunchRecord? get _firstCheckIn {
@@ -334,9 +233,14 @@ class _TimeClockPageState extends State<TimeClockPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WorkspaceScaffold(
-      sidebar: _buildSummaryPanel(),
-      contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return WorkspaceScaffold(
+          sidebar: _buildSummaryPanel(),
+          contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
+        );
+      },
     );
   }
 

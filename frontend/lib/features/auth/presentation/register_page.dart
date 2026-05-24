@@ -1,10 +1,10 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
-import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/auth/presentation/auth_session_navigation.dart';
+import 'package:bunchin_flutter/features/auth/presentation/auth_submission_mixin.dart';
 import 'package:bunchin_flutter/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -13,7 +13,8 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends State<RegisterPage>
+    with AuthSubmissionMixin<RegisterPage> {
   final BunchinApi _api = BunchinApi();
   final _formKey = GlobalKey<FormState>();
   final _companyNameController = TextEditingController();
@@ -27,7 +28,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _acceptTerms = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -57,62 +57,36 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    await submitAuthAction(
+      action: () {
+        return _api.registerCompany(
+          draft: CompanyRegistrationDraft(
+            companyName: _companyNameController.text.trim(),
+            tradeName: _tradeNameController.text.trim(),
+            cnpj: _cnpjController.text.trim(),
+            email: _emailController.text.trim(),
+            phone: _phoneController.text.trim(),
+            password: _passwordController.text,
+            acceptTerms: _acceptTerms,
+          ),
+        );
+      },
+      onSuccess: (session) {
+        final authSession = session!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Empresa cadastrada com sucesso.'),
+          ),
+        );
 
-    try {
-      final session = await _api.registerCompany(
-        draft: CompanyRegistrationDraft(
-          companyName: _companyNameController.text.trim(),
-          tradeName: _tradeNameController.text.trim(),
-          cnpj: _cnpjController.text.trim(),
-          email: _emailController.text.trim(),
-          phone: _phoneController.text.trim(),
-          password: _passwordController.text,
-          acceptTerms: _acceptTerms,
-        ),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Empresa cadastrada com sucesso.'),
-        ),
-      );
-
-      Navigator.of(context).pushAndRemoveUntil(
-        buildAuthenticatedWorkspaceRoute(session),
-        (route) => false,
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível concluir o cadastro da empresa.'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
+        Navigator.of(context).pushAndRemoveUntil(
+          buildAuthenticatedWorkspaceRoute(authSession),
+          (route) => false,
+        );
+      },
+      genericErrorMessage:
+          'Não foi possível concluir o cadastro da empresa.',
+    );
   }
 
   @override
@@ -383,8 +357,8 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: _isSubmitting ? null : _submit,
-              child: _isSubmitting
+              onPressed: isSubmitting ? null : _submit,
+              child: isSubmitting
                   ? const SizedBox(
                       height: 18,
                       width: 18,
