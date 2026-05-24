@@ -64,6 +64,16 @@ class BunchinApi {
     }
   }
 
+  Future<String> resetPassword({required String email}) async {
+    final response = await _client.post(
+      '/auth/reset-password',
+      body: {'email': email},
+    );
+
+    final map = requireJsonMap(response, 'reset-password response');
+    return requireString(map, 'message');
+  }
+
   Future<List<EmployeeProfile>> listEmployees() async {
     final response = await _client.get('/employees', withAuth: true);
     return _parseContract('employees', () {
