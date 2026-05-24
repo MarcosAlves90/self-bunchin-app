@@ -544,14 +544,18 @@ class WorkspaceSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.56),
-        border: Border.all(color: colorScheme.outlineVariant),
+    return Material(
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.56),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
-      child: child,
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: child,
+        ),
+      ),
     );
   }
 }
