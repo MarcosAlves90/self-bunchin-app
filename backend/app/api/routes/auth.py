@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.authorization import require_permission
@@ -19,7 +19,6 @@ from app.services.auth import (
     logout,
     register_company,
 )
-from app.services.brevo import send_company_welcome_email
 
 
 router = APIRouter()
@@ -32,17 +31,9 @@ router = APIRouter()
 )
 def register_company_route(
     payload: CompanyRegisterRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> AuthSessionResponse:
-    response = register_company(db, payload)
-    background_tasks.add_task(
-        send_company_welcome_email,
-        recipient_email=str(payload.email).strip(),
-        company_name=payload.company_name,
-        trade_name=payload.trade_name,
-    )
-    return response
+    return register_company(db, payload)
 
 
 @router.post("/login", response_model=AuthSessionResponse)

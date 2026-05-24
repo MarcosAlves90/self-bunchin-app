@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.crypto import FieldCipher
 from app.db import ensure_utc, utcnow
 from app.errors import DomainError, ErrorKind
+from app.domain.project_policy import validate_project_for_punch
 from app.models import Employee, Punch
 from app.schemas.punch import (
     CreatePunchRequest,
@@ -24,9 +25,6 @@ from app.schemas.punch import (
     TimeClockStateResponse,
     UpdateManagedPunchRequest,
 )
-from app.services.projects import validate_project_for_punch
-
-
 def _cipher() -> FieldCipher:
     settings = get_settings()
     return FieldCipher(settings.encryption_secret or "")

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from sqlalchemy import select
 
-from app.api.routes import auth as auth_routes
+from app.config import get_settings
+from app.events import get_event_bus
 from app.db import SessionLocal
 from app.models import Employee
 from app.services.employees import _cipher
 
-TEST_SEED_SECRET = "Bunchin@123"
-TEST_REGISTER_SECRET = "Acme@1234"
+TEST_SEED_SECRET = get_settings().seed_admin_password
+TEST_REGISTER_SECRET = f"test-register-{uuid4().hex}"
 
 
 def login_headers(client):
@@ -298,11 +301,11 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             },
         )
 
-    monkeypatch.setattr(
-        auth_routes,
-        "send_company_welcome_email",
-        fake_send_company_welcome_email,
-    )
+    monkeypatch.setattr("app.services.brevo.send_company_welcome_email", fake_send_company_welcome_email)
+    get_event_bus().reset()
+    from app.events.handlers import register_event_handlers
+
+    register_event_handlers()
 
     response = client.post(
         "/api/v1/auth/register-company",

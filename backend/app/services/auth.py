@@ -10,6 +10,9 @@ from app.config import get_settings
 from app.crypto import FieldCipher, lookup_digest
 from app.db import ensure_utc, utcnow
 from app.errors import DomainError, ErrorKind
+from app.domain.identity import normalize_email as _normalize_email
+from app.events.bus import publish_event
+from app.events.contracts import CompanyRegisteredEvent
 from app.models import AuthSession, Company, Employee, UserAccount
 from app.schemas.auth import (
     AuthContextResponse,
@@ -36,7 +39,7 @@ def _cipher() -> FieldCipher:
 
 
 def normalize_email(value: str) -> str:
-    return value.strip().lower()
+    return _normalize_email(value)
 
 
 def digits_only(value: str) -> str:
@@ -165,6 +168,13 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
     db.refresh(company)
     db.refresh(user)
     db.refresh(auth_session)
+    publish_event(
+        CompanyRegisteredEvent(
+            recipient_email=normalized_email,
+            company_name=payload.company_name,
+            trade_name=payload.trade_name,
+        ),
+    )
     return AuthSessionResponse(
         access_token=token,
         expires_at=ensure_utc(auth_session.expires_at),

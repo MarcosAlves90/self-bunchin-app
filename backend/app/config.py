@@ -54,10 +54,7 @@ class Settings:
                 "http://localhost:8080",
             ],
         )
-        self.seed_admin_password = os.getenv(
-            "BUNCHIN_SEED_ADMIN_PASSWORD",
-            "Bunchin@123",
-        )
+        self.seed_admin_password = os.getenv("BUNCHIN_SEED_ADMIN_PASSWORD")
         self.brevo_api_key = os.getenv("BUNCHIN_BREVO_API_KEY")
         self.brevo_sender_email = os.getenv("BUNCHIN_BREVO_SENDER_EMAIL")
         self.brevo_sender_name = os.getenv(
@@ -74,6 +71,7 @@ class Settings:
             for name, value in {
                 "BUNCHIN_TOKEN_SECRET": self.token_secret,
                 "BUNCHIN_ENCRYPTION_SECRET": self.encryption_secret,
+                "BUNCHIN_SEED_ADMIN_PASSWORD": self.seed_admin_password,
             }.items()
             if not value
         ]
