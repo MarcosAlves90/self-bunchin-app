@@ -274,12 +274,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }
   }
 
-  Future<void> _removeSelectedEmployee() async {
-    final employee = _selectedEmployee;
-    if (employee == null) {
-      return;
-    }
-
+  Future<void> _removeEmployee(EmployeeProfile employee) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -524,16 +519,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   List<Widget> _buildHeaderActions(bool isWide) {
-    final selectedEmployee = _selectedEmployee;
-    final removeButton = SizedBox(
-      width: isWide ? 210 : double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: selectedEmployee == null ? null : _removeSelectedEmployee,
-        icon: const Icon(Icons.person_remove_alt_1_rounded),
-        label: const Text('Remover selecionado'),
-        style: _removeButtonStyle(),
-      ),
-    );
     final createButton = SizedBox(
       width: isWide ? 210 : double.infinity,
       child: ElevatedButton.icon(
@@ -543,43 +528,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ),
     );
 
-    if (!isWide) {
-      return <Widget>[createButton, removeButton];
-    }
-
-    return <Widget>[removeButton, const SizedBox(width: 8), createButton];
-  }
-
-  ButtonStyle _removeButtonStyle() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final criticalColor = colorScheme.error;
-    return OutlinedButton.styleFrom(
-      foregroundColor: criticalColor,
-      side: BorderSide(color: criticalColor.withValues(alpha: 0.45)),
-    ).copyWith(
-      overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.pressed)) {
-          return criticalColor.withValues(alpha: 0.18);
-        }
-        if (states.contains(WidgetState.hovered)) {
-          return criticalColor.withValues(alpha: 0.1);
-        }
-        return null;
-      }),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.42);
-        }
-        return criticalColor.withValues(alpha: 0.04);
-      }),
-    );
+    return <Widget>[createButton];
   }
 
   Widget _buildMetricGrid(bool isWide) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final theme = Theme.of(context);
-        final colorScheme = theme.colorScheme;
         final useSingleRow = isWide && constraints.maxWidth >= 980;
         final useTwoColumns = !useSingleRow && constraints.maxWidth >= 500;
         final itemWidth = useTwoColumns
@@ -811,6 +765,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     statusLabel: _statusLabel(employee.status),
                     needsAttention: _needsAttention(employee),
                     onTap: () => _selectEmployee(employee.id),
+                    onDelete: () => _removeEmployee(employee),
                   ),
                 );
               }).toList(),
@@ -1660,6 +1615,7 @@ class _EmployeeListTile extends StatelessWidget {
     required this.statusLabel,
     required this.needsAttention,
     required this.onTap,
+    required this.onDelete,
   });
 
   final EmployeeProfile employee;
@@ -1669,6 +1625,7 @@ class _EmployeeListTile extends StatelessWidget {
   final String statusLabel;
   final bool needsAttention;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1750,13 +1707,33 @@ class _EmployeeListTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    employee.name,
-                    maxLines: isCompact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          employee.name,
+                          maxLines: isCompact ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: onDelete,
+                        tooltip: 'Remover funcionário',
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        color: colorScheme.error,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 36,
+                          height: 36,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
