@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.api.routes import auth as auth_routes
 from app.api.routes import employees as employees_routes
 from app.config import get_settings
+from app.events import get_event_bus
 from app.db import SessionLocal
 from app.models import Employee, UserAccount
 from app.services.employees import _cipher
@@ -132,6 +133,30 @@ def test_create_and_update_employee(client):
     updated = update_response.json()
     assert updated["role"] == "Analista Financeira Senior"
     assert updated["workMode"] == "remote"
+
+    patch_response = client.patch(
+        f"/api/v1/employees/{employee['id']}",
+        headers=headers,
+        json={
+            "name": "Renata Souza",
+            "role": "Analista Financeira Lead",
+            "department": "Financeiro",
+            "email": "renata.souza@bunchin.com",
+            "phone": "(11) 94444-6060",
+            "unit": "Backoffice Centro",
+            "expectedShiftStart": "08:00",
+            "expectedShiftEnd": "17:00",
+            "status": "active",
+            "workMode": "hybrid",
+            "roleLevel": "specialist",
+            "accessRole": "employee",
+            "requiresLocationOnPunch": False,
+            "trustedDeviceRequired": True,
+            "notes": "Atualizada via patch.",
+        },
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["role"] == "Analista Financeira Lead"
 
     with SessionLocal() as db:
         user = db.scalar(select(UserAccount).where(UserAccount.employee_id == employee["id"]))
@@ -440,6 +465,14 @@ def test_manager_can_manage_employee_punches(client):
     assert update_response.status_code == 200
     assert update_response.json()["detail"] == "Ajuste revisado pelo gestor."
 
+    patch_response = client.patch(
+        f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
+        headers=headers,
+        json={"detail": "Ajuste final via patch."},
+    )
+    assert patch_response.status_code == 200
+    assert patch_response.json()["detail"] == "Ajuste final via patch."
+
     delete_response = client.delete(
         f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
         headers=headers,
@@ -505,11 +538,11 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             },
         )
 
-    monkeypatch.setattr(
-        auth_routes,
-        "send_company_welcome_email",
-        fake_send_company_welcome_email,
-    )
+    monkeypatch.setattr("app.services.brevo.send_company_welcome_email", fake_send_company_welcome_email)
+    get_event_bus().reset()
+    from app.events.handlers import register_event_handlers
+
+    register_event_handlers()
 
     response = client.post(
         "/api/v1/auth/register-company",

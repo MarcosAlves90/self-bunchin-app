@@ -56,6 +56,7 @@ def get_project_route(
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
+@router.patch("/{project_id}", response_model=ProjectResponse)
 def update_project_route(
     project_id: str,
     payload: ProjectDraftPayload,

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
 from app.crypto import FieldCipher
+from app.domain.project_policy import validate_project_for_punch as _validate_project_for_punch
 from app.errors import DomainError, ErrorKind
 from app.models import Employee, EmployeeProject, Project
 from app.schemas.project import (
@@ -202,15 +203,9 @@ def validate_project_for_punch(
     employee_id: str,
     project_id: str,
 ) -> Project:
-    project = _project_or_404(db, company_id=company_id, project_id=project_id)
-    if project.status != ProjectStatus.active.value:
-        raise DomainError(ErrorKind.forbidden, "Project is inactive.")
-    linked = db.scalar(
-        select(EmployeeProject).where(
-            EmployeeProject.employee_id == employee_id,
-            EmployeeProject.project_id == project_id,
-        ),
+    return _validate_project_for_punch(
+        db,
+        company_id=company_id,
+        employee_id=employee_id,
+        project_id=project_id,
     )
-    if linked is None:
-        raise DomainError(ErrorKind.forbidden, "Employee is not assigned to this project.")
-    return project

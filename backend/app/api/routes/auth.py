@@ -40,17 +40,9 @@ router = APIRouter()
 )
 def register_company_route(
     payload: CompanyRegisterRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> AuthSessionResponse:
-    response = register_company(db, payload)
-    background_tasks.add_task(
-        send_company_welcome_email,
-        recipient_email=str(payload.email).strip(),
-        company_name=payload.company_name,
-        trade_name=payload.trade_name,
-    )
-    return response
+    return register_company(db, payload)
 
 
 @router.post("/login", response_model=AuthSessionResponse)

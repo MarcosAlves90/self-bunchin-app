@@ -12,11 +12,12 @@ from app.config import get_settings
 from app.crypto import FieldCipher, lookup_digest
 from app.db import ensure_utc
 from app.errors import DomainError, ErrorKind
+from app.domain.identity import normalize_email
+from app.domain.time_clock import calculate_worked_minutes, group_today_records
 from app.models import Employee, Punch, UserAccount
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.security import generate_temp_password, hash_password
-from app.services.auth import AuthenticatedContext, normalize_email
-from app.services.time_clock import calculate_worked_minutes, group_today_records
+from app.services.auth import AuthenticatedContext
 
 
 _LEGACY_EXPECTED_SHIFT_PATTERN = re.compile(r"^\s*(\d{1,2}:\d{2})\s*(?:as|às|a|-)\s*(\d{1,2}:\d{2})\s*$")
