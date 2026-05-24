@@ -1,273 +1,177 @@
 # CONTEXT-FORMAT.md — Formato Oficial do CONTEXT.md
 
-> Este arquivo define a estrutura padronizada do `CONTEXT.md`, fonte central de contexto compartilhado entre humanos e agentes de IA.  
-> Todo conteúdo novo ou atualizado no `CONTEXT.md` DEVE seguir este formato.
+> Este arquivo define a estrutura padrão do `CONTEXT.md`, que é a fonte central de contexto compartilhado entre humanos e agentes de IA.
+> Toda atualização relevante em `CONTEXT.md` deve manter esta estrutura ou justificar a alteração da estrutura aqui primeiro.
 
 ---
 
-## 1. Propósito
+## 1. Objetivo
 
-`CONTEXT.md` documenta informações críticas do projeto para:
+`CONTEXT.md` documenta o estado atual do projeto para:
 
-- Alinhar equipe e agentes de IA sobre o estado atual do sistema
-- Reduzir ambiguidade em decisões técnicas
-- Acelerar onboarding de novos contribuidores
-- Servir como fonte única de verdade para regras, padrões e arquitetura
+- alinhar humanos e agentes de IA
+- reduzir ambiguidade técnica
+- acelerar onboarding
+- servir como fonte única de verdade para regras, arquitetura e decisões
 
 ---
 
 ## 2. Princípios de Redação
 
 | Princípio | Descrição |
-|-----------|-----------|
-| **Clareza** | Frases curtas. Termo técnico exato. Sem jargão vago. |
-| **Baixa redundância** | Cada informação aparece uma vez. Use referências cruzadas. |
-| **Escaneabilidade** | Títulos, listas, tabelas, blocos de código. Leitura vertical. |
-| **Facilidade de manutenção** | Seções curtas. Datas em decisões. Arquivos pequenos = fáceis de atualizar. |
-| **Compatibilidade com IA** | Markdown simples. Hierarquia clara. Sem formatação complexa (HTML, spans). |
+|---|---|
+| Clareza | Frases curtas, termos precisos e sem jargão vago |
+| Baixa redundância | Cada informação deve aparecer uma vez |
+| Escaneabilidade | Títulos, listas e tabelas bem organizadas |
+| Manutenção | Seções curtas e fáceis de atualizar |
+| Compatibilidade com IA | Markdown simples e hierarquia explícita |
 
 ---
 
-## 3. Estrutura Obrigatória do `CONTEXT.md`
+## 3. Estrutura Obrigatória
 
-```
-# CONTEXT.md — [Nome do Projeto]
+O `CONTEXT.md` deve seguir esta ordem:
 
-<!-- Metadados -->
-- Última atualização: YYYY-MM-DD
-- Versão do documento: X.Y.Z
-- Mantenedor: [time/pessoa responsável]
+1. Visão Geral do Projeto
+2. Stack Tecnológica
+3. Arquitetura
+4. Estrutura de Pastas
+5. Convenções de Código
+6. Fluxos Críticos
+7. Decisões Arquiteturais
+8. Segurança
+9. Ambientes
+10. Integrações Externas
+11. Padrões de API
+12. Regras de Negócio
+13. Observações para IA
+14. Pendências Técnicas
+15. Glossário
+
+Se uma seção não se aplicar ao projeto, remova a seção em vez de deixá-la vazia.
 
 ---
 
-## 1. Visão Geral do Projeto
+## 4. Formato de Cada Seção
 
-**Propósito:** Resumo executivo do projeto. O que faz, para quem, por que existe.
+### 4.1 Visão Geral do Projeto
 
-- Descrição (2-3 frases)
+- Descrição curta do sistema
 - Público-alvo
 - Problema resolvido
-- Links úteis (docs, design system, ambiente de staging)
+- Links úteis
 
----
+### 4.2 Stack Tecnológica
 
-## 2. Stack Tecnológica
+- Tabela com tecnologia, versão e papel
+- Separar backend e frontend quando houver mais de uma stack
 
-**Propósito:** Lista de tecnologias, versões e papéis no sistema.
+### 4.3 Arquitetura
 
-| Tecnologia | Versão | Papel |
-|------------|--------|-------|
-| Flutter    | 3.x    | Frontend mobile/web |
-| FastAPI    | 0.x    | API REST |
-| PostgreSQL | 15.x   | Banco de dados |
+- Descrever padrões e camadas
+- Explicar relações entre módulos
+- Registrar regras de comunicação importantes
 
----
+### 4.4 Estrutura de Pastas
 
-## 3. Arquitetura
+- Mapear diretórios principais
+- Explicar a responsabilidade de cada pasta-chave
+- Incluir apenas o que ajuda a navegar o projeto
 
-**Propósito:** Visão macro da arquitetura. Diagramas textuais, padrões, fluxos de dados.
+### 4.5 Convenções de Código
 
-- Padrão arquitetural (ex: Clean Architecture, MVC, Modular Monolith)
-- Diagrama em Mermaid (se aplicável)
-- Relações entre camadas
-- Regras de comunicação entre módulos
-
----
-
-## 4. Estrutura de Pastas
-
-**Propósito:** Mapa da árvore de diretórios com explicação do papel de cada pasta-chave.
-
-```text
-frontend/lib/
-  core/           # Código compartilhado: temas, utils, constantes
-  features/       # Módulos por funcionalidade (Clean Architecture)
-  shared/         # Widgets e lógica compartilhada entre features
-```
-
----
-
-## 5. Convenções de Código
-
-**Propósito:** Regras que todo código do projeto deve seguir.
-
-- Estilo de nomenclatura (camelCase, snake_case, PascalCase)
+- Nomenclatura
 - Organização de imports
-- Tamanho máximo de função/arquivo
-- Uso de types vs dynamic
-- Padrão de commits (Conventional Commits)
-- Linters e formatadores configurados
+- Regras de tipos
+- Linters e formatadores
+- Convenção de commits
 
----
+### 4.6 Fluxos Críticos
 
-## 6. Fluxos Críticos
+- Listar fluxos essenciais do sistema
+- Descrever sequência e resultado esperado
+- Registrar erros comuns e solução conhecida
 
-**Propósito:** Sequência de passos para operações essenciais do sistema.
+### 4.7 Decisões Arquiteturais
 
-- Autenticação: fluxo de login, refresh token, logout
-- Criação de [recurso X]: validações, regras de negócio, side effects
-- Integração com serviço Y]: request, retry, fallback
+- Usar formato ADR
+- Sempre registrar data, contexto, decisão, alternativas e consequências
 
-Formato:
+### 4.8 Segurança
 
-```text
-1. [Ação] -> [Condição] -> [Resultado esperado]
-2. [Erro comum] -> [Manifestação] -> [Solução conhecida]
-```
+- Autenticação e autorização
+- Secrets
+- Validação
+- Proteções de transporte e headers
 
----
+### 4.9 Ambientes
 
-## 7. Decisões Arquiteturais (ADR)
+- Tabela com dev, staging e produção
+- URL, banco, acesso e deploy
 
-**Propósito:** Registro de decisões técnicas importantes com contexto, alternativa e consequência.
-
-Cada ADR segue:
-
-```markdown
-### ADR-001: [Título da Decisão]
-
-- **Data:** YYYY-MM-DD
-- **Contexto:** Por que a decisão foi necessária
-- **Decisão:** O que foi escolhido
-- **Alternativas:** O que foi rejeitado e por que
-- **Consequências:** Impactos positivos e negativos previstos
-```
-
----
-
-## 8. Segurança
-
-**Propósito:** Diretrizes de segurança, proteção de dados, prevenção de vulnerabilidades.
-
-- Autenticação e autorização (JWT, OAuth, RBAC)
-- Proteção de secrets (variáveis de ambiente, vault)
-- Validação de entrada (sanitização, rate limiting)
-- Headers de segurança (CSP, CORS, HSTS)
-
----
-
-## 9. Ambientes
-
-**Propósito:** Descrição de cada ambiente de deploy e suas diferenças.
-
-| Ambiente | URL | DB | Acesso | Deploy automático |
-|----------|-----|----|--------|-------------------|
-| dev      | ... | ... | equipe | push em main |
-| staging  | ... | ... | QA | tag release |
-| prod     | ... | ... | todos | aprovação manual |
-
----
-
-## 10. Integrações Externas
-
-**Propósito:** Serviços de terceiros que o sistema consome.
+### 4.10 Integrações Externas
 
 - Nome do serviço
-- API versionada
-- Chave de autenticação (referência a secret, nunca valor literal)
-- Rate limits
-- Endpoints críticos
-- Comportamento em falha (timeout, retry, fallback)
+- Chave ou credencial por referência
+- Comportamento em falha
 
----
+### 4.11 Padrões de API
 
-## 11. Padrões de API
-
-**Propósito:** Contrato de como as APIs são projetadas e documentadas.
-
-- Prefixo de URL (/api/v1)
-- Formato de request/response (JSON, HTTP codes)
-- Paginação (cursor vs offset)
+- Prefixo
+- Formato
+- Erros
 - Versionamento
-- Padrão de erros (código, mensagem, traceId)
 
----
+### 4.12 Regras de Negócio
 
-## 12. Regras de Negócio
-
-**Propósito:** Lógica de domínio que não pode ser inferida do código sozinha.
-
-- Regras de validação
-- Cálculos ou fórmulas específicas
-- Estados e transições permitidas
+- Validadores
+- Estados
+- Transições
 - Políticas de acesso
 
----
+### 4.13 Observações para IA
 
-## 13. Observações para IA
+- Arquivos gerados que não devem ser editados manualmente
+- Comandos frequentes
+- Sensibilidades do projeto
 
-**Propósito:** Instruções explícitas para agentes de IA que forem editar ou analisar o código.
+### 4.14 Pendências Técnicas
 
-- Quais arquivos nunca devem ser alterados manualmente (ex: gerados)
-- Padrões de prompt ou contexto esperados
-- Comandos frequentes (testar, buildar, rodar)
-- Sensibilidades (não commitar secrets, não alterar migrations)
+- Lista objetiva de tech debt
+- Impacto e prioridade, quando útil
 
----
+### 4.15 Glossário
 
-## 14. Pendências Técnicas (Tech Debt)
-
-**Propósito:** Itens conhecidos que precisam de refatoração ou melhoria futura.
-
-- [ ] Descrição do débito
-- Impacto estimado
-- Solução proposta
-- Prioridade (baixa/média/alta)
+- Termos específicos do domínio
+- Definições curtas e consistentes
 
 ---
 
-## 15. Glossário
+## 5. Regras de Manutenção
 
-**Propósito:** Definição de termos específicos do domínio.
-
-| Termo | Definição |
-|-------|-----------|
-| Workspace | Espaço de trabalho com projetos e membros |
-| Bunch | Agrupamento de tarefas relacionadas |
-
----
-
-## 4. Regras de Manutenção
-
-1. **Atualização contínua** — CONTEXT.md reflete o estado atual. Desatualizado = perigoso.
-2. **Uma fonte de verdade** — Se a informação está em CONTEXT.md, ela vale. Remova duplicatas em outros lugares.
-3. **Seções opcionais** — Se uma seção não se aplica, remova-a em vez de deixá-la vazia.
-4. **Datas em tudo** — Toda entrada com data. Facilita rastrear obsolescência.
-5. **Tamanho** — Prefira arquivo único até ~500 linhas. Depois disso, divida em `docs/context/` com índice.
-6. **Reviews** — Mudanças no CONTEXT.md passam pelo mesmo processo de PR que código.
+1. `CONTEXT.md` deve refletir o estado atual do projeto.
+2. Se uma regra mudar, atualize `CONTEXT.md` primeiro.
+3. Prefira remover informação obsoleta a acumular texto antigo.
+4. Use datas em decisões e mudanças importantes.
+5. Evite duplicar a mesma informação em múltiplos lugares.
+6. Se o arquivo crescer demais, considere dividir a documentação por domínio.
 
 ---
 
-## 5. Exemplo de Uso
+## 6. Exemplo de Uso
 
 ```markdown
 # CONTEXT.md — Bunchin App
 
-- Última atualização: 2026-05-23
-- Versão: 1.0.0
+- Última atualização: 2026-05-24
+- Versão do documento: 1.1.0
 - Mantenedor: Time Platform
 
 ---
 
 ## 1. Visão Geral do Projeto
 
-App de gerenciamento empresarial para organização de tarefas, projetos e equipes.
-Público: PMs e líderes de equipe.
-Problema: centralizar acompanhamento de entregas.
-Links: [docs](./docs), [staging](https://staging.bunchin.app)
+Sistema de gerenciamento empresarial para ponto eletrônico, jornada e equipe.
 
 ---
 ```
-
----
-
-## 6. Checklist de Qualidade
-
-Antes de commitar alterações no `CONTEXT.md`, verifique:
-
-- [ ] Informações técnicas estão corretas e atuais?
-- [ ] Links funcionam?
-- [ ] Seções obrigatórias preenchidas?
-- [ ] Sem duplicação com outros arquivos de documentação?
-- [ ] Linguagem objetiva, sem rodeios?
-- [ ] Agente de IA consegue extrair respostas sem ambiguidade?

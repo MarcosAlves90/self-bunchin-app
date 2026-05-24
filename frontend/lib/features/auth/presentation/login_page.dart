@@ -73,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel concluir o login.'),
+          content: Text('Não foi possível concluir o login.'),
         ),
       );
     } finally {
@@ -104,24 +104,14 @@ class _LoginPageState extends State<LoginPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+    return AuthFormFrame(
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.sizeOf(context).width < 920) ...[
-              const AuthCompactBrandBadge(),
-              const SizedBox(height: 24),
-            ],
-            Text(
-              'Entrar',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            const AuthPageHeading(title: 'Entrar'),
             const SizedBox(height: 10),
             Text(
               'Use seu e-mail e senha para acessar sua conta.',
@@ -245,12 +235,6 @@ class _LoginPageState extends State<LoginPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Text('Entrar'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Entrar com Google'),
             ),
             const SizedBox(height: 20),
             Center(

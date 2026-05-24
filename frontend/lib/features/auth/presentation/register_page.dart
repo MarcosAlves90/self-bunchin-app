@@ -103,7 +103,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel concluir o cadastro da empresa.'),
+          content: Text('Não foi possível concluir o cadastro da empresa.'),
         ),
       );
     } finally {
@@ -118,8 +118,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return AuthShell(
-      brandHeadline:
-          'Sua operação começa aqui.',
+      brandHeadline: 'Sua operação começa aqui.',
       brandDescription:
           'Ative sua empresa com um onboarding moderno, automatizado e desenvolvido para negócios que valorizam velocidade, controle e crescimento.',
       brandTags: const [
@@ -135,38 +134,16 @@ class _RegisterPageState extends State<RegisterPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+    return AuthFormFrame(
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.sizeOf(context).width < 920) ...[
-              const AuthCompactBrandBadge(),
-              const SizedBox(height: 24),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Cadastrar empresa',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+            AuthPageHeading(
+              title: 'Cadastrar empresa',
+              onBack: () => Navigator.of(context).pop(),
             ),
             const SizedBox(height: 10),
             Text(

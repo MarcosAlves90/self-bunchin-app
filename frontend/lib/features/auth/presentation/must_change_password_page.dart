@@ -82,7 +82,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Nao foi possivel redefinir sua senha.'),
+          content: Text('Não foi possível redefinir sua senha.'),
         ),
       );
     }
@@ -122,7 +122,8 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
       controller: controller,
       obscureText: obscure,
       textInputAction: textInputAction,
-      onFieldSubmitted: onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
+      onFieldSubmitted:
+          onFieldSubmitted != null ? (_) => onFieldSubmitted() : null,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -130,9 +131,7 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
         suffixIcon: IconButton(
           onPressed: () => onToggleObscure(!obscure),
           icon: Icon(
-            obscure
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
+            obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
           ),
         ),
       ),
@@ -159,24 +158,14 @@ class _MustChangePasswordPageState extends State<MustChangePasswordPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+    return AuthFormFrame(
       child: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (MediaQuery.sizeOf(context).width < 920) ...[
-              const AuthCompactBrandBadge(),
-              const SizedBox(height: 24),
-            ],
-            Text(
-              'Criar nova senha',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            const AuthPageHeading(title: 'Criar nova senha'),
             const SizedBox(height: 10),
             Text(
               'Defina uma senha forte e exclusiva para proteger sua conta.',

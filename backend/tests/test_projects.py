@@ -152,7 +152,7 @@ def test_employee_can_read_but_cannot_create_projects(client):
     create_response = client.post(
         "/api/v1/projects",
         headers=employee_headers,
-        json={"name": "Projeto sem permissao", "description": None},
+        json={"name": "Projeto sem permissão", "description": None},
     )
     assert create_response.status_code == 403
 

@@ -3,6 +3,21 @@ import 'dart:ui';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
+part 'auth_form_widgets.dart';
+
+TextStyle? authPageTitleStyle(BuildContext context) {
+  final theme = Theme.of(context);
+  final isMobile = MediaQuery.sizeOf(context).width < 920;
+
+  return (isMobile
+          ? theme.textTheme.headlineSmall
+          : theme.textTheme.headlineMedium)
+      ?.copyWith(
+    fontWeight: FontWeight.w700,
+    height: 1.08,
+  );
+}
+
 class AuthShell extends StatelessWidget {
   const AuthShell({
     super.key,

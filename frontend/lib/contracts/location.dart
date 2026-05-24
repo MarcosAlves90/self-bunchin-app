@@ -61,7 +61,7 @@ abstract class PunchLocationResult with _$PunchLocationResult {
 
   const factory PunchLocationResult.ready({
     @Default(
-        'Permissao concedida. A localizacao sera anexada nas proximas batidas.')
+        'Permissão concedida. A localização sera anexada nas proximas batidas.')
     String message,
     PunchLocationSnapshot? snapshot,
   }) = _PunchLocationReady;
@@ -74,12 +74,12 @@ abstract class PunchLocationResult with _$PunchLocationResult {
 
   const factory PunchLocationResult.permissionDeniedForever({
     @Default(
-        'A permissao de localizacao foi bloqueada. Reabilite o acesso nas configuracoes do dispositivo ou do navegador.')
+        'A permissão de localização foi bloqueada. Reabilite o acesso nas configurações do dispositivo ou do navegador.')
     String message,
   }) = _PunchLocationPermissionDeniedForever;
 
   const factory PunchLocationResult.unsupported({
-    @Default('Este ambiente nao oferece suporte a geolocalizacao.')
+    @Default('Este ambiente nao oferece suporte a geolocalização.')
     String message,
   }) = _PunchLocationUnsupported;
 
@@ -100,12 +100,12 @@ abstract class PunchLocationResult with _$PunchLocationResult {
       );
 
   String get message => when(
-        checking: () => 'Validando permissao de localizacao.',
+        checking: () => 'Validando permissão de localização.',
         ready: (message, _) => message,
         serviceDisabled: () =>
-            'Os servicos de localizacao estao desativados. Ative-os para registrar o ponto.',
+            'Os serviços de localização estão desativados. Ative-os para registrar o ponto.',
         permissionDenied: () =>
-            'A permissao de localizacao foi negada. Sem ela, a batida nao e registrada.',
+            'A permissão de localização foi negada. Sem ela, a batida nao é registrada.',
         permissionDeniedForever: (message) => message,
         unsupported: (message) => message,
         error: (message, _) => message,
