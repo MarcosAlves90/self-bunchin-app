@@ -9,7 +9,7 @@ from app.api.routes import employees as employees_routes
 from app.config import get_settings
 from app.events import get_event_bus
 from app.db import SessionLocal
-from app.models import Employee, UserAccount
+from app.models import Employee, Punch, UserAccount
 from app.services.employees import _cipher
 
 TEST_SEED_SECRET = get_settings().seed_admin_password
@@ -42,6 +42,14 @@ def login_headers_for(client, *, email: str, password: str):
     assert response.status_code == 200
     token = response.json()["accessToken"]
     return {"Authorization": f"Bearer {token}"}
+
+
+def _clear_employee_punches(employee_id: str) -> None:
+    with SessionLocal() as db:
+        punches = db.scalars(select(Punch).where(Punch.employee_id == employee_id)).all()
+        for punch in punches:
+            db.delete(punch)
+        db.commit()
 
 
 def test_health_check(client):
@@ -399,7 +407,10 @@ def test_time_clock_requires_location_when_policy_demands_it(client):
         json={"type": "checkIn"},
     )
     assert forbidden_response.status_code == 400
-    assert "location" in forbidden_response.json()["detail"].lower()
+    assert (
+        forbidden_response.json()["detail"]
+        == "Este funcionário precisa enviar dados de localização ao bater ponto."
+    )
 
     success_response = client.post(
         "/api/v1/time-clock/me/punches",
@@ -418,6 +429,63 @@ def test_time_clock_requires_location_when_policy_demands_it(client):
     payload = success_response.json()
     assert payload["type"] == "checkIn"
     assert payload["location"]["latitude"] == -23.5632
+
+
+def test_time_clock_state_paginates_records(client):
+    headers = login_headers(client)
+    _clear_employee_punches("emp-01")
+
+    punch_payloads = [
+        {"type": "checkIn"},
+        {"type": "breakStart"},
+        {"type": "breakEnd"},
+        {"type": "breakStart"},
+        {"type": "breakEnd"},
+    ]
+
+    for payload in punch_payloads:
+        response = client.post(
+            "/api/v1/time-clock/me/punches",
+            headers=headers,
+            json={
+                **payload,
+                "location": {
+                    "latitude": -23.5632,
+                    "longitude": -46.6545,
+                    "accuracyMeters": 12,
+                    "capturedAt": "2026-04-25T16:30:00-03:00",
+                },
+            },
+        )
+        assert response.status_code == 200
+
+    page_one = client.get(
+        "/api/v1/time-clock/me?page=1&limit=2",
+        headers=headers,
+    )
+    assert page_one.status_code == 200
+    payload = page_one.json()
+    assert payload["recordsPage"] == 1
+    assert payload["recordsPageSize"] == 2
+    assert payload["recordsTotal"] == 5
+    assert payload["recordsTotalPages"] == 3
+    assert payload["recordsHasPrevious"] is False
+    assert payload["recordsHasNext"] is True
+    assert [item["type"] for item in payload["records"]] == [
+        "breakEnd",
+        "breakStart",
+    ]
+
+    page_three = client.get(
+        "/api/v1/time-clock/me?page=3&limit=2",
+        headers=headers,
+    )
+    assert page_three.status_code == 200
+    payload = page_three.json()
+    assert payload["recordsPage"] == 3
+    assert payload["recordsHasPrevious"] is True
+    assert payload["recordsHasNext"] is False
+    assert [item["type"] for item in payload["records"]] == ["checkIn"]
 
 
 def test_employee_cannot_manage_employee_punches(client):

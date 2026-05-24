@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from math import ceil
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -81,7 +82,7 @@ def _get_company_employee(db: Session, *, company_id: str, employee_id: str) -> 
         select(Employee).where(Employee.company_id == company_id, Employee.id == employee_id),
     )
     if employee is None:
-        raise DomainError(ErrorKind.not_found, "Employee not found.")
+        raise DomainError(ErrorKind.not_found, "Funcionário não encontrado.")
     return employee
 
 
@@ -100,7 +101,7 @@ def _get_employee_punch(
         ),
     )
     if record is None:
-        raise DomainError(ErrorKind.not_found, "Punch not found.")
+        raise DomainError(ErrorKind.not_found, "Registro de ponto não encontrado.")
     return record
 
 
@@ -178,6 +179,23 @@ def get_employee_records(db: Session, *, employee_id: str) -> list[Punch]:
 
 
 def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> TimeClockStateResponse:
+    return time_clock_state_page(
+        db,
+        employee=employee,
+        timezone_name=timezone_name,
+        page=1,
+        page_size=4,
+    )
+
+
+def time_clock_state_page(
+    db: Session,
+    *,
+    employee: Employee,
+    timezone_name: str,
+    page: int,
+    page_size: int,
+) -> TimeClockStateResponse:
     cipher = _cipher()
     all_records = get_employee_records(db, employee_id=employee.id)
     today_records = group_today_records(
@@ -185,6 +203,14 @@ def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> 
         company_id=employee.company_id,
         timezone_name=timezone_name,
     ).get(employee.id, [])
+    display_records = list(reversed(today_records))
+    normalized_page_size = max(page_size, 1)
+    total_records = len(display_records)
+    total_pages = max(ceil(total_records / normalized_page_size), 1)
+    normalized_page = min(max(page, 1), total_pages)
+    start_index = (normalized_page - 1) * normalized_page_size
+    end_index = start_index + normalized_page_size
+    page_records = display_records[start_index:end_index]
 
     first_check_in_at = next(
         (
@@ -211,7 +237,13 @@ def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> 
         today_break_minutes=calculate_break_minutes(today_records),
         first_check_in_at=first_check_in_at,
         last_punch_at=last_punch_at,
-        records=[serialize_record(record, cipher=cipher) for record in today_records],
+        records=[serialize_record(record, cipher=cipher) for record in page_records],
+        records_page=normalized_page,
+        records_page_size=normalized_page_size,
+        records_total=total_records,
+        records_total_pages=total_pages,
+        records_has_previous=normalized_page > 1,
+        records_has_next=normalized_page < total_pages,
     )
 
 
@@ -235,15 +267,15 @@ def create_punch(
         raise DomainError(
             ErrorKind.conflict,
             (
-                "Invalid punch transition for the current shift status. "
-                f"Current status: {current_status.value}."
+                "Transição de ponto inválida para o estado atual. "
+                f"Estado atual: {current_status.value}."
             ),
         )
 
     if employee.requires_location_on_punch and payload.location is None:
         raise DomainError(
             ErrorKind.bad_request,
-            "This employee must submit location data when punching.",
+            "Este funcionário precisa enviar dados de localização ao bater ponto.",
         )
 
     if payload.project_id is not None:

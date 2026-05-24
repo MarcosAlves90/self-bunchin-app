@@ -62,6 +62,12 @@ abstract class TimeClockState with _$TimeClockState {
     required DateTime? firstCheckInAt,
     required DateTime? lastPunchAt,
     required List<PunchRecord> records,
+    required int recordsPage,
+    required int recordsPageSize,
+    required int recordsTotal,
+    required int recordsTotalPages,
+    required bool recordsHasPrevious,
+    required bool recordsHasNext,
   }) = _TimeClockState;
 
   factory TimeClockState.fromJson(JsonMap json) {
@@ -83,6 +89,12 @@ abstract class TimeClockState with _$TimeClockState {
             ),
           )
           .toList(),
+      recordsPage: requireInt(json, 'recordsPage'),
+      recordsPageSize: requireInt(json, 'recordsPageSize'),
+      recordsTotal: requireInt(json, 'recordsTotal'),
+      recordsTotalPages: requireInt(json, 'recordsTotalPages'),
+      recordsHasPrevious: requireBool(json, 'recordsHasPrevious'),
+      recordsHasNext: requireBool(json, 'recordsHasNext'),
     );
   }
 }

@@ -96,3 +96,9 @@ class TimeClockStateResponse(CamelModel):
     first_check_in_at: datetime | None
     last_punch_at: datetime | None
     records: list[PunchRecordResponse]
+    records_page: int = Field(ge=1)
+    records_page_size: int = Field(ge=1)
+    records_total: int = Field(ge=0)
+    records_total_pages: int = Field(ge=1)
+    records_has_previous: bool
+    records_has_next: bool

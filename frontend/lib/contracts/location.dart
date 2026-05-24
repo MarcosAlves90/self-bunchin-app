@@ -61,7 +61,7 @@ abstract class PunchLocationResult with _$PunchLocationResult {
 
   const factory PunchLocationResult.ready({
     @Default(
-        'Permissão concedida. A localização sera anexada nas proximas batidas.')
+        'Permissão concedida. A localização será anexada nas próximas batidas.')
     String message,
     PunchLocationSnapshot? snapshot,
   }) = _PunchLocationReady;

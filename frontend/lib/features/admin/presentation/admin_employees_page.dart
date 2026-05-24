@@ -1,9 +1,9 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
-import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
+import 'package:bunchin_flutter/features/admin/presentation/admin_employees_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,193 +11,37 @@ import 'package:flutter/services.dart';
 part 'admin_employees_page_widgets.dart';
 
 class AdminEmployeesPage extends StatefulWidget {
-  const AdminEmployeesPage({super.key, this.api});
+  const AdminEmployeesPage({super.key, this.api, this.controller});
 
   final BunchinApi? api;
+  final AdminEmployeesController? controller;
 
   @override
   State<AdminEmployeesPage> createState() => _AdminEmployeesPageState();
 }
 
 class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
-  final TextEditingController _searchController = TextEditingController();
-
-  late final BunchinApi _api;
-  late List<EmployeeProfile> _employees;
-  AuthContext? _authContext;
+  late final AdminEmployeesController _controller;
+  late final bool _ownsController;
   _EmployeeDetailTab _detailTab = _EmployeeDetailTab.registration;
-  EmployeeFilter _filter = EmployeeFilter.all;
-  String _searchQuery = '';
-  String? _selectedEmployeeId;
-  bool _isLoading = true;
-  String? _loadError;
 
   @override
   void initState() {
     super.initState();
-    _api = widget.api ?? BunchinApi();
-    _employees = <EmployeeProfile>[];
-    _loadEmployees();
-  }
-
-  Future<void> _loadEmployees() async {
-    setState(() {
-      _isLoading = true;
-      _loadError = null;
+    _controller = widget.controller ??
+        AdminEmployeesController(api: widget.api);
+    _ownsController = widget.controller == null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.start();
     });
-
-    try {
-      final employeesFuture = _api.listEmployees();
-      final authContextFuture = _loadAuthContextSafely();
-      final employees = await employeesFuture;
-      final authContext = await authContextFuture;
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _employees = employees;
-        _authContext = authContext;
-        if (_selectedEmployeeId == null && _employees.isNotEmpty) {
-          _selectedEmployeeId = _employees.first.id;
-        }
-        _isLoading = false;
-      });
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoading = false;
-        _loadError = error.message;
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _isLoading = false;
-        _loadError = 'Não foi possível carregar os funcionários.';
-      });
-    }
-  }
-
-  Future<AuthContext?> _loadAuthContextSafely() async {
-    try {
-      return await _api.getAuthContext();
-    } on ApiException {
-      return null;
-    } catch (_) {
-      return null;
-    }
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    if (_ownsController) {
+      _controller.dispose();
+    }
     super.dispose();
-  }
-
-  List<EmployeeProfile> get _visibleEmployees {
-    final normalizedQuery = _searchQuery.trim().toLowerCase();
-    final currentUserEmail = _authContext?.user.email.trim().toLowerCase();
-    final currentUserEmployeeId = _authContext?.user.employeeId;
-
-    return _employees.where((employee) {
-      // Avoid showing the current user's own profile in the admin list.
-      if (currentUserEmployeeId != null &&
-          currentUserEmployeeId.isNotEmpty &&
-          employee.id == currentUserEmployeeId) {
-        return false;
-      }
-
-      if (currentUserEmail != null &&
-          currentUserEmail.isNotEmpty &&
-          employee.email.trim().toLowerCase() == currentUserEmail) {
-        return false;
-      }
-
-      final matchesFilter = switch (_filter) {
-        EmployeeFilter.all => true,
-        EmployeeFilter.active => employee.status == EmployeeStatus.active,
-        EmployeeFilter.attention => _needsAttention(employee),
-        EmployeeFilter.inactive => employee.status == EmployeeStatus.inactive,
-      };
-
-      if (!matchesFilter) {
-        return false;
-      }
-
-      if (normalizedQuery.isEmpty) {
-        return true;
-      }
-
-      final haystack = <String>[
-        employee.name,
-        employee.role,
-        employee.department,
-        employee.email,
-        employee.unit,
-      ].join(' ').toLowerCase();
-
-      return haystack.contains(normalizedQuery);
-    }).toList()
-      ..sort((left, right) {
-        final leftPriority = _needsAttention(left) ? 0 : 1;
-        final rightPriority = _needsAttention(right) ? 0 : 1;
-
-        if (leftPriority != rightPriority) {
-          return leftPriority.compareTo(rightPriority);
-        }
-
-        return left.name.compareTo(right.name);
-      });
-  }
-
-  EmployeeProfile? get _selectedEmployee {
-    final visibleEmployees = _visibleEmployees;
-    if (visibleEmployees.isEmpty) {
-      return null;
-    }
-
-    for (final employee in visibleEmployees) {
-      if (employee.id == _selectedEmployeeId) {
-        return employee;
-      }
-    }
-
-    return visibleEmployees.first;
-  }
-
-  int get _activeEmployees {
-    return _employees
-        .where((employee) => employee.status == EmployeeStatus.active)
-        .length;
-  }
-
-  int get _attentionEmployees {
-    return _employees.where(_needsAttention).length;
-  }
-
-  int get _locationTrackedEmployees {
-    return _employees
-        .where((employee) => employee.requiresLocationOnPunch)
-        .length;
-  }
-
-  int get _leadershipEmployees {
-    return _employees
-        .where((employee) => employee.roleLevel == RoleLevel.leadership)
-        .length;
-  }
-
-  bool _needsAttention(EmployeeProfile employee) {
-    return employee.pendingAdjustments > 0 ||
-        employee.status == EmployeeStatus.onboarding ||
-        employee.status == EmployeeStatus.onLeave ||
-        employee.status == EmployeeStatus.inactive;
   }
 
   Future<void> _openCreateEmployeeDialog() async {
@@ -210,29 +54,14 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    try {
-      final employee = await _api.createEmployee(draft);
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _employees = <EmployeeProfile>[employee, ..._employees];
-        _selectedEmployeeId = employee.id;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${employee.name} foi adicionado à empresa.')),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+    final message = await _controller.createEmployee(draft);
+    if (!mounted || message == null) {
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _openEditEmployeeDialog(EmployeeProfile employee) async {
@@ -245,39 +74,18 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    try {
-      final updated = await _api.updateEmployee(employee.id, draft);
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _employees = _employees.map((currentEmployee) {
-          if (currentEmployee.id != employee.id) {
-            return currentEmployee;
-          }
-
-          return updated;
-        }).toList();
-        _selectedEmployeeId = employee.id;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${draft.name} foi atualizado com sucesso.')),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+    final message = await _controller.updateEmployee(employee, draft);
+    if (!mounted || message == null) {
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _removeSelectedEmployee() async {
-    final employee = _selectedEmployee;
+    final employee = _controller.selectedEmployee;
     if (employee == null) {
       return;
     }
@@ -307,39 +115,39 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    try {
-      await _api.deleteEmployee(employee.id);
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _employees = _employees
-            .where((currentEmployee) => currentEmployee.id != employee.id)
-            .toList();
-        final fallbackSelection =
-            _visibleEmployees.isEmpty ? null : _visibleEmployees.first.id;
-        _selectedEmployeeId = fallbackSelection;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${employee.name} foi removido da empresa.')),
-      );
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+    final message = await _controller.deleteSelectedEmployee();
+    if (!mounted || message == null) {
+      return;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   void _selectEmployee(String employeeId) {
-    setState(() {
-      _selectedEmployeeId = employeeId;
-    });
+    _controller.selectEmployee(employeeId);
+  }
+
+  Future<void> _loadEmployees() => _controller.loadEmployees();
+
+  TextEditingController get _searchController => _controller.searchController;
+  List<EmployeeProfile> get _employees => _controller.employees;
+  AuthContext? get _authContext => _controller.authContext;
+  EmployeeFilter get _filter => _controller.filter;
+  String get _searchQuery => _controller.searchQuery;
+  String? get _selectedEmployeeId => _controller.selectedEmployeeId;
+  bool get _isLoading => _controller.isLoading;
+  String? get _loadError => _controller.loadError;
+  EmployeeProfile? get _selectedEmployee => _controller.selectedEmployee;
+  List<EmployeeProfile> get _visibleEmployees => _controller.visibleEmployees;
+  int get _activeEmployees => _controller.activeEmployees;
+  int get _attentionEmployees => _controller.attentionEmployees;
+  int get _locationTrackedEmployees => _controller.locationTrackedEmployees;
+  int get _leadershipEmployees => _controller.leadershipEmployees;
+
+  bool _needsAttention(EmployeeProfile employee) {
+    return _controller.needsAttention(employee);
   }
 
   String _formatHours(int minutes) {
@@ -357,54 +165,43 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Color _statusColor(EmployeeStatus status) {
-    return switch (status) {
-      EmployeeStatus.active => const Color(0xFF2F8F46),
-      EmployeeStatus.onboarding => const Color(0xFF8C5D00),
-      EmployeeStatus.onLeave => const Color(0xFF8C5D00),
-      EmployeeStatus.inactive => const Color(0xFF8B1E1E),
-    };
+    return _controller.statusColor(status);
   }
 
   String _statusLabel(EmployeeStatus status) {
-    return switch (status) {
-      EmployeeStatus.active => 'Ativo',
-      EmployeeStatus.onboarding => 'Onboarding',
-      EmployeeStatus.onLeave => 'Afastado',
-      EmployeeStatus.inactive => 'Inativo',
-    };
+    return _controller.statusLabel(status);
   }
 
   String _workModeLabel(EmployeeWorkMode workMode) {
-    return switch (workMode) {
-      EmployeeWorkMode.onsite => 'Presencial',
-      EmployeeWorkMode.hybrid => 'Híbrido',
-      EmployeeWorkMode.remote => 'Remoto',
-    };
+    return _controller.workModeLabel(workMode);
   }
 
   IconData _statusIcon(EmployeeStatus status) {
-    return switch (status) {
-      EmployeeStatus.active => Icons.check_circle_rounded,
-      EmployeeStatus.onboarding => Icons.rocket_launch_rounded,
-      EmployeeStatus.onLeave => Icons.pause_circle_rounded,
-      EmployeeStatus.inactive => Icons.do_not_disturb_on_rounded,
-    };
+    return _controller.statusIcon(status);
   }
 
   String _filterLabel(EmployeeFilter filter) {
-    return switch (filter) {
-      EmployeeFilter.all => 'Todos',
-      EmployeeFilter.active => 'Ativos',
-      EmployeeFilter.attention => 'Atenção',
-      EmployeeFilter.inactive => 'Inativos',
-    };
+    return _controller.filterLabel(filter);
+  }
+
+  String _companyDisplayName(AuthCompanySummary? company) {
+    return _controller.companyDisplayName(company);
+  }
+
+  String _companyIdentitySummary(AuthCompanySummary? company) {
+    return _controller.companyIdentitySummary(company);
   }
 
   @override
   Widget build(BuildContext context) {
-    return WorkspaceScaffold(
-      sidebar: _buildSummaryPanel(),
-      contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return WorkspaceScaffold(
+          sidebar: _buildSummaryPanel(),
+          contentBuilder: (context, isWide) => _buildWorkspace(isWide: isWide),
+        );
+      },
     );
   }
 
@@ -447,34 +244,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ),
       const WorkspaceHighlightChip(label: 'Dados mascarados'),
     ];
-  }
-
-  String _companyDisplayName(AuthCompanySummary? company) {
-    if (company == null) {
-      return 'Cadastro empresarial indisponível';
-    }
-
-    final tradeName = company.tradeName.trim();
-    if (tradeName.isNotEmpty) {
-      return tradeName;
-    }
-
-    return company.legalName.trim();
-  }
-
-  String _companyIdentitySummary(AuthCompanySummary? company) {
-    if (company == null) {
-      return 'Não foi possível carregar os dados cadastrais da empresa.';
-    }
-
-    final legalName = company.legalName.trim();
-    final displayName = _companyDisplayName(company);
-
-    if (legalName.isNotEmpty && legalName != displayName) {
-      return legalName;
-    }
-
-    return 'Dados cadastrais confirmados.';
   }
 
   Widget _buildWorkspace({required bool isWide}) {
@@ -693,9 +462,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           TextField(
             controller: _searchController,
             onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
+              _controller.setSearchQuery(value);
             },
             decoration: InputDecoration(
               labelText: 'Buscar funcionário',
@@ -705,10 +472,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                   ? null
                   : IconButton(
                       onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
+                        _controller.clearSearch();
                       },
                       icon: const Icon(Icons.close_rounded),
                     ),
@@ -724,9 +488,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                 selected: _filter == filter,
                 checkmarkColor: AppTheme.accent,
                 onSelected: (_) {
-                  setState(() {
-                    _filter = filter;
-                  });
+                  _controller.setFilter(filter);
                 },
               );
             }).toList(),
@@ -1101,11 +863,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   IconData _workModeSummaryIcon(EmployeeWorkMode workMode) {
-    return switch (workMode) {
-      EmployeeWorkMode.onsite => Icons.business_center_rounded,
-      EmployeeWorkMode.hybrid => Icons.sync_alt_rounded,
-      EmployeeWorkMode.remote => Icons.laptop_mac_rounded,
-    };
+    return _controller.workModeSummaryIcon(workMode);
   }
 }
 
