@@ -745,7 +745,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
                 : '${_formatCoordinate(lastLocation.latitude)}, ${_formatCoordinate(lastLocation.longitude)}',
           ),
           _InfoFlag(
-            label: 'Precisã',
+            label: 'Precisão',
             value: lastLocation == null
                 ? '--'
                 : _formatAccuracy(lastLocation.accuracyMeters),
@@ -812,7 +812,7 @@ class _TimelineTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Precisã estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
+                  'Precisão estimada ${location.accuracyMeters.toStringAsFixed(0)} m',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
