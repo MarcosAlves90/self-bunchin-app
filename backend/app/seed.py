@@ -410,3 +410,7 @@ def seed_database_if_empty(db: Session) -> None:
     db.add_all(_build_users(COMPANY_ID, cipher, settings))
     db.add_all(_build_punches(COMPANY_ID))
     db.commit()
+
+
+def seed_database(db: Session) -> None:
+    seed_database_if_empty(db)

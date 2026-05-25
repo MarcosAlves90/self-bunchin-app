@@ -15,7 +15,7 @@ os.environ["BUNCHIN_SEED_ON_STARTUP"] = "true"
 
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.seed import seed_database_if_empty  # noqa: E402
+from app.seed import seed_database  # noqa: E402
 
 
 @pytest.fixture()
@@ -23,7 +23,7 @@ def client() -> Generator[TestClient, None, None]:
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
-        seed_database_if_empty(db)
+        seed_database(db)
 
     app = create_app()
     with TestClient(app) as test_client:
