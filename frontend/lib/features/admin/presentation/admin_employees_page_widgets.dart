@@ -982,7 +982,7 @@ class _EmployeeDetailHero extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.82),
         border: Border.all(color: colorScheme.outlineVariant),
@@ -1671,26 +1671,26 @@ class _ManagedPunchTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Container(
-                width: 44,
-                height: 44,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: tone.withValues(alpha: 0.12),
                   border: Border.all(color: tone.withValues(alpha: 0.24)),
                 ),
                 child: Icon(
                   _punchTypeIcon(punch.type),
-                  size: 22,
+                  size: 18,
                   color: tone,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: 6,
+                      runSpacing: 6,
                       children: <Widget>[
                         _InlinePill(
                           label: _punchTypeLabel(punch.type),
@@ -1704,17 +1704,17 @@ class _ManagedPunchTile extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       punch.detail,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface,
-                        height: 1.4,
+                        height: 1.35,
                       ),
                     ),
                     if (punch.projectId != null &&
                         punch.projectId!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Text(
                         'Projeto: ${punch.projectId}',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -1727,7 +1727,7 @@ class _ManagedPunchTile extends StatelessWidget {
               ),
             ],
           ),
-          if (!isCompact) const SizedBox(height: 12),
+          if (!isCompact) const SizedBox(height: 8),
           if (!isCompact)
             Row(
               children: <Widget>[
@@ -1749,7 +1749,7 @@ class _ManagedPunchTile extends StatelessWidget {
               ],
             )
           else ...<Widget>[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               children: <Widget>[
                 Expanded(

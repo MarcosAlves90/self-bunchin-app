@@ -1,5 +1,6 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
@@ -101,9 +102,67 @@ void main() {
     expect(find.text('Nenhum ponto manual registrado.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('paginates managed punches on the admin screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminEmployeesPage(
+          api: _FakeAdminApi(
+            managedPunchesByEmployeeId: <String, List<ManagedPunchRecord>>{
+              'emp-99': List<ManagedPunchRecord>.generate(5, (index) {
+                final day = index + 1;
+                return ManagedPunchRecord(
+                  id: 'punch-$day',
+                  employeeId: 'emp-99',
+                  type: PunchType.checkIn,
+                  timestamp: DateTime(2026, 5, day, 8, 0),
+                  detail: 'Ponto $day',
+                  projectId: null,
+                  location: null,
+                );
+              }),
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final punchTab = find.text('Ponto').last;
+    await tester.ensureVisible(punchTab);
+    await tester.tap(punchTab);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Página 1 de 2'), findsOneWidget);
+    expect(find.text('Ponto 5'), findsOneWidget);
+    expect(find.text('Ponto 2'), findsOneWidget);
+    expect(find.text('Ponto 1'), findsNothing);
+
+    final nextPage = find.text('Próxima');
+    await tester.ensureVisible(nextPage);
+    await tester.tap(nextPage);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Página 2 de 2'), findsOneWidget);
+    expect(find.text('Ponto 1'), findsOneWidget);
+    expect(find.text('Ponto 5'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeAdminApi extends BunchinApi {
+  _FakeAdminApi(
+      {Map<String, List<ManagedPunchRecord>>? managedPunchesByEmployeeId})
+      : managedPunchesByEmployeeId =
+            managedPunchesByEmployeeId ?? <String, List<ManagedPunchRecord>>{};
+
+  final Map<String, List<ManagedPunchRecord>> managedPunchesByEmployeeId;
+
   @override
   Future<AuthContext> getAuthContext() async {
     return AuthContext(
@@ -151,8 +210,33 @@ class _FakeAdminApi extends BunchinApi {
   }
 
   @override
-  Future<List<ManagedPunchRecord>> listManagedPunches(String employeeId) async {
-    return <ManagedPunchRecord>[];
+  Future<ManagedPunchPage> listManagedPunches(
+    String employeeId, {
+    int page = 1,
+    int limit = 4,
+  }) async {
+    final records = <ManagedPunchRecord>[
+      ...managedPunchesByEmployeeId[employeeId] ?? <ManagedPunchRecord>[],
+    ]..sort((left, right) {
+        final timestampComparison = right.timestamp.compareTo(left.timestamp);
+        if (timestampComparison != 0) {
+          return timestampComparison;
+        }
+        return right.id.compareTo(left.id);
+      });
+    final totalPages = records.isEmpty ? 1 : (records.length / limit).ceil();
+    final normalizedPage = page.clamp(1, totalPages);
+    final startIndex = (normalizedPage - 1) * limit;
+    final endIndex = (startIndex + limit).clamp(0, records.length);
+    return ManagedPunchPage(
+      records: records.sublist(startIndex, endIndex),
+      recordsPage: normalizedPage,
+      recordsPageSize: limit,
+      recordsTotal: records.length,
+      recordsTotalPages: totalPages,
+      recordsHasPrevious: normalizedPage > 1,
+      recordsHasNext: normalizedPage < totalPages,
+    );
   }
 
   @override

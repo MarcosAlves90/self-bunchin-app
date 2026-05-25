@@ -16,6 +16,7 @@ from app.domain.project_policy import validate_project_for_punch
 from app.models import Employee, Punch
 from app.schemas.punch import (
     CreatePunchRequest,
+    ManagedPunchPageResponse,
     ManagedPunchRecordResponse,
     ManagePunchRequest,
     PunchLocationSnapshotPayload,
@@ -178,6 +179,30 @@ def get_employee_records(db: Session, *, employee_id: str) -> list[Punch]:
     ).all()
 
 
+def _paginate_records(
+    records: list[Punch],
+    *,
+    page: int,
+    page_size: int,
+) -> tuple[list[Punch], int, int, int, bool, bool]:
+    normalized_page_size = max(page_size, 1)
+    total_records = len(records)
+    total_pages = max(ceil(total_records / normalized_page_size), 1)
+    normalized_page = min(max(page, 1), total_pages)
+    start_index = (normalized_page - 1) * normalized_page_size
+    end_index = start_index + normalized_page_size
+    page_records = records[start_index:end_index]
+    return (
+        page_records,
+        normalized_page,
+        normalized_page_size,
+        total_records,
+        total_pages,
+        normalized_page > 1,
+        normalized_page < total_pages,
+    )
+
+
 def time_clock_state(db: Session, *, employee: Employee, timezone_name: str) -> TimeClockStateResponse:
     return time_clock_state_page(
         db,
@@ -322,9 +347,40 @@ def list_managed_punches(
     records = db.scalars(
         select(Punch)
         .where(Punch.company_id == company_id, Punch.employee_id == employee_id)
-        .order_by(Punch.timestamp.asc(), Punch.id.asc()),
+        .order_by(Punch.timestamp.desc(), Punch.id.desc()),
     ).all()
     return [serialize_managed_record(record, cipher=cipher) for record in records]
+
+
+def list_managed_punches_page(
+    db: Session,
+    *,
+    company_id: str,
+    employee_id: str,
+    page: int,
+    page_size: int,
+) -> ManagedPunchPageResponse:
+    cipher = _cipher()
+    _get_company_employee(db, company_id=company_id, employee_id=employee_id)
+    records = db.scalars(
+        select(Punch)
+        .where(Punch.company_id == company_id, Punch.employee_id == employee_id)
+        .order_by(Punch.timestamp.desc(), Punch.id.desc()),
+    ).all()
+    page_records, normalized_page, normalized_page_size, total_records, total_pages, has_previous, has_next = _paginate_records(
+        records,
+        page=page,
+        page_size=page_size,
+    )
+    return ManagedPunchPageResponse(
+        records=[serialize_managed_record(record, cipher=cipher) for record in page_records],
+        records_page=normalized_page,
+        records_page_size=normalized_page_size,
+        records_total=total_records,
+        records_total_pages=total_pages,
+        records_has_previous=has_previous,
+        records_has_next=has_next,
+    )
 
 
 def create_managed_punch(

@@ -44,6 +44,46 @@ class ManagedPunchRecord {
   }
 }
 
+class ManagedPunchPage {
+  const ManagedPunchPage({
+    required this.records,
+    required this.recordsPage,
+    required this.recordsPageSize,
+    required this.recordsTotal,
+    required this.recordsTotalPages,
+    required this.recordsHasPrevious,
+    required this.recordsHasNext,
+  });
+
+  final List<ManagedPunchRecord> records;
+  final int recordsPage;
+  final int recordsPageSize;
+  final int recordsTotal;
+  final int recordsTotalPages;
+  final bool recordsHasPrevious;
+  final bool recordsHasNext;
+
+  factory ManagedPunchPage.fromJson(JsonMap json) {
+    final rawRecords = requireJsonList(json['records'], 'records');
+
+    return ManagedPunchPage(
+      records: rawRecords
+          .map(
+            (item) => ManagedPunchRecord.fromJson(
+              requireJsonMap(item, 'records[]'),
+            ),
+          )
+          .toList(),
+      recordsPage: requireInt(json, 'recordsPage'),
+      recordsPageSize: requireInt(json, 'recordsPageSize'),
+      recordsTotal: requireInt(json, 'recordsTotal'),
+      recordsTotalPages: requireInt(json, 'recordsTotalPages'),
+      recordsHasPrevious: requireBool(json, 'recordsHasPrevious'),
+      recordsHasNext: requireBool(json, 'recordsHasNext'),
+    );
+  }
+}
+
 class ManagedPunchDraft {
   const ManagedPunchDraft({
     required this.type,

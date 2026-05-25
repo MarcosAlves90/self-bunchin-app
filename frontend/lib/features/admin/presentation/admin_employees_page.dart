@@ -130,7 +130,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 
   void _selectEmployee(String employeeId, {required bool isWide}) {
     _controller.selectEmployee(employeeId);
-    _controller.loadEmployeePunches(employeeId);
+    _controller.loadEmployeePunches(employeeId, page: 1);
     _scrollToEmployeeDetails(isWide: isWide);
   }
 
@@ -158,8 +158,14 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     });
   }
 
-  Future<void> _loadEmployeePunches({required String employeeId}) {
-    return _controller.loadEmployeePunches(employeeId);
+  Future<void> _loadEmployeePunches({
+    required String employeeId,
+    int? page,
+  }) {
+    return _controller.loadEmployeePunches(
+      employeeId,
+      page: page ?? _controller.employeePunchesPage,
+    );
   }
 
   Future<void> _openCreatePunchDialog(EmployeeProfile employee) async {
@@ -516,7 +522,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(flex: 11, child: _buildEmployeesListCard(isWide: isWide)),
+              Expanded(
+                  flex: 11, child: _buildEmployeesListCard(isWide: isWide)),
               const SizedBox(width: 20),
               Expanded(flex: 9, child: _buildEmployeeDetailCard()),
             ],
@@ -897,6 +904,9 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isCompact = constraints.maxWidth < 540;
+    final totalPages = _controller.employeePunchesTotalPages;
+    final currentPage = _controller.employeePunchesPage;
+    final visiblePunches = _employeePunches;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -932,6 +942,16 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                             height: 1.45,
                           ),
                         ),
+                        if (_controller.employeePunchesTotal > 0) ...<Widget>[
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_controller.employeePunchesTotal} registros',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1046,23 +1066,48 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           )
         else
           Column(
-            children: _employeePunches.map((punch) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ManagedPunchTile(
-                  punch: punch,
-                  employee: employee,
-                  onEdit: () => _openEditPunchDialog(
-                    employee: employee,
+            children: <Widget>[
+              ...visiblePunches.map((punch) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ManagedPunchTile(
                     punch: punch,
-                  ),
-                  onDelete: () => _deleteManagedPunch(
                     employee: employee,
-                    punch: punch,
+                    onEdit: () => _openEditPunchDialog(
+                      employee: employee,
+                      punch: punch,
+                    ),
+                    onDelete: () => _deleteManagedPunch(
+                      employee: employee,
+                      punch: punch,
+                    ),
                   ),
+                );
+              }),
+              if (totalPages > 1) ...<Widget>[
+                const SizedBox(height: 8),
+                PaginationControls(
+                  page: currentPage,
+                  totalPages: totalPages,
+                  hasPrevious: _controller.employeePunchesHasPrevious,
+                  hasNext: _controller.employeePunchesHasNext,
+                  onPrevious: () {
+                    final previousPage = currentPage - 1;
+                    _controller.loadEmployeePunches(
+                      employee.id,
+                      page: previousPage,
+                    );
+                  },
+                  onNext: () {
+                    final nextPage = currentPage + 1;
+                    _controller.loadEmployeePunches(
+                      employee.id,
+                      page: nextPage,
+                    );
+                  },
                 ),
-              );
-            }).toList(),
+              ],
+            ],
           ),
       ],
     );
@@ -1128,8 +1173,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         },
         style: ButtonStyle(
           animationDuration: Duration.zero,
-          minimumSize:
-              MaterialStateProperty.all(const Size.fromHeight(48)),
+          minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
           backgroundColor: MaterialStateProperty.resolveWith((_) {
             return selected ? AppTheme.accent : Colors.transparent;
           }),

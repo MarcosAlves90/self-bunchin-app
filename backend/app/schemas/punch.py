@@ -56,6 +56,16 @@ class ManagedPunchRecordResponse(PunchRecordResponse):
     employee_id: str
 
 
+class ManagedPunchPageResponse(CamelModel):
+    records: list[ManagedPunchRecordResponse]
+    records_page: int = Field(ge=1)
+    records_page_size: int = Field(ge=1)
+    records_total: int = Field(ge=0)
+    records_total_pages: int = Field(ge=1)
+    records_has_previous: bool
+    records_has_next: bool
+
+
 class ManagePunchRequest(CamelModel):
     type: PunchType
     timestamp: datetime | None = None

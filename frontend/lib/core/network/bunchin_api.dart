@@ -139,21 +139,24 @@ class BunchinApi {
     await _client.delete('/employees/$employeeId', withAuth: true);
   }
 
-  Future<List<ManagedPunchRecord>> listManagedPunches(String employeeId) async {
+  Future<ManagedPunchPage> listManagedPunches(
+    String employeeId, {
+    int page = 1,
+    int limit = 4,
+  }) async {
     final response = await _client.get(
       '/time-clock/employees/$employeeId/punches',
       withAuth: true,
+      queryParameters: <String, Object?>{
+        'page': page,
+        'limit': limit,
+      },
     );
 
     return _parseContract('managed punches', () {
-      final payload = requireJsonList(response, 'managed punches response');
-      return payload
-          .map(
-            (item) => ManagedPunchRecord.fromJson(
-              requireJsonMap(item, 'managed punches[]'),
-            ),
-          )
-          .toList();
+      return ManagedPunchPage.fromJson(
+        requireJsonMap(response, 'managed punches response'),
+      );
     });
   }
 

@@ -19,6 +19,12 @@ class AdminEmployeesController extends ChangeNotifier {
   int employeesPageSize = 8;
   String? selectedEmployeeId;
   List<ManagedPunchRecord> employeePunches = <ManagedPunchRecord>[];
+  int employeePunchesPage = 1;
+  int employeePunchesPageSize = 4;
+  int employeePunchesTotal = 0;
+  int employeePunchesTotalPages = 1;
+  bool employeePunchesHasPrevious = false;
+  bool employeePunchesHasNext = false;
   bool isLoadingEmployeePunches = false;
   String? employeePunchesError;
   bool isLoading = true;
@@ -48,7 +54,7 @@ class AdminEmployeesController extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
       if (selectedEmployeeId != null) {
-        await loadEmployeePunches(selectedEmployeeId!);
+        await loadEmployeePunches(selectedEmployeeId!, page: 1);
       }
     } on ApiException catch (error) {
       isLoading = false;
@@ -228,6 +234,7 @@ class AdminEmployeesController extends ChangeNotifier {
 
   void selectEmployee(String employeeId) {
     selectedEmployeeId = employeeId;
+    employeePunchesPage = 1;
     notifyListeners();
   }
 
@@ -265,7 +272,7 @@ class AdminEmployeesController extends ChangeNotifier {
       employees = <EmployeeProfile>[employee, ...employees];
       selectedEmployeeId = employee.id;
       notifyListeners();
-      await loadEmployeePunches(employee.id);
+      await loadEmployeePunches(employee.id, page: 1);
       return '${employee.name} foi adicionado à empresa.';
     } on ApiException catch (error) {
       return error.message;
@@ -287,7 +294,7 @@ class AdminEmployeesController extends ChangeNotifier {
       }).toList();
       selectedEmployeeId = employee.id;
       notifyListeners();
-      await loadEmployeePunches(employee.id);
+      await loadEmployeePunches(employee.id, page: 1);
       return '${draft.name} foi atualizado com sucesso.';
     } on ApiException catch (error) {
       return error.message;
@@ -309,9 +316,14 @@ class AdminEmployeesController extends ChangeNotifier {
         employeePunches = <ManagedPunchRecord>[];
         employeePunchesError = null;
         isLoadingEmployeePunches = false;
+        employeePunchesPage = 1;
+        employeePunchesTotal = 0;
+        employeePunchesTotalPages = 1;
+        employeePunchesHasPrevious = false;
+        employeePunchesHasNext = false;
         notifyListeners();
       } else {
-        await loadEmployeePunches(fallbackSelection);
+        await loadEmployeePunches(fallbackSelection, page: 1);
       }
       return '${employee.name} foi removido da empresa.';
     } on ApiException catch (error) {
@@ -319,18 +331,31 @@ class AdminEmployeesController extends ChangeNotifier {
     }
   }
 
-  Future<void> loadEmployeePunches(String employeeId) async {
+  Future<void> loadEmployeePunches(
+    String employeeId, {
+    int page = 1,
+  }) async {
     isLoadingEmployeePunches = true;
     employeePunchesError = null;
     notifyListeners();
 
     try {
-      final punches = await _api.listManagedPunches(employeeId);
+      final punchPage = await _api.listManagedPunches(
+        employeeId,
+        page: page,
+        limit: employeePunchesPageSize,
+      );
       if (selectedEmployeeId != employeeId) {
         return;
       }
 
-      employeePunches = punches;
+      employeePunches = punchPage.records;
+      employeePunchesPage = punchPage.recordsPage;
+      employeePunchesPageSize = punchPage.recordsPageSize;
+      employeePunchesTotal = punchPage.recordsTotal;
+      employeePunchesTotalPages = punchPage.recordsTotalPages;
+      employeePunchesHasPrevious = punchPage.recordsHasPrevious;
+      employeePunchesHasNext = punchPage.recordsHasNext;
       isLoadingEmployeePunches = false;
       notifyListeners();
     } on ApiException catch (error) {
@@ -339,6 +364,11 @@ class AdminEmployeesController extends ChangeNotifier {
       }
 
       employeePunches = <ManagedPunchRecord>[];
+      employeePunchesPage = 1;
+      employeePunchesTotal = 0;
+      employeePunchesTotalPages = 1;
+      employeePunchesHasPrevious = false;
+      employeePunchesHasNext = false;
       isLoadingEmployeePunches = false;
       employeePunchesError = error.message;
       notifyListeners();
@@ -348,6 +378,11 @@ class AdminEmployeesController extends ChangeNotifier {
       }
 
       employeePunches = <ManagedPunchRecord>[];
+      employeePunchesPage = 1;
+      employeePunchesTotal = 0;
+      employeePunchesTotalPages = 1;
+      employeePunchesHasPrevious = false;
+      employeePunchesHasNext = false;
       isLoadingEmployeePunches = false;
       employeePunchesError = 'Não foi possível carregar os pontos.';
       notifyListeners();
@@ -360,7 +395,7 @@ class AdminEmployeesController extends ChangeNotifier {
   }) async {
     try {
       await _api.createManagedPunch(employeeId: employee.id, draft: draft);
-      await loadEmployeePunches(employee.id);
+      await loadEmployeePunches(employee.id, page: 1);
       return 'Ponto manual de ${employee.name} foi criado.';
     } on ApiException catch (error) {
       return error.message;
@@ -378,7 +413,7 @@ class AdminEmployeesController extends ChangeNotifier {
         punchId: punch.id,
         draft: draft,
       );
-      await loadEmployeePunches(employee.id);
+      await loadEmployeePunches(employee.id, page: employeePunchesPage);
       return 'Ponto manual atualizado.';
     } on ApiException catch (error) {
       return error.message;
@@ -394,7 +429,7 @@ class AdminEmployeesController extends ChangeNotifier {
         employeeId: employee.id,
         punchId: punch.id,
       );
-      await loadEmployeePunches(employee.id);
+      await loadEmployeePunches(employee.id, page: employeePunchesPage);
       return 'Ponto manual removido.';
     } on ApiException catch (error) {
       return error.message;

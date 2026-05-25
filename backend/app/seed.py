@@ -166,7 +166,7 @@ def _employee_seeds() -> list[EmployeeSeed]:
             requires_location_on_punch=False,
             trusted_device_required=False,
             pending_adjustments=0,
-            notes="Atua no app corporativo e em integracoes internas com foco em evolucao de produto.",
+            notes="Atua no app corporativo e em integrações internas com foco em evolução de produto.",
         ),
         EmployeeSeed(
             employee_id="emp-05",
