@@ -15,6 +15,8 @@ class AdminEmployeesController extends ChangeNotifier {
   AuthContext? authContext;
   EmployeeFilter filter = EmployeeFilter.all;
   String searchQuery = '';
+  int employeesPage = 1;
+  int employeesPageSize = 8;
   String? selectedEmployeeId;
   List<ManagedPunchRecord> employeePunches = <ManagedPunchRecord>[];
   bool isLoadingEmployeePunches = false;
@@ -39,6 +41,7 @@ class AdminEmployeesController extends ChangeNotifier {
 
       employees = loadedEmployees;
       authContext = loadedAuthContext;
+      employeesPage = 1;
       if (selectedEmployeeId == null && employees.isNotEmpty) {
         selectedEmployeeId = employees.first.id;
       }
@@ -123,6 +126,43 @@ class AdminEmployeesController extends ChangeNotifier {
       });
   }
 
+  int get employeesTotal => visibleEmployees.length;
+
+  int get employeesTotalPages {
+    if (employeesTotal == 0) {
+      return 1;
+    }
+    return (employeesTotal / employeesPageSize).ceil();
+  }
+
+  bool get employeesHasPrevious => employeesPage > 1;
+
+  bool get employeesHasNext => employeesPage < employeesTotalPages;
+
+  bool get hasEmployeesPagination => employeesTotalPages > 1;
+
+  List<EmployeeProfile> get pagedEmployees {
+    final visible = visibleEmployees;
+    if (visible.isEmpty) {
+      return <EmployeeProfile>[];
+    }
+
+    var startIndex = (employeesPage - 1) * employeesPageSize;
+    if (startIndex < 0) {
+      startIndex = 0;
+    }
+    if (startIndex > visible.length) {
+      startIndex = visible.length;
+    }
+
+    var endIndex = startIndex + employeesPageSize;
+    if (endIndex > visible.length) {
+      endIndex = visible.length;
+    }
+
+    return visible.sublist(startIndex, endIndex);
+  }
+
   EmployeeProfile? get selectedEmployee {
     final visible = visibleEmployees;
     if (visible.isEmpty) {
@@ -169,23 +209,54 @@ class AdminEmployeesController extends ChangeNotifier {
 
   void setSearchQuery(String value) {
     searchQuery = value;
+    employeesPage = 1;
     notifyListeners();
   }
 
   void clearSearch() {
     searchController.clear();
     searchQuery = '';
+    employeesPage = 1;
     notifyListeners();
   }
 
   void setFilter(EmployeeFilter value) {
     filter = value;
+    employeesPage = 1;
     notifyListeners();
   }
 
   void selectEmployee(String employeeId) {
     selectedEmployeeId = employeeId;
     notifyListeners();
+  }
+
+  void loadPreviousEmployeesPage() {
+    if (!employeesHasPrevious) {
+      return;
+    }
+    employeesPage -= 1;
+    notifyListeners();
+  }
+
+  void loadNextEmployeesPage() {
+    if (!employeesHasNext) {
+      return;
+    }
+    employeesPage += 1;
+    notifyListeners();
+  }
+
+  void _clampEmployeesPage() {
+    if (employeesPage < 1) {
+      employeesPage = 1;
+      return;
+    }
+
+    final totalPages = employeesTotalPages;
+    if (employeesPage > totalPages) {
+      employeesPage = totalPages;
+    }
   }
 
   Future<String?> createEmployee(EmployeeDraft draft) async {
@@ -229,6 +300,7 @@ class AdminEmployeesController extends ChangeNotifier {
       employees = employees
           .where((currentEmployee) => currentEmployee.id != employee.id)
           .toList();
+      _clampEmployeesPage();
       final fallbackSelection =
           visibleEmployees.isEmpty ? null : visibleEmployees.first.id;
       selectedEmployeeId = fallbackSelection;

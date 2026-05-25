@@ -4,6 +4,7 @@ import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/shared/presentation/widgets/pagination_controls.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -26,6 +27,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   late final AdminEmployeesController _controller;
   late final bool _ownsController;
   _EmployeeDetailTab _detailTab = _EmployeeDetailTab.registration;
+  final GlobalKey _employeeDetailKey = GlobalKey();
+  bool _isWideLayout = false;
 
   @override
   void initState() {
@@ -129,9 +132,32 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   void _selectEmployee(String employeeId) {
     _controller.selectEmployee(employeeId);
     _controller.loadEmployeePunches(employeeId);
+    _scrollToEmployeeDetails();
   }
 
   Future<void> _loadEmployees() => _controller.loadEmployees();
+
+  void _scrollToEmployeeDetails() {
+    if (_isWideLayout) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isWideLayout) {
+        return;
+      }
+      final detailContext = _employeeDetailKey.currentContext;
+      if (detailContext == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        detailContext,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        alignment: 0.04,
+      );
+    });
+  }
 
   Future<void> _loadEmployeePunches({required String employeeId}) {
     return _controller.loadEmployeePunches(employeeId);
@@ -248,6 +274,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   String? get _loadError => _controller.loadError;
   EmployeeProfile? get _selectedEmployee => _controller.selectedEmployee;
   List<EmployeeProfile> get _visibleEmployees => _controller.visibleEmployees;
+  List<EmployeeProfile> get _pagedEmployees => _controller.pagedEmployees;
+  bool get _hasEmployeesPagination => _controller.hasEmployeesPagination;
+  int get _employeesPage => _controller.employeesPage;
+  int get _employeesTotalPages => _controller.employeesTotalPages;
+  bool get _employeesHasPrevious => _controller.employeesHasPrevious;
+  bool get _employeesHasNext => _controller.employeesHasNext;
   int get _activeEmployees => _controller.activeEmployees;
   int get _attentionEmployees => _controller.attentionEmployees;
   int get _locationTrackedEmployees => _controller.locationTrackedEmployees;
@@ -354,6 +386,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Widget _buildWorkspace({required bool isWide}) {
+    _isWideLayout = isWide;
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
@@ -508,6 +541,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final visibleEmployees = _visibleEmployees;
+    final pagedEmployees = _pagedEmployees;
 
     return WorkspaceSectionCard(
       child: Column(
@@ -629,24 +663,37 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             )
           else
             Column(
-              children: visibleEmployees.map((employee) {
-                final selected = employee.id == _selectedEmployee?.id;
+              children: [
+                ...pagedEmployees.map((employee) {
+                  final selected = employee.id == _selectedEmployee?.id;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _EmployeeListTile(
-                    employee: employee,
-                    selected: selected,
-                    statusColor: _statusColor(employee.status),
-                    statusIcon: _statusIcon(employee.status),
-                    statusLabel: _statusLabel(employee.status),
-                    needsAttention: _needsAttention(employee),
-                    onTap: () => _selectEmployee(employee.id),
-                    onEdit: () => _openEditEmployeeDialog(employee),
-                    onDelete: () => _removeEmployee(employee),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _EmployeeListTile(
+                      employee: employee,
+                      selected: selected,
+                      statusColor: _statusColor(employee.status),
+                      statusIcon: _statusIcon(employee.status),
+                      statusLabel: _statusLabel(employee.status),
+                      needsAttention: _needsAttention(employee),
+                      onTap: () => _selectEmployee(employee.id),
+                      onEdit: () => _openEditEmployeeDialog(employee),
+                      onDelete: () => _removeEmployee(employee),
+                    ),
+                  );
+                }),
+                if (_hasEmployeesPagination) ...[
+                  const SizedBox(height: 16),
+                  PaginationControls(
+                    page: _employeesPage,
+                    totalPages: _employeesTotalPages,
+                    hasPrevious: _employeesHasPrevious,
+                    hasNext: _employeesHasNext,
+                    onPrevious: _controller.loadPreviousEmployeesPage,
+                    onNext: _controller.loadNextEmployeesPage,
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             ),
         ],
       ),
@@ -659,23 +706,26 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final employee = _selectedEmployee;
 
     if (employee == null) {
-      return WorkspaceSectionCard(
-        child: Row(
-          children: <Widget>[
-            Icon(
-              Icons.touch_app_rounded,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Selecione um funcionário para ver os detalhes.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+      return KeyedSubtree(
+        key: _employeeDetailKey,
+        child: WorkspaceSectionCard(
+          child: Row(
+            children: <Widget>[
+              Icon(
+                Icons.touch_app_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Selecione um funcionário para ver os detalhes.',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -685,68 +735,70 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         ? 'Sem registro'
         : _formatDateTime(employee.lastPunchAt!);
 
-    return WorkspaceSectionCard(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final useTwoColumns = constraints.maxWidth >= 520;
-          final overviewItemWidth = useTwoColumns
-              ? (constraints.maxWidth - 12) / 2
-              : constraints.maxWidth;
-          final activeTab = hasNotes || _detailTab != _EmployeeDetailTab.notes
-              ? _detailTab
-              : _EmployeeDetailTab.registration;
+    return KeyedSubtree(
+      key: _employeeDetailKey,
+      child: WorkspaceSectionCard(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useTwoColumns = constraints.maxWidth >= 520;
+            final overviewItemWidth = useTwoColumns
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
+            final activeTab = hasNotes || _detailTab != _EmployeeDetailTab.notes
+                ? _detailTab
+                : _EmployeeDetailTab.registration;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _EmployeeDetailHero(
-                employee: employee,
-                statusLabel: _statusLabel(employee.status),
-                statusColor: _statusColor(employee.status),
-                statusIcon: _statusIcon(employee.status),
-                workModeLabel: _workModeLabel(employee.workMode),
-                workModeIcon: _workModeSummaryIcon(employee.workMode),
-                needsAttention: _needsAttention(employee),
-                onEdit: () => _openEditEmployeeDialog(employee),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Resumo rápido',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _EmployeeDetailHero(
+                  employee: employee,
+                  statusLabel: _statusLabel(employee.status),
+                  statusColor: _statusColor(employee.status),
+                  statusIcon: _statusIcon(employee.status),
+                  workModeLabel: _workModeLabel(employee.workMode),
+                  workModeIcon: _workModeSummaryIcon(employee.workMode),
+                  needsAttention: _needsAttention(employee),
+                  onEdit: () => _openEditEmployeeDialog(employee),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: <Widget>[
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.schedule_rounded,
-                      label: 'Jornada',
-                      value: employee.expectedShiftLabel,
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  'Resumo rápido',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.av_timer_rounded,
-                      label: 'Horas de hoje',
-                      value: _formatHours(employee.todayWorkedMinutes),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: <Widget>[
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.schedule_rounded,
+                        label: 'Jornada',
+                        value: employee.expectedShiftLabel,
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.history_toggle_off_rounded,
-                      label: 'Última batida',
-                      value: lastPunchLabel,
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.av_timer_rounded,
+                        label: 'Horas de hoje',
+                        value: _formatHours(employee.todayWorkedMinutes),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.history_toggle_off_rounded,
+                        label: 'Última batida',
+                        value: lastPunchLabel,
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 16),
               _buildDetailTabSelector(
                 activeTab: activeTab,
@@ -831,6 +883,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           );
         },
       ),
+    ),
     );
   }
 
@@ -1037,7 +1090,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           backgroundColor: selected ? AppTheme.accent : null,
+          disabledBackgroundColor: selected ? AppTheme.accent : null,
           foregroundColor:
+              selected ? selectedTabForeground : colorScheme.onSurface,
+          disabledForegroundColor:
               selected ? selectedTabForeground : colorScheme.onSurface,
           side: const BorderSide(color: AppTheme.accent),
           shape: const RoundedRectangleBorder(
