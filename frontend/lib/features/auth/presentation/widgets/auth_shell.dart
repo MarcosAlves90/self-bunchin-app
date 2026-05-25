@@ -36,6 +36,8 @@ class AuthShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final primary = colorScheme.primary;
+    final secondary = colorScheme.secondary;
 
     return Scaffold(
       body: DecoratedBox(
@@ -55,7 +57,7 @@ class AuthShell extends StatelessWidget {
               top: -120,
               right: -40,
               child: _AmbientGlow(
-                color: AppTheme.accent.withValues(alpha: 0.24),
+                color: primary.withValues(alpha: 0.22),
                 size: 260,
               ),
             ),
@@ -63,7 +65,7 @@ class AuthShell extends StatelessWidget {
               left: -100,
               bottom: -80,
               child: _AmbientGlow(
-                color: colorScheme.secondary.withValues(alpha: 0.14),
+                color: secondary.withValues(alpha: 0.14),
                 size: 240,
               ),
             ),
@@ -141,23 +143,55 @@ class AuthCompactBrandBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.14),
-        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.28)),
-      ),
-      child: Text(
-        'BUNCHIN',
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: colorScheme.onSurface,
-          letterSpacing: 2.2,
-          fontWeight: FontWeight.w700,
+        color: colorScheme.primary.withValues(alpha: 0.14),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.28),
         ),
       ),
+      child: _AuthBrandMark(
+        compact: true,
+        foregroundColor: colorScheme.primary,
+      ),
+    );
+  }
+}
+
+class _AuthBrandMark extends StatelessWidget {
+  const _AuthBrandMark({
+    required this.compact,
+    required this.foregroundColor,
+  });
+
+  final bool compact;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.fingerprint_rounded,
+          size: compact ? 18 : 20,
+          color: foregroundColor,
+        ),
+        SizedBox(width: compact ? 8 : 10),
+        Text(
+          'BUNCHIN',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: foregroundColor,
+            letterSpacing: compact ? 2.0 : 2.4,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -177,6 +211,8 @@ class _AuthBrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final primary = colorScheme.primary;
+    final secondary = colorScheme.secondary;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(40, 48, 40, 40),
@@ -185,8 +221,8 @@ class _AuthBrandPanel extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.accent.withValues(alpha: 0.96),
-            const Color(0xFFE28E00),
+            primary.withValues(alpha: 0.96),
+            secondary.withValues(alpha: 0.92),
           ],
         ),
       ),
@@ -196,16 +232,14 @@ class _AuthBrandPanel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-            ),
-            child: Text(
-              'BUNCHIN',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colorScheme.onPrimary,
-                letterSpacing: 2.4,
-                fontWeight: FontWeight.w700,
+              color: colorScheme.surface.withValues(alpha: 0.12),
+              border: Border.all(
+                color: colorScheme.onPrimary.withValues(alpha: 0.22),
               ),
+            ),
+            child: _AuthBrandMark(
+              compact: false,
+              foregroundColor: colorScheme.onPrimary,
             ),
           ),
           const Spacer(),
@@ -266,17 +300,19 @@ class _AuthHighlightTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+        color: colorScheme.onPrimary.withValues(alpha: 0.12),
+        border:
+            Border.all(color: colorScheme.onPrimary.withValues(alpha: 0.18)),
       ),
       child: Text(
         label,
         style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onPrimary,
+          color: colorScheme.onPrimary,
           fontWeight: FontWeight.w600,
         ),
       ),
