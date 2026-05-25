@@ -4,6 +4,7 @@ import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/shared/presentation/widgets/pagination_controls.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -248,6 +249,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   String? get _loadError => _controller.loadError;
   EmployeeProfile? get _selectedEmployee => _controller.selectedEmployee;
   List<EmployeeProfile> get _visibleEmployees => _controller.visibleEmployees;
+  List<EmployeeProfile> get _pagedEmployees => _controller.pagedEmployees;
+  bool get _hasEmployeesPagination => _controller.hasEmployeesPagination;
+  int get _employeesPage => _controller.employeesPage;
+  int get _employeesTotalPages => _controller.employeesTotalPages;
+  bool get _employeesHasPrevious => _controller.employeesHasPrevious;
+  bool get _employeesHasNext => _controller.employeesHasNext;
   int get _activeEmployees => _controller.activeEmployees;
   int get _attentionEmployees => _controller.attentionEmployees;
   int get _locationTrackedEmployees => _controller.locationTrackedEmployees;
@@ -508,6 +515,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final visibleEmployees = _visibleEmployees;
+    final pagedEmployees = _pagedEmployees;
 
     return WorkspaceSectionCard(
       child: Column(
@@ -629,24 +637,37 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             )
           else
             Column(
-              children: visibleEmployees.map((employee) {
-                final selected = employee.id == _selectedEmployee?.id;
+              children: [
+                ...pagedEmployees.map((employee) {
+                  final selected = employee.id == _selectedEmployee?.id;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _EmployeeListTile(
-                    employee: employee,
-                    selected: selected,
-                    statusColor: _statusColor(employee.status),
-                    statusIcon: _statusIcon(employee.status),
-                    statusLabel: _statusLabel(employee.status),
-                    needsAttention: _needsAttention(employee),
-                    onTap: () => _selectEmployee(employee.id),
-                    onEdit: () => _openEditEmployeeDialog(employee),
-                    onDelete: () => _removeEmployee(employee),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _EmployeeListTile(
+                      employee: employee,
+                      selected: selected,
+                      statusColor: _statusColor(employee.status),
+                      statusIcon: _statusIcon(employee.status),
+                      statusLabel: _statusLabel(employee.status),
+                      needsAttention: _needsAttention(employee),
+                      onTap: () => _selectEmployee(employee.id),
+                      onEdit: () => _openEditEmployeeDialog(employee),
+                      onDelete: () => _removeEmployee(employee),
+                    ),
+                  );
+                }),
+                if (_hasEmployeesPagination) ...[
+                  const SizedBox(height: 16),
+                  PaginationControls(
+                    page: _employeesPage,
+                    totalPages: _employeesTotalPages,
+                    hasPrevious: _employeesHasPrevious,
+                    hasNext: _employeesHasNext,
+                    onPrevious: _controller.loadPreviousEmployeesPage,
+                    onNext: _controller.loadNextEmployeesPage,
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             ),
         ],
       ),
@@ -1037,7 +1058,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
           backgroundColor: selected ? AppTheme.accent : null,
+          disabledBackgroundColor: selected ? AppTheme.accent : null,
           foregroundColor:
+              selected ? selectedTabForeground : colorScheme.onSurface,
+          disabledForegroundColor:
               selected ? selectedTabForeground : colorScheme.onSurface,
           side: const BorderSide(color: AppTheme.accent),
           shape: const RoundedRectangleBorder(
