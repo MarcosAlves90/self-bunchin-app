@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
-
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -16,19 +14,18 @@ from app.domain.auth_read import (
     resolve_user,
     summarize_company as _summarize_company,
 )
+from app.domain.auth_session import build_auth_response, issue_session
 from app.domain.identity import normalize_email as _normalize_email
-from app.db import ensure_utc, utcnow
+from app.db import utcnow
 from app.errors import DomainError, ErrorKind
 from app.models import AuthSession, Company, Employee, UserAccount
 from app.schemas.auth import (
     AuthContextResponse,
     AuthSessionResponse,
     CompanyRegisterRequest,
-    CompanySummary,
     LoginRequest,
-    UserSummary,
 )
-from app.security import generate_temp_password, hash_password, issue_bearer_token, verify_password
+from app.security import generate_temp_password, hash_password, verify_password
 from app.services.brevo import send_company_welcome_email
 
 
@@ -84,12 +81,6 @@ def summarize_company(company: Company, cipher: FieldCipher | None = None) -> Co
     return _summarize_company(company, cipher)
 
 
-def _user_summary(user: UserAccount, cipher: FieldCipher) -> UserSummary:
-    from app.domain.auth_read import user_summary
-
-    return user_summary(user, cipher)
-
-
 def _display_name_for_user(
     db: Session,
     *,
@@ -97,46 +88,6 @@ def _display_name_for_user(
     cipher: FieldCipher,
 ) -> str:
     return display_name_for_user(db, user=user, field_cipher=cipher)
-
-
-def _issue_session(
-    db: Session,
-    *,
-    user: UserAccount,
-    keep_connected: bool,
-) -> tuple[str, AuthSession]:
-    settings = get_settings()
-    issued_at = utcnow()
-    ttl = (
-        timedelta(days=settings.remember_me_ttl_days)
-        if keep_connected
-        else timedelta(hours=settings.token_ttl_hours)
-    )
-    token = issue_bearer_token()
-    session = AuthSession(
-        user=user,
-        token_hash=lookup_digest(token, settings.token_secret or ""),
-        issued_at=issued_at,
-        expires_at=issued_at + ttl,
-    )
-    db.add(session)
-    return token, session
-
-
-def _build_auth_response(
-    token: str,
-    auth_session: AuthSession,
-    user: UserAccount,
-    company: Company,
-    cipher: FieldCipher,
-) -> AuthSessionResponse:
-    return AuthSessionResponse(
-        access_token=token,
-        expires_at=ensure_utc(auth_session.expires_at),
-        must_change_password=user.must_change_password,
-        company=summarize_company(company, cipher),
-        user=_user_summary(user, cipher),
-    )
 
 
 def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessionResponse:
@@ -186,7 +137,7 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
         role="admin",
     )
     db.add_all([company, user])
-    token, auth_session = _issue_session(db, user=user, keep_connected=True)
+    token, auth_session = issue_session(db, user=user, keep_connected=True)
     db.commit()
     db.refresh(company)
     db.refresh(user)
@@ -196,7 +147,7 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
         company_name=payload.company_name,
         trade_name=payload.trade_name,
     )
-    return _build_auth_response(token, auth_session, user, company, cipher)
+    return build_auth_response(token, auth_session, user, company, cipher)
 
 
 def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
@@ -211,14 +162,14 @@ def login(db: Session, payload: LoginRequest) -> AuthSessionResponse:
     _ensure_accounts_active(user, company)
 
     user.last_login_at = utcnow()
-    token, auth_session = _issue_session(
+    token, auth_session = issue_session(
         db,
         user=user,
         keep_connected=payload.keep_connected,
     )
     db.commit()
     db.refresh(auth_session)
-    return _build_auth_response(token, auth_session, user, company, cipher)
+    return build_auth_response(token, auth_session, user, company, cipher)
 
 
 def reset_password(
