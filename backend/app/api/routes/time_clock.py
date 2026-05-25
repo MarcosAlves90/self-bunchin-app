@@ -19,10 +19,9 @@ from app.services.time_clock import (
     create_managed_punch,
     create_punch,
     delete_managed_punch,
-    list_managed_punches_page,
-    time_clock_state_page,
     update_managed_punch,
 )
+from app.domain.time_clock_read import list_managed_punches_page, time_clock_state_page
 
 
 router = APIRouter()

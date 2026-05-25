@@ -1,7 +1,7 @@
 # CONTEXT.md — Bunchin App
 
-- Última atualização: 2026-05-24
-- Versão do documento: 1.1.0
+- Última atualização: 2026-05-25
+- Versão do documento: 1.2.1
 - Mantenedor: Time Platform
 
 ---
@@ -12,7 +12,7 @@ App de gerenciamento empresarial para registro de ponto eletrônico, controle de
 
 - **Público-alvo:** PMs, líderes de equipe e funcionários
 - **Problema resolvido:** Centralizar ponto, jornada e alocação com privacidade de dados pessoais
-- **Estado atual:** Frontend Flutter com tema global persistido, tela de configurações, módulo de auth reorganizado e painel de admin com widgets extraídos
+- **Estado atual:** Frontend Flutter com tema global persistido, tela de configurações, módulo de auth reorganizado e painel de admin com widgets extraídos; backend com read models separados, sessão extraída, bootstrap dedicado e sem bus de eventos interno
 - **Links:** [docs](./docs), [frontend](./frontend), [backend](./backend)
 
 ---
@@ -37,7 +37,7 @@ App de gerenciamento empresarial para registro de ponto eletrônico, controle de
 ## 3. Arquitetura
 
 - **Frontend:** Clean Architecture por feature, com módulos em `auth`, `admin`, `settings`, `shared` e `time_tracking`
-- **Backend:** Monólito modular com FastAPI, rotas por domínio em `api/routes/`, serviços em `services/`, esquemas em `schemas/`, regras compartilhadas em `domain/` e eventos em `events/`
+- **Backend:** Monólito modular com FastAPI, rotas por domínio em `api/routes/`, comandos em `services/`, read models e regras compartilhadas em `domain/`, lifecycle em `bootstrap.py` e upgrade de schema em `database_schema.py`
 - **Persistência:** SQLAlchemy declarativo com UUIDs string como chaves primárias
 - **Criptografia:** PII armazenada como ciphertext + hash para lookup. AES-GCM via `cryptography`
 - **Autenticação:** Bearer token aleatório com hash em `auth_sessions`. Não usa JWT nem refresh token dedicado
@@ -55,15 +55,15 @@ backend/
       router.py
       routes/
     domain/
-    events/
     schemas/
     services/
     main.py
     models.py
     security.py
     crypto.py
-    permissions.py
     authorization.py
+    bootstrap.py
+    database_schema.py
     dependencies.py
     seed.py
     scripts/
@@ -143,7 +143,7 @@ frontend/
 ### Registro de Ponto
 1. Funcionário registra entrada, pausa ou saída em `/api/v1/time-clock/me/punches`
 2. O estado atual vem de `/api/v1/time-clock/me`
-3. Time clock gerenciado usa rotas em `/api/v1/time-clock/employees/{employee_id}/punches`
+3. Time clock gerenciado usa rotas em `/api/v1/time-clock/employees/{employee_id}/punches?page=&limit=`
 4. O timestamp vem do servidor
 5. Metadados e payloads opcionais ficam criptografados
 6. Regras de localização e dispositivo confiável são aplicadas quando habilitadas
@@ -196,7 +196,8 @@ frontend/
 - **CORS:** Configurável via `BUNCHIN_ALLOWED_ORIGINS`
 - **HTTPS:** Middleware `https_guard` bloqueia tráfego não seguro quando ativado
 - **Secrets:** `BUNCHIN_TOKEN_SECRET` e `BUNCHIN_ENCRYPTION_SECRET` são obrigatórios
-- **RBAC:** `permissions.py` define o básico entre `employee` e `admin`
+- **RBAC:** `authorization.py` concentra permissões por papel e checagem de acesso
+- **Seed:** `seed.py` tem builders pequenos e `seed_database` como entrada simples para testes e bootstrap
 - **Frontend:** tokens ficam no `flutter_secure_storage`, não em armazenamento comum
 
 ---
@@ -265,7 +266,7 @@ frontend/
 - **Frontend:** rodar `dart run build_runner build` após alterar `contracts/`
 - **Tema global:** o modo atual fica em `ThemeModeController` e o padrão é escuro
 - **Auth:** páginas de auth compartilham widgets comuns em `features/auth/presentation/widgets/`
-- **Admin:** `admin_employees_page.dart` foi dividido em arquivo principal + widgets auxiliares
+- **Admin:** `admin_employees_page.dart` foi dividido em arquivo principal + widgets auxiliares; pontos e membros estão mais compactos e o seletor desktop evita quebra de texto
 - **Theme store:** o valor salvo do tema passa por `ThemePreferenceStore` em `core/theme/theme_mode_controller.dart`
 - **Docs:** manter este arquivo e o `README.md` alinhados ao estado atual do repositório
 - **Segredos:** nunca commitar valores reais de secret
@@ -275,7 +276,6 @@ frontend/
 
 ## 14. Pendências Técnicas (Tech Debt)
 
-- [ ] Definir paginação oficial para listas grandes
 - [ ] Considerar tool de migrations para o banco
 - [ ] Adicionar testes de integração para fluxos completos de auth e ponto
 - [ ] Documentar melhor a tela de configurações e o comportamento de tema por dispositivo

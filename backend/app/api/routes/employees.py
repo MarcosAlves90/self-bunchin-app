@@ -7,10 +7,10 @@ from app.authorization import require_permission
 from app.dependencies import get_db
 from app.schemas.employee import EmployeeDraftPayload, EmployeeProfileResponse
 from app.schemas.project import ProjectResponse
+from app.domain.project_read import list_employee_projects
 from app.services.auth import AuthenticatedContext
 from app.services.brevo import send_employee_credentials_email
 from app.services.employees import create_employee, delete_employee, get_employee, list_employees, update_employee
-from app.services.projects import list_employee_projects
 
 
 router = APIRouter()

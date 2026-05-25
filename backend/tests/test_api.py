@@ -7,7 +7,6 @@ from sqlalchemy import select
 from app.api.routes import auth as auth_routes
 from app.api.routes import employees as employees_routes
 from app.config import get_settings
-from app.events import get_event_bus
 from app.db import SessionLocal
 from app.models import Employee, Punch, UserAccount
 from app.services.employees import _cipher
@@ -660,11 +659,7 @@ def test_register_company_triggers_welcome_email_task(client, monkeypatch):
             },
         )
 
-    monkeypatch.setattr("app.services.brevo.send_company_welcome_email", fake_send_company_welcome_email)
-    get_event_bus().reset()
-    from app.events.handlers import register_event_handlers
-
-    register_event_handlers()
+    monkeypatch.setattr("app.services.auth.send_company_welcome_email", fake_send_company_welcome_email)
 
     response = client.post(
         "/api/v1/auth/register-company",

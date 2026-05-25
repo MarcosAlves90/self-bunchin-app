@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, inspect, text
 
-from app.db import upgrade_database_schema
+from app.database_schema import upgrade_database_schema
 
 
 def test_upgrade_database_schema_adds_project_id_to_legacy_punches_table(tmp_path):

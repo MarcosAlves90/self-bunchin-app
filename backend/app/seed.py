@@ -42,59 +42,45 @@ class EmployeeSeed:
     notes: str
 
 
+def _settings():
+    return get_settings()
+
+
 def _cipher() -> FieldCipher:
-    settings = get_settings()
+    settings = _settings()
     return FieldCipher(settings.encryption_secret or "")
 
 
+def _email_hash(value: str) -> str:
+    settings = _settings()
+    return lookup_digest(value.lower(), settings.encryption_secret or "")
+
+
 def _local_today_at(hour: int, minute: int) -> datetime:
-    zone = ZoneInfo(get_settings().timezone)
+    zone = ZoneInfo(_settings().timezone)
     now = datetime.now(zone)
     local_value = datetime(now.year, now.month, now.day, hour, minute, tzinfo=zone)
     return local_value.astimezone(timezone.utc)
 
 
 def _days_ago_at(days: int, hour: int, minute: int) -> datetime:
-    zone = ZoneInfo(get_settings().timezone)
+    zone = ZoneInfo(_settings().timezone)
     now = datetime.now(zone) - timedelta(days=days)
     local_value = datetime(now.year, now.month, now.day, hour, minute, tzinfo=zone)
     return local_value.astimezone(timezone.utc)
 
 
-def _employee(company_id: str, seed: EmployeeSeed) -> Employee:
-    cipher = _cipher()
-    normalized_email = seed.email.lower()
-    return Employee(
-        id=seed.employee_id,
-        company_id=company_id,
-        name_ciphertext=cipher.encrypt(seed.name) or "",
-        role_ciphertext=cipher.encrypt(seed.role) or "",
-        department_ciphertext=cipher.encrypt(seed.department) or "",
-        email_ciphertext=cipher.encrypt(normalized_email) or "",
-        email_hash=lookup_digest(normalized_email, get_settings().encryption_secret or ""),
-        phone_ciphertext=cipher.encrypt(seed.phone) or "",
-        unit_ciphertext=cipher.encrypt(seed.unit) or "",
-        expected_shift_ciphertext=cipher.encrypt(
-            json.dumps(
-                {
-                    "start": seed.expected_shift_start.strftime("%H:%M"),
-                    "end": seed.expected_shift_end.strftime("%H:%M"),
-                },
-                separators=(",", ":"),
-            ),
-        )
-        or "",
-        status=seed.status,
-        work_mode=seed.work_mode,
-        role_level=seed.role_level,
-        requires_location_on_punch=seed.requires_location_on_punch,
-        trusted_device_required=seed.trusted_device_required,
-        pending_adjustments=seed.pending_adjustments,
-        notes_ciphertext=cipher.encrypt(seed.notes) or "",
+def _serialize_shift(start: time, end: time) -> str:
+    return json.dumps(
+        {
+            "start": start.strftime("%H:%M"),
+            "end": end.strftime("%H:%M"),
+        },
+        separators=(",", ":"),
     )
 
 
-def _employee_seeds() -> list[EmployeeSeed]:
+def _employee_seed_rows() -> list[EmployeeSeed]:
     return [
         EmployeeSeed(
             employee_id="emp-01",
@@ -189,9 +175,9 @@ def _employee_seeds() -> list[EmployeeSeed]:
     ]
 
 
-def _company(company_id: str, cipher: FieldCipher, settings) -> Company:
+def _build_company(cipher: FieldCipher, settings) -> Company:
     return Company(
-        id=company_id,
+        id=COMPANY_ID,
         legal_name_ciphertext=cipher.encrypt("Bunchin Servicos Digitais LTDA") or "",
         trade_name_ciphertext=cipher.encrypt("Bunchin Servicos Digitais") or "",
         cnpj_ciphertext=cipher.encrypt(COMPANY_CNPJ) or "",
@@ -204,14 +190,45 @@ def _company(company_id: str, cipher: FieldCipher, settings) -> Company:
     )
 
 
-def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
+def _build_employee(company_id: str, seed: EmployeeSeed) -> Employee:
+    cipher = _cipher()
+    normalized_email = seed.email.lower()
+    return Employee(
+        id=seed.employee_id,
+        company_id=company_id,
+        name_ciphertext=cipher.encrypt(seed.name) or "",
+        role_ciphertext=cipher.encrypt(seed.role) or "",
+        department_ciphertext=cipher.encrypt(seed.department) or "",
+        email_ciphertext=cipher.encrypt(normalized_email) or "",
+        email_hash=_email_hash(normalized_email),
+        phone_ciphertext=cipher.encrypt(seed.phone) or "",
+        unit_ciphertext=cipher.encrypt(seed.unit) or "",
+        expected_shift_ciphertext=cipher.encrypt(
+            _serialize_shift(seed.expected_shift_start, seed.expected_shift_end),
+        )
+        or "",
+        status=seed.status,
+        work_mode=seed.work_mode,
+        role_level=seed.role_level,
+        requires_location_on_punch=seed.requires_location_on_punch,
+        trusted_device_required=seed.trusted_device_required,
+        pending_adjustments=seed.pending_adjustments,
+        notes_ciphertext=cipher.encrypt(seed.notes) or "",
+    )
+
+
+def _build_employees(company_id: str) -> list[Employee]:
+    return [_build_employee(company_id, seed) for seed in _employee_seed_rows()]
+
+
+def _build_users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
     return [
         UserAccount(
             id="user-marina",
             company_id=company_id,
             employee_id="emp-01",
             email_ciphertext=cipher.encrypt(MARINA_EMAIL) or "",
-            email_hash=lookup_digest(MARINA_EMAIL, settings.encryption_secret or ""),
+            email_hash=_email_hash(MARINA_EMAIL),
             password_hash=hash_password(settings.seed_admin_password),
             role="admin",
         ),
@@ -220,7 +237,7 @@ def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
             company_id=company_id,
             employee_id="emp-02",
             email_ciphertext=cipher.encrypt(CAIO_EMAIL) or "",
-            email_hash=lookup_digest(CAIO_EMAIL, settings.encryption_secret or ""),
+            email_hash=_email_hash(CAIO_EMAIL),
             password_hash=hash_password(settings.seed_admin_password),
             role="manager",
         ),
@@ -229,7 +246,7 @@ def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
             company_id=company_id,
             employee_id="emp-04",
             email_ciphertext=cipher.encrypt(JOAO_EMAIL) or "",
-            email_hash=lookup_digest(JOAO_EMAIL, settings.encryption_secret or ""),
+            email_hash=_email_hash(JOAO_EMAIL),
             password_hash=hash_password(settings.seed_admin_password),
             role="employee",
         ),
@@ -238,10 +255,7 @@ def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
             company_id=company_id,
             employee_id="emp-03",
             email_ciphertext=cipher.encrypt("bianca.nogueira@bunchin.com") or "",
-            email_hash=lookup_digest(
-                "bianca.nogueira@bunchin.com",
-                settings.encryption_secret or "",
-            ),
+            email_hash=_email_hash("bianca.nogueira@bunchin.com"),
             password_hash=hash_password(settings.seed_admin_password),
             role="employee",
         ),
@@ -250,18 +264,14 @@ def _users(company_id: str, cipher: FieldCipher, settings) -> list[UserAccount]:
             company_id=company_id,
             employee_id=None,
             email_ciphertext=cipher.encrypt(SUPER_ADMIN_EMAIL) or "",
-            email_hash=lookup_digest(SUPER_ADMIN_EMAIL, settings.encryption_secret or ""),
+            email_hash=_email_hash(SUPER_ADMIN_EMAIL),
             password_hash=hash_password(settings.seed_admin_password),
             role="super_admin",
         ),
     ]
 
 
-def _employees(company_id: str) -> list[Employee]:
-    return [_employee(company_id, seed) for seed in _employee_seeds()]
-
-
-def _punch(
+def _build_punch(
     *,
     company_id: str,
     employee_id: str,
@@ -281,17 +291,10 @@ def _punch(
     )
 
 
-def seed_database_if_empty(db: Session) -> None:
-    company_exists = db.scalar(select(Company.id).limit(1))
-    if company_exists is not None:
-        return
-
-    settings = get_settings()
-    cipher = _cipher()
-    company = _company(COMPANY_ID, cipher, settings)
-    punches = [
-        _punch(
-            company_id=COMPANY_ID,
+def _build_punches(company_id: str) -> list[Punch]:
+    return [
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-01",
             punch_type="checkIn",
             timestamp=_local_today_at(8, 5),
@@ -303,22 +306,22 @@ def seed_database_if_empty(db: Session) -> None:
                 "captured_at": _local_today_at(8, 5).isoformat(),
             },
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-01",
             punch_type="breakStart",
             timestamp=_local_today_at(12, 4),
             detail="Pausa iniciada para intervalo.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-01",
             punch_type="breakEnd",
             timestamp=_local_today_at(12, 58),
             detail="Retorno validado sem inconsistencias.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-01",
             punch_type="checkOut",
             timestamp=_local_today_at(16, 26),
@@ -330,64 +333,64 @@ def seed_database_if_empty(db: Session) -> None:
                 "captured_at": _local_today_at(16, 26).isoformat(),
             },
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-02",
             punch_type="checkIn",
             timestamp=_local_today_at(9, 0),
             detail="Entrada registrada.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-02",
             punch_type="breakStart",
             timestamp=_local_today_at(12, 10),
             detail="Pausa iniciada.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-02",
             punch_type="breakEnd",
             timestamp=_local_today_at(13, 0),
             detail="Retorno registrado.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-02",
             punch_type="checkOut",
             timestamp=_local_today_at(16, 32),
             detail="Saida registrada.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-03",
             punch_type="checkIn",
             timestamp=_days_ago_at(3, 13, 40),
             detail="Entrada registrada antes do afastamento.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-04",
             punch_type="checkIn",
             timestamp=_local_today_at(9, 0),
             detail="Entrada registrada.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-04",
             punch_type="breakStart",
             timestamp=_local_today_at(12, 10),
             detail="Pausa iniciada.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-04",
             punch_type="breakEnd",
             timestamp=_local_today_at(13, 0),
             detail="Retorno registrado.",
         ),
-        _punch(
-            company_id=COMPANY_ID,
+        _build_punch(
+            company_id=company_id,
             employee_id="emp-04",
             punch_type="checkOut",
             timestamp=_local_today_at(16, 51),
@@ -395,8 +398,19 @@ def seed_database_if_empty(db: Session) -> None:
         ),
     ]
 
-    db.add(company)
-    db.add_all(_employees(COMPANY_ID))
-    db.add_all(_users(COMPANY_ID, cipher, settings))
-    db.add_all(punches)
+
+def seed_database_if_empty(db: Session) -> None:
+    if db.scalar(select(Company.id).limit(1)) is not None:
+        return
+
+    settings = _settings()
+    cipher = _cipher()
+    db.add(_build_company(cipher, settings))
+    db.add_all(_build_employees(COMPANY_ID))
+    db.add_all(_build_users(COMPANY_ID, cipher, settings))
+    db.add_all(_build_punches(COMPANY_ID))
     db.commit()
+
+
+def seed_database(db: Session) -> None:
+    seed_database_if_empty(db)

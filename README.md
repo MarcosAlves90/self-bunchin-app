@@ -2,7 +2,7 @@
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115.x-009688?logo=fastapi)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)
+![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)
 ![SQLite](https://img.shields.io/badge/SQLite-dev-003B57?logo=sqlite)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
@@ -40,7 +40,7 @@ O repositório é um monorepo com:
 | Tema global | Tema claro, escuro e seguir sistema | Persistido no dispositivo |
 | Configurações | Tela global de aparência | Acesso pelo workspace |
 | E-mail transacional | Envio via Brevo | Falha não bloqueia o fluxo principal |
-| Seed automático | Criação de admin padrão em dev | Controlado por variável de ambiente |
+| Seed automático | Criação de dados iniciais em dev | Controlado por variável de ambiente |
 
 ---
 
@@ -50,7 +50,7 @@ O repositório é um monorepo com:
 
 | Tecnologia | Versão | Função |
 |---|---:|---|
-| Python | 3.12 | Linguagem principal |
+| Python | 3.x | Linguagem principal |
 | FastAPI | 0.115.x | API REST |
 | SQLAlchemy | 2.0.x | ORM |
 | SQLite | dev | Banco local |
@@ -81,13 +81,15 @@ O repositório é um monorepo com:
 
 ### Backend
 
-O backend segue um modular monolith com camadas limpas:
+O backend segue um monólito modular com camadas claras:
 
 - `api/routes/` expõe os endpoints
 - `schemas/` define contratos de entrada e saída
-- `services/` concentra a lógica de negócio
-- `domain/` guarda regras de domínio reutilizáveis
-- `events/` centraliza eventos de domínio e seus handlers
+- `services/` concentra comandos e orquestração
+- `domain/` guarda read models e regras reutilizáveis
+- `domain/auth_session.py` concentra a montagem de respostas e criação de sessão
+- `bootstrap.py` concentra o ciclo de inicialização
+- `database_schema.py` concentra upgrades de schema legados
 
 ### Frontend
 
@@ -112,15 +114,15 @@ backend/
       router.py
       routes/
     domain/
-    events/
     schemas/
     services/
     main.py
     models.py
     security.py
     crypto.py
-    permissions.py
     authorization.py
+    bootstrap.py
+    database_schema.py
     dependencies.py
     seed.py
     scripts/
@@ -226,6 +228,8 @@ dart format lib test
   - `/employees`
   - `/projects`
   - `/time-clock`
+  - `/time-clock/me?page=&limit=`
+  - `/time-clock/employees/{employee_id}/punches?page=&limit=`
   - `/admin`
 
 ---
@@ -248,15 +252,28 @@ Estado atual do frontend:
 - Tema global com três modos: claro, escuro e seguir sistema
 - Tela de configurações para alternar o tema
 - `admin_employees_page.dart` dividido em arquivo principal e widgets auxiliares
+- Lista de membros e pontos do admin mais compacta, com ações em menu e paginação no backend
+- Seletor desktop do admin ajustado para evitar quebra de texto nas abas
 - Módulo de auth simplificado com widgets comuns de formulário
 - Login sem botão de Google
 
 Estado atual do backend:
 
 - Monólito modular com rotas por domínio
-- Camada `domain/` para regras compartilhadas
-- Camada `events/` para eventos e handlers de domínio
+- `services/` focado em comandos e orquestração
+- `domain/` dividido em read models para auth, employees, projects e time clock
+- `authorization.py` concentra as permissões de papel
+- `bootstrap.py` concentra o lifecycle da aplicação
+- `database_schema.py` concentra o upgrade de schema legado
+- `seed.py` ficou com builders pequenos e `seed_database` como entrada simples
 - Endpoints para auth, employees, projects, time clock, admin e health
+- `time-clock/me` e `time-clock/employees/{employee_id}/punches` suportam paginação por `page` e `limit`
+
+Estado atual de dados e seed:
+
+- Seed gera empresa, usuários, funcionários e pontos iniciais
+- Seed roda no startup quando `BUNCHIN_SEED_ON_STARTUP=true`
+- O ambiente de dev usa SQLite; staging e prod usam PostgreSQL
 
 ---
 
