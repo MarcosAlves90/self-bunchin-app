@@ -1,7 +1,7 @@
 # CONTEXT.md — Bunchin App
 
 - Última atualização: 2026-05-25
-- Versão do documento: 1.2.0
+- Versão do documento: 1.2.1
 - Mantenedor: Time Platform
 
 ---
@@ -12,7 +12,7 @@ App de gerenciamento empresarial para registro de ponto eletrônico, controle de
 
 - **Público-alvo:** PMs, líderes de equipe e funcionários
 - **Problema resolvido:** Centralizar ponto, jornada e alocação com privacidade de dados pessoais
-- **Estado atual:** Frontend Flutter com tema global persistido, tela de configurações, módulo de auth reorganizado e painel de admin com widgets extraídos; backend com read models separados, bootstrap dedicado e sem bus de eventos interno
+- **Estado atual:** Frontend Flutter com tema global persistido, tela de configurações, módulo de auth reorganizado e painel de admin com widgets extraídos; backend com read models separados, sessão extraída, bootstrap dedicado e sem bus de eventos interno
 - **Links:** [docs](./docs), [frontend](./frontend), [backend](./backend)
 
 ---
@@ -197,6 +197,7 @@ frontend/
 - **HTTPS:** Middleware `https_guard` bloqueia tráfego não seguro quando ativado
 - **Secrets:** `BUNCHIN_TOKEN_SECRET` e `BUNCHIN_ENCRYPTION_SECRET` são obrigatórios
 - **RBAC:** `authorization.py` concentra permissões por papel e checagem de acesso
+- **Seed:** `seed.py` tem builders pequenos e `seed_database` como entrada simples para testes e bootstrap
 - **Frontend:** tokens ficam no `flutter_secure_storage`, não em armazenamento comum
 
 ---

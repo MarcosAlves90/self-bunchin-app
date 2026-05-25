@@ -19,15 +19,20 @@ backend/
       router.py
       routes/
     domain/
-    events/
+      auth_read.py
+      auth_session.py
+      employee_read.py
+      project_read.py
+      time_clock_read.py
     schemas/
     services/
     main.py
     models.py
     security.py
     crypto.py
-    permissions.py
     authorization.py
+    bootstrap.py
+    database_schema.py
     dependencies.py
     seed.py
     scripts/
@@ -99,7 +104,7 @@ Com `BUNCHIN_SEED_ON_STARTUP=true`, a inicialização cria uma empresa e usuári
 | employee | `joao.lima@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 | super_admin | `super.admin@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 
-`emp-03` agora também tem `user-account` vinculado, então mudanças de `accessRole` funcionam no front quando esse funcionário é editado.
+`emp-03` também tem `user-account` vinculado, então mudanças de `accessRole` funcionam no front quando esse funcionário é editado.
 
 ## Autenticação
 
@@ -144,7 +149,7 @@ Authorization: Bearer <accessToken>
 
 ## Permissões
 
-As permissões ficam em `app/permissions.py`.
+As permissões ficam em `app/authorization.py`.
 
 | Role | Permissões principais |
 | --- | --- |
@@ -157,6 +162,15 @@ Regras gerais:
 
 - As rotas comuns são escopadas por empresa.
 - `admin.cross_company` exige `super_admin`.
+
+## Arquitetura Atual
+
+- `services/` fica com comandos e orquestração
+- `domain/` guarda read models e helpers compartilhados
+- `bootstrap.py` concentra o lifecycle da app
+- `database_schema.py` concentra upgrade de schema legado
+- `seed.py` usa builders pequenos e expõe `seed_database`
+- `time-clock/me` e `time-clock/employees/{employeeId}/punches` aceitam paginação por `page` e `limit`
 
 ## Endpoints
 

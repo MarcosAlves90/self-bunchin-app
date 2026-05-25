@@ -87,6 +87,7 @@ O backend segue um monólito modular com camadas claras:
 - `schemas/` define contratos de entrada e saída
 - `services/` concentra comandos e orquestração
 - `domain/` guarda read models e regras reutilizáveis
+- `domain/auth_session.py` concentra a montagem de respostas e criação de sessão
 - `bootstrap.py` concentra o ciclo de inicialização
 - `database_schema.py` concentra upgrades de schema legados
 
@@ -264,6 +265,7 @@ Estado atual do backend:
 - `authorization.py` concentra as permissões de papel
 - `bootstrap.py` concentra o lifecycle da aplicação
 - `database_schema.py` concentra o upgrade de schema legado
+- `seed.py` ficou com builders pequenos e `seed_database` como entrada simples
 - Endpoints para auth, employees, projects, time clock, admin e health
 - `time-clock/me` e `time-clock/employees/{employee_id}/punches` suportam paginação por `page` e `limit`
 
