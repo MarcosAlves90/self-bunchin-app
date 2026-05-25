@@ -608,7 +608,7 @@ class _EmployeeListTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: selected
                 ? AppTheme.accent.withValues(alpha: 0.08)
@@ -641,226 +641,152 @@ class _EmployeeListTile extends StatelessWidget {
   }) {
     final hasSignals =
         employee.status != EmployeeStatus.active || needsAttention;
-    final showLeadingIcon = MediaQuery.sizeOf(context).width >= 560;
+    final showLeadingIcon = !isCompact;
 
-    if (isCompact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (showLeadingIcon) ...<Widget>[
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppTheme.accent.withValues(alpha: 0.16)
-                        : colorScheme.surfaceContainerHighest.withValues(
-                            alpha: 0.72,
-                          ),
-                    border: Border.all(
-                      color: selected
-                          ? AppTheme.accent.withValues(alpha: 0.36)
-                          : colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.badge_rounded,
-                    size: 22,
-                    color: selected ? AppTheme.accent : colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            employee.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: onEdit,
-                          tooltip: 'Editar funcionário',
-                          icon: const Icon(Icons.edit_outlined),
-                          color: AppTheme.accent,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          onPressed: onDelete,
-                          tooltip: 'Remover funcionário',
-                          icon: const Icon(Icons.delete_outline_rounded),
-                          color: const Color(0xFFE53935),
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 36,
-                            height: 36,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${employee.role} | ${employee.department}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (hasSignals) ...<Widget>[
-            const SizedBox(height: 12),
-            _buildBadgeWrap(),
-          ],
-        ],
-      );
-    }
-
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (showLeadingIcon) ...<Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppTheme.accent.withValues(alpha: 0.16)
-                      : colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.72,
-                        ),
-                  border: Border.all(
-                    color: selected
-                        ? AppTheme.accent.withValues(alpha: 0.36)
-                        : colorScheme.outlineVariant,
-                  ),
-                ),
-                child: Icon(
-                  Icons.badge_rounded,
-                  size: 24,
-                  color: selected ? AppTheme.accent : colorScheme.onSurface,
-                ),
+        if (showLeadingIcon) ...<Widget>[
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppTheme.accent.withValues(alpha: 0.16)
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
+              border: Border.all(
+                color: selected
+                    ? AppTheme.accent.withValues(alpha: 0.36)
+                    : colorScheme.outlineVariant,
               ),
-              const SizedBox(width: 14),
-            ],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            child: Icon(
+              Icons.badge_rounded,
+              size: 20,
+              color: selected ? AppTheme.accent : colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          employee.name,
-                          maxLines: isCompact ? 2 : 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                  Expanded(
+                    child: Text(
+                      employee.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: onEdit,
-                        tooltip: 'Editar funcionário',
-                        icon: const Icon(Icons.edit_outlined),
-                        color: AppTheme.accent,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 36,
-                          height: 36,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        onPressed: onDelete,
-                        tooltip: 'Remover funcionário',
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        color: const Color(0xFFE53935),
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 36,
-                          height: 36,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${employee.role} | ${employee.department}',
-                    maxLines: isCompact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.35,
                     ),
+                  ),
+                  Builder(
+                    builder: (buttonContext) {
+                      return IconButton(
+                        onPressed: () => _showActionsMenu(
+                          buttonContext,
+                          onEdit: onEdit,
+                          onDelete: onDelete,
+                        ),
+                        icon: const Icon(Icons.more_horiz_rounded, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 32,
+                          height: 32,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Ações',
+                      );
+                    },
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                '${employee.role} | ${employee.department}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.2,
+                ),
+              ),
+              if (hasSignals) ...<Widget>[
+                const SizedBox(height: 6),
+                Text(
+                  _compactSignalsLabel(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        if (hasSignals) ...<Widget>[
-          const SizedBox(height: 12),
-          _buildBadgeWrap(),
-        ],
       ],
     );
   }
 
-  Widget _buildBadgeWrap() {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: <Widget>[
-        if (employee.status != EmployeeStatus.active)
-          _InlinePill(
-            label: statusLabel,
-            tone: statusColor,
-            icon: statusIcon,
-          ),
-        if (needsAttention)
-          const _InlinePill(
-            label: 'Acompanhamento',
-            tone: Color(0xFF8C5D00),
-            icon: Icons.warning_amber_rounded,
-          ),
+  String _compactSignalsLabel() {
+    final labels = <String>[
+      if (employee.status != EmployeeStatus.active) statusLabel,
+      if (needsAttention) 'Acompanhamento',
+    ];
+    return labels.join(' • ');
+  }
+
+  Future<void> _showActionsMenu(
+    BuildContext context, {
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final button = context.findRenderObject() as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final action = await showMenu<_EmployeeListAction>(
+      context: context,
+      position: position,
+      items: const <PopupMenuEntry<_EmployeeListAction>>[
+        PopupMenuItem<_EmployeeListAction>(
+          value: _EmployeeListAction.edit,
+          child: Text('Editar'),
+        ),
+        PopupMenuItem<_EmployeeListAction>(
+          value: _EmployeeListAction.delete,
+          child: Text('Remover'),
+        ),
       ],
     );
+
+    if (!context.mounted || action == null) {
+      return;
+    }
+
+    if (action == _EmployeeListAction.edit) {
+      onEdit();
+    } else {
+      onDelete();
+    }
   }
 }
+
+enum _EmployeeListAction { edit, delete }
 
 class _AdminMetricItem extends StatelessWidget {
   const _AdminMetricItem({
