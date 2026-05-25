@@ -1187,25 +1187,35 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           ),
         ),
         icon: Icon(icon),
-        label: Text(label),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       );
     }
 
     if (!useVerticalLayout) {
-      return Row(
-        children: visibleItems.map((item) {
-          final isLast = item == visibleItems.last;
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: isLast ? 0 : 8),
-              child: buildTabButton(
-                value: item.value,
-                icon: item.icon,
-                label: item.label,
-              ),
-            ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth =
+              (constraints.maxWidth - (visibleItems.length > 1 ? 8 : 0)) / 2;
+
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: visibleItems.map((item) {
+              return SizedBox(
+                width: itemWidth,
+                child: buildTabButton(
+                  value: item.value,
+                  icon: item.icon,
+                  label: item.label,
+                ),
+              );
+            }).toList(),
           );
-        }).toList(),
+        },
       );
     }
 
