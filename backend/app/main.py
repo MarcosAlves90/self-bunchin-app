@@ -10,7 +10,6 @@ from app.api.router import api_router
 from app.config import get_settings
 from app.db import SessionLocal, init_database
 from app.errors import DomainError, ErrorKind
-from app.events import register_event_handlers
 from app.seed import seed_database_if_empty
 
 
@@ -26,7 +25,6 @@ ERROR_STATUS_CODES = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    register_event_handlers()
     init_database()
     if settings.seed_on_startup:
         with SessionLocal() as db:
