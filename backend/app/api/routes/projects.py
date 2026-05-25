@@ -17,12 +17,10 @@ from app.services.projects import (
     assign_project_member,
     create_project,
     delete_project,
-    get_project,
-    list_project_members,
-    list_projects,
     remove_project_member,
     update_project,
 )
+from app.domain.project_read import get_project, list_project_members, list_projects
 
 
 router = APIRouter()
