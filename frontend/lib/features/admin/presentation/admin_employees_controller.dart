@@ -1,12 +1,12 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:flutter/material.dart';
 
 class AdminEmployeesController extends ChangeNotifier {
-  AdminEmployeesController({BunchinApi? api})
-      : _api = api ?? BunchinApi();
+  AdminEmployeesController({BunchinApi? api}) : _api = api ?? BunchinApi();
 
   final BunchinApi _api;
 
@@ -15,7 +15,18 @@ class AdminEmployeesController extends ChangeNotifier {
   AuthContext? authContext;
   EmployeeFilter filter = EmployeeFilter.all;
   String searchQuery = '';
+  int employeesPage = 1;
+  int employeesPageSize = 8;
   String? selectedEmployeeId;
+  List<ManagedPunchRecord> employeePunches = <ManagedPunchRecord>[];
+  int employeePunchesPage = 1;
+  int employeePunchesPageSize = 4;
+  int employeePunchesTotal = 0;
+  int employeePunchesTotalPages = 1;
+  bool employeePunchesHasPrevious = false;
+  bool employeePunchesHasNext = false;
+  bool isLoadingEmployeePunches = false;
+  String? employeePunchesError;
   bool isLoading = true;
   String? loadError;
 
@@ -36,11 +47,15 @@ class AdminEmployeesController extends ChangeNotifier {
 
       employees = loadedEmployees;
       authContext = loadedAuthContext;
+      employeesPage = 1;
       if (selectedEmployeeId == null && employees.isNotEmpty) {
         selectedEmployeeId = employees.first.id;
       }
       isLoading = false;
       notifyListeners();
+      if (selectedEmployeeId != null) {
+        await loadEmployeePunches(selectedEmployeeId!, page: 1);
+      }
     } on ApiException catch (error) {
       isLoading = false;
       loadError = error.message;
@@ -117,6 +132,43 @@ class AdminEmployeesController extends ChangeNotifier {
       });
   }
 
+  int get employeesTotal => visibleEmployees.length;
+
+  int get employeesTotalPages {
+    if (employeesTotal == 0) {
+      return 1;
+    }
+    return (employeesTotal / employeesPageSize).ceil();
+  }
+
+  bool get employeesHasPrevious => employeesPage > 1;
+
+  bool get employeesHasNext => employeesPage < employeesTotalPages;
+
+  bool get hasEmployeesPagination => employeesTotalPages > 1;
+
+  List<EmployeeProfile> get pagedEmployees {
+    final visible = visibleEmployees;
+    if (visible.isEmpty) {
+      return <EmployeeProfile>[];
+    }
+
+    var startIndex = (employeesPage - 1) * employeesPageSize;
+    if (startIndex < 0) {
+      startIndex = 0;
+    }
+    if (startIndex > visible.length) {
+      startIndex = visible.length;
+    }
+
+    var endIndex = startIndex + employeesPageSize;
+    if (endIndex > visible.length) {
+      endIndex = visible.length;
+    }
+
+    return visible.sublist(startIndex, endIndex);
+  }
+
   EmployeeProfile? get selectedEmployee {
     final visible = visibleEmployees;
     if (visible.isEmpty) {
@@ -163,23 +215,55 @@ class AdminEmployeesController extends ChangeNotifier {
 
   void setSearchQuery(String value) {
     searchQuery = value;
+    employeesPage = 1;
     notifyListeners();
   }
 
   void clearSearch() {
     searchController.clear();
     searchQuery = '';
+    employeesPage = 1;
     notifyListeners();
   }
 
   void setFilter(EmployeeFilter value) {
     filter = value;
+    employeesPage = 1;
     notifyListeners();
   }
 
   void selectEmployee(String employeeId) {
     selectedEmployeeId = employeeId;
+    employeePunchesPage = 1;
     notifyListeners();
+  }
+
+  void loadPreviousEmployeesPage() {
+    if (!employeesHasPrevious) {
+      return;
+    }
+    employeesPage -= 1;
+    notifyListeners();
+  }
+
+  void loadNextEmployeesPage() {
+    if (!employeesHasNext) {
+      return;
+    }
+    employeesPage += 1;
+    notifyListeners();
+  }
+
+  void _clampEmployeesPage() {
+    if (employeesPage < 1) {
+      employeesPage = 1;
+      return;
+    }
+
+    final totalPages = employeesTotalPages;
+    if (employeesPage > totalPages) {
+      employeesPage = totalPages;
+    }
   }
 
   Future<String?> createEmployee(EmployeeDraft draft) async {
@@ -188,6 +272,7 @@ class AdminEmployeesController extends ChangeNotifier {
       employees = <EmployeeProfile>[employee, ...employees];
       selectedEmployeeId = employee.id;
       notifyListeners();
+      await loadEmployeePunches(employee.id, page: 1);
       return '${employee.name} foi adicionado à empresa.';
     } on ApiException catch (error) {
       return error.message;
@@ -209,27 +294,143 @@ class AdminEmployeesController extends ChangeNotifier {
       }).toList();
       selectedEmployeeId = employee.id;
       notifyListeners();
+      await loadEmployeePunches(employee.id, page: 1);
       return '${draft.name} foi atualizado com sucesso.';
     } on ApiException catch (error) {
       return error.message;
     }
   }
 
-  Future<String?> deleteSelectedEmployee() async {
-    final employee = selectedEmployee;
-    if (employee == null) {
-      return null;
-    }
-
+  Future<String?> deleteEmployee(EmployeeProfile employee) async {
     try {
       await _api.deleteEmployee(employee.id);
-      employees =
-          employees.where((currentEmployee) => currentEmployee.id != employee.id).toList();
+      employees = employees
+          .where((currentEmployee) => currentEmployee.id != employee.id)
+          .toList();
+      _clampEmployeesPage();
       final fallbackSelection =
           visibleEmployees.isEmpty ? null : visibleEmployees.first.id;
       selectedEmployeeId = fallbackSelection;
       notifyListeners();
+      if (fallbackSelection == null) {
+        employeePunches = <ManagedPunchRecord>[];
+        employeePunchesError = null;
+        isLoadingEmployeePunches = false;
+        employeePunchesPage = 1;
+        employeePunchesTotal = 0;
+        employeePunchesTotalPages = 1;
+        employeePunchesHasPrevious = false;
+        employeePunchesHasNext = false;
+        notifyListeners();
+      } else {
+        await loadEmployeePunches(fallbackSelection, page: 1);
+      }
       return '${employee.name} foi removido da empresa.';
+    } on ApiException catch (error) {
+      return error.message;
+    }
+  }
+
+  Future<void> loadEmployeePunches(
+    String employeeId, {
+    int page = 1,
+  }) async {
+    isLoadingEmployeePunches = true;
+    employeePunchesError = null;
+    notifyListeners();
+
+    try {
+      final punchPage = await _api.listManagedPunches(
+        employeeId,
+        page: page,
+        limit: employeePunchesPageSize,
+      );
+      if (selectedEmployeeId != employeeId) {
+        return;
+      }
+
+      employeePunches = punchPage.records;
+      employeePunchesPage = punchPage.recordsPage;
+      employeePunchesPageSize = punchPage.recordsPageSize;
+      employeePunchesTotal = punchPage.recordsTotal;
+      employeePunchesTotalPages = punchPage.recordsTotalPages;
+      employeePunchesHasPrevious = punchPage.recordsHasPrevious;
+      employeePunchesHasNext = punchPage.recordsHasNext;
+      isLoadingEmployeePunches = false;
+      notifyListeners();
+    } on ApiException catch (error) {
+      if (selectedEmployeeId != employeeId) {
+        return;
+      }
+
+      employeePunches = <ManagedPunchRecord>[];
+      employeePunchesPage = 1;
+      employeePunchesTotal = 0;
+      employeePunchesTotalPages = 1;
+      employeePunchesHasPrevious = false;
+      employeePunchesHasNext = false;
+      isLoadingEmployeePunches = false;
+      employeePunchesError = error.message;
+      notifyListeners();
+    } catch (_) {
+      if (selectedEmployeeId != employeeId) {
+        return;
+      }
+
+      employeePunches = <ManagedPunchRecord>[];
+      employeePunchesPage = 1;
+      employeePunchesTotal = 0;
+      employeePunchesTotalPages = 1;
+      employeePunchesHasPrevious = false;
+      employeePunchesHasNext = false;
+      isLoadingEmployeePunches = false;
+      employeePunchesError = 'Não foi possível carregar os pontos.';
+      notifyListeners();
+    }
+  }
+
+  Future<String?> createManagedPunch({
+    required EmployeeProfile employee,
+    required ManagedPunchDraft draft,
+  }) async {
+    try {
+      await _api.createManagedPunch(employeeId: employee.id, draft: draft);
+      await loadEmployeePunches(employee.id, page: 1);
+      return 'Ponto manual de ${employee.name} foi criado.';
+    } on ApiException catch (error) {
+      return error.message;
+    }
+  }
+
+  Future<String?> updateManagedPunch({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+    required ManagedPunchDraft draft,
+  }) async {
+    try {
+      await _api.updateManagedPunch(
+        employeeId: employee.id,
+        punchId: punch.id,
+        draft: draft,
+      );
+      await loadEmployeePunches(employee.id, page: employeePunchesPage);
+      return 'Ponto manual atualizado.';
+    } on ApiException catch (error) {
+      return error.message;
+    }
+  }
+
+  Future<String?> deleteManagedPunch({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+  }) async {
+    try {
+      await _api.deleteManagedPunch(
+        employeeId: employee.id,
+        punchId: punch.id,
+      );
+      await loadEmployeePunches(employee.id, page: employeePunchesPage);
+      return 'Ponto manual removido.';
     } on ApiException catch (error) {
       return error.message;
     }

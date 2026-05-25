@@ -95,8 +95,11 @@ Com `BUNCHIN_SEED_ON_STARTUP=true`, a inicialização cria uma empresa e usuári
 | --- | --- | --- |
 | admin | `marina.costa@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 | manager | `caio.martins@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
+| employee | `bianca.nogueira@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 | employee | `joao.lima@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
 | super_admin | `super.admin@bunchin.com` | `BUNCHIN_SEED_ADMIN_PASSWORD` |
+
+`emp-03` agora também tem `user-account` vinculado, então mudanças de `accessRole` funcionam no front quando esse funcionário é editado.
 
 ## Autenticação
 

@@ -7,6 +7,7 @@ from app.authorization import require_permission
 from app.dependencies import get_current_context, get_db
 from app.schemas.punch import (
     CreatePunchRequest,
+    ManagedPunchPageResponse,
     ManagedPunchRecordResponse,
     ManagePunchRequest,
     PunchRecordResponse,
@@ -18,7 +19,7 @@ from app.services.time_clock import (
     create_managed_punch,
     create_punch,
     delete_managed_punch,
-    list_managed_punches,
+    list_managed_punches_page,
     time_clock_state_page,
     update_managed_punch,
 )
@@ -68,16 +69,20 @@ def create_punch_route(
     )
 
 
-@router.get("/employees/{employee_id}/punches", response_model=list[ManagedPunchRecordResponse])
+@router.get("/employees/{employee_id}/punches", response_model=ManagedPunchPageResponse)
 def list_managed_punches_route(
     employee_id: str,
+    page: int = 1,
+    limit: int = 4,
     context: AuthenticatedContext = Depends(require_permission("time_clock.manage")),
     db: Session = Depends(get_db),
-) -> list[ManagedPunchRecordResponse]:
-    return list_managed_punches(
+) -> ManagedPunchPageResponse:
+    return list_managed_punches_page(
         db,
         company_id=context.company.id,
         employee_id=employee_id,
+        page=page,
+        page_size=limit,
     )
 
 

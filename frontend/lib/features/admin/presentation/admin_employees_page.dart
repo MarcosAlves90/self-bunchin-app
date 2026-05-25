@@ -1,7 +1,10 @@
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/punch.dart';
+import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/forms/br_input_masks.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/shared/presentation/widgets/pagination_controls.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_controller.dart';
 import 'package:bunchin_flutter/theme/app_theme.dart';
@@ -24,12 +27,13 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   late final AdminEmployeesController _controller;
   late final bool _ownsController;
   _EmployeeDetailTab _detailTab = _EmployeeDetailTab.registration;
+  final GlobalKey _employeeDetailKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ??
-        AdminEmployeesController(api: widget.api);
+    _controller =
+        widget.controller ?? AdminEmployeesController(api: widget.api);
     _ownsController = widget.controller == null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _controller.start();
@@ -84,16 +88,15 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  Future<void> _removeSelectedEmployee() async {
-    final employee = _controller.selectedEmployee;
-    if (employee == null) {
-      return;
-    }
-
+  Future<void> _removeEmployee(EmployeeProfile employee) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+          ),
           title: const Text('Remover funcionário'),
           content: Text(
             'Deseja remover ${employee.name}? Esta ação não pode ser desfeita.',
@@ -115,7 +118,70 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       return;
     }
 
-    final message = await _controller.deleteSelectedEmployee();
+    final message = await _controller.deleteEmployee(employee);
+    if (!mounted || message == null) {
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _selectEmployee(String employeeId, {required bool isWide}) {
+    _controller.selectEmployee(employeeId);
+    _controller.loadEmployeePunches(employeeId, page: 1);
+    _scrollToEmployeeDetails(isWide: isWide);
+  }
+
+  Future<void> _loadEmployees() => _controller.loadEmployees();
+
+  void _scrollToEmployeeDetails({required bool isWide}) {
+    if (isWide) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || isWide) {
+        return;
+      }
+      final detailContext = _employeeDetailKey.currentContext;
+      if (detailContext == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        detailContext,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        alignment: 0.04,
+      );
+    });
+  }
+
+  Future<void> _loadEmployeePunches({
+    required String employeeId,
+    int? page,
+  }) {
+    return _controller.loadEmployeePunches(
+      employeeId,
+      page: page ?? _controller.employeePunchesPage,
+    );
+  }
+
+  Future<void> _openCreatePunchDialog(EmployeeProfile employee) async {
+    final draft = await showDialog<ManagedPunchDraft>(
+      context: context,
+      builder: (context) => _ManagedPunchEditorDialog(employee: employee),
+    );
+
+    if (draft == null || !mounted) {
+      return;
+    }
+
+    final message = await _controller.createManagedPunch(
+      employee: employee,
+      draft: draft,
+    );
     if (!mounted || message == null) {
       return;
     }
@@ -125,22 +191,100 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  void _selectEmployee(String employeeId) {
-    _controller.selectEmployee(employeeId);
+  Future<void> _openEditPunchDialog({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+  }) async {
+    final draft = await showDialog<ManagedPunchDraft>(
+      context: context,
+      builder: (context) => _ManagedPunchEditorDialog(
+        employee: employee,
+        punch: punch,
+      ),
+    );
+
+    if (draft == null || !mounted) {
+      return;
+    }
+
+    final message = await _controller.updateManagedPunch(
+      employee: employee,
+      punch: punch,
+      draft: draft,
+    );
+    if (!mounted || message == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
-  Future<void> _loadEmployees() => _controller.loadEmployees();
+  Future<void> _deleteManagedPunch({
+    required EmployeeProfile employee,
+    required ManagedPunchRecord punch,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+          ),
+          title: const Text('Remover ponto'),
+          content: Text(
+            'Deseja remover o ponto de ${_formatDateTime(punch.timestamp)}? Esta ação não pode ser desfeita.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Remover'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    final message = await _controller.deleteManagedPunch(
+      employee: employee,
+      punch: punch,
+    );
+    if (!mounted || message == null) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   TextEditingController get _searchController => _controller.searchController;
   List<EmployeeProfile> get _employees => _controller.employees;
   AuthContext? get _authContext => _controller.authContext;
   EmployeeFilter get _filter => _controller.filter;
   String get _searchQuery => _controller.searchQuery;
-  String? get _selectedEmployeeId => _controller.selectedEmployeeId;
+  List<ManagedPunchRecord> get _employeePunches => _controller.employeePunches;
+  bool get _isLoadingEmployeePunches => _controller.isLoadingEmployeePunches;
+  String? get _employeePunchesError => _controller.employeePunchesError;
   bool get _isLoading => _controller.isLoading;
   String? get _loadError => _controller.loadError;
   EmployeeProfile? get _selectedEmployee => _controller.selectedEmployee;
   List<EmployeeProfile> get _visibleEmployees => _controller.visibleEmployees;
+  List<EmployeeProfile> get _pagedEmployees => _controller.pagedEmployees;
+  bool get _hasEmployeesPagination => _controller.hasEmployeesPagination;
+  int get _employeesPage => _controller.employeesPage;
+  int get _employeesTotalPages => _controller.employeesTotalPages;
+  bool get _employeesHasPrevious => _controller.employeesHasPrevious;
+  bool get _employeesHasNext => _controller.employeesHasNext;
   int get _activeEmployees => _controller.activeEmployees;
   int get _attentionEmployees => _controller.attentionEmployees;
   int get _locationTrackedEmployees => _controller.locationTrackedEmployees;
@@ -295,16 +439,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   List<Widget> _buildHeaderActions(bool isWide) {
-    final selectedEmployee = _selectedEmployee;
-    final removeButton = SizedBox(
-      width: isWide ? 240 : double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: selectedEmployee == null ? null : _removeSelectedEmployee,
-        icon: const Icon(Icons.person_remove_alt_1_rounded),
-        label: const Text('Remover selecionado'),
-        style: _removeButtonStyle(),
-      ),
-    );
     final createButton = SizedBox(
       width: isWide ? 210 : double.infinity,
       child: ElevatedButton.icon(
@@ -314,36 +448,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       ),
     );
 
-    if (!isWide) {
-      return <Widget>[createButton, removeButton];
-    }
-
-    return <Widget>[removeButton, const SizedBox(width: 8), createButton];
-  }
-
-  ButtonStyle _removeButtonStyle() {
-    final colorScheme = Theme.of(context).colorScheme;
-    final criticalColor = colorScheme.error;
-    return OutlinedButton.styleFrom(
-      foregroundColor: criticalColor,
-      side: BorderSide(color: criticalColor.withValues(alpha: 0.45)),
-    ).copyWith(
-      overlayColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.pressed)) {
-          return criticalColor.withValues(alpha: 0.18);
-        }
-        if (states.contains(WidgetState.hovered)) {
-          return criticalColor.withValues(alpha: 0.1);
-        }
-        return null;
-      }),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(WidgetState.disabled)) {
-          return colorScheme.surfaceContainerHighest.withValues(alpha: 0.42);
-        }
-        return criticalColor.withValues(alpha: 0.04);
-      }),
-    );
+    return <Widget>[createButton];
   }
 
   Widget _buildMetricGrid(bool isWide) {
@@ -417,7 +522,8 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(flex: 11, child: _buildEmployeesListCard()),
+              Expanded(
+                  flex: 11, child: _buildEmployeesListCard(isWide: isWide)),
               const SizedBox(width: 20),
               Expanded(flex: 9, child: _buildEmployeeDetailCard()),
             ],
@@ -427,7 +533,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildEmployeesListCard(),
+            _buildEmployeesListCard(isWide: isWide),
             const SizedBox(height: 20),
             _buildEmployeeDetailCard(),
           ],
@@ -436,10 +542,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  Widget _buildEmployeesListCard() {
+  Widget _buildEmployeesListCard({required bool isWide}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final visibleEmployees = _visibleEmployees;
+    final pagedEmployees = _pagedEmployees;
 
     return WorkspaceSectionCard(
       child: Column(
@@ -561,25 +668,47 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
             )
           else
             Column(
-              children: visibleEmployees.map((employee) {
-                final selected = employee.id == _selectedEmployee?.id;
+              children: [
+                ...pagedEmployees.map((employee) {
+                  final selected = employee.id == _selectedEmployee?.id;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _EmployeeListTile(
-                    employee: employee,
-                    selected: selected,
-                    statusColor: _statusColor(employee.status),
-                    statusIcon: _statusIcon(employee.status),
-                    statusLabel: _statusLabel(employee.status),
-                    needsAttention: _needsAttention(employee),
-                    onTap: () => _selectEmployee(employee.id),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _EmployeeListTile(
+                      employee: employee,
+                      selected: selected,
+                      statusColor: _statusColor(employee.status),
+                      statusIcon: _statusIcon(employee.status),
+                      statusLabel: _statusLabel(employee.status),
+                      needsAttention: _needsAttention(employee),
+                      onTap: () => _selectEmployee(employee.id, isWide: isWide),
+                      onEdit: () => _openEditEmployeeDialog(employee),
+                      onDelete: () => _removeEmployee(employee),
+                    ),
+                  );
+                }),
+                if (_hasEmployeesPagination) ...[
+                  const SizedBox(height: 16),
+                  PaginationControls(
+                    page: _employeesPage,
+                    totalPages: _employeesTotalPages,
+                    hasPrevious: _employeesHasPrevious,
+                    hasNext: _employeesHasNext,
+                    onPrevious: _controller.loadPreviousEmployeesPage,
+                    onNext: _controller.loadNextEmployeesPage,
                   ),
-                );
-              }).toList(),
+                ],
+              ],
             ),
         ],
       ),
+    );
+  }
+
+  Widget _wrapEmployeeDetailCard({required Widget child}) {
+    return KeyedSubtree(
+      key: _employeeDetailKey,
+      child: child,
     );
   }
 
@@ -589,23 +718,25 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final employee = _selectedEmployee;
 
     if (employee == null) {
-      return WorkspaceSectionCard(
-        child: Row(
-          children: <Widget>[
-            Icon(
-              Icons.touch_app_rounded,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Selecione um funcionário para ver os detalhes.',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+      return _wrapEmployeeDetailCard(
+        child: WorkspaceSectionCard(
+          child: Row(
+            children: <Widget>[
+              Icon(
+                Icons.touch_app_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Selecione um funcionário para ver os detalhes.',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -615,147 +746,369 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         ? 'Sem registro'
         : _formatDateTime(employee.lastPunchAt!);
 
-    return WorkspaceSectionCard(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final useTwoColumns = constraints.maxWidth >= 520;
-          final overviewItemWidth = useTwoColumns
-              ? (constraints.maxWidth - 12) / 2
-              : constraints.maxWidth;
-          final activeTab = hasNotes || _detailTab != _EmployeeDetailTab.notes
-              ? _detailTab
-              : _EmployeeDetailTab.registration;
+    return _wrapEmployeeDetailCard(
+      child: WorkspaceSectionCard(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useTwoColumns = constraints.maxWidth >= 520;
+            final overviewItemWidth = useTwoColumns
+                ? (constraints.maxWidth - 12) / 2
+                : constraints.maxWidth;
+            final activeTab = hasNotes || _detailTab != _EmployeeDetailTab.notes
+                ? _detailTab
+                : _EmployeeDetailTab.registration;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _EmployeeDetailHero(
-                employee: employee,
-                statusLabel: _statusLabel(employee.status),
-                statusColor: _statusColor(employee.status),
-                statusIcon: _statusIcon(employee.status),
-                workModeLabel: _workModeLabel(employee.workMode),
-                workModeIcon: _workModeSummaryIcon(employee.workMode),
-                needsAttention: _needsAttention(employee),
-                onEdit: () => _openEditEmployeeDialog(employee),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Resumo rápido',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _EmployeeDetailHero(
+                  employee: employee,
+                  statusLabel: _statusLabel(employee.status),
+                  statusColor: _statusColor(employee.status),
+                  statusIcon: _statusIcon(employee.status),
+                  workModeLabel: _workModeLabel(employee.workMode),
+                  workModeIcon: _workModeSummaryIcon(employee.workMode),
+                  needsAttention: _needsAttention(employee),
+                  onEdit: () => _openEditEmployeeDialog(employee),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: <Widget>[
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.schedule_rounded,
-                      label: 'Jornada',
-                      value: employee.expectedShiftLabel,
-                    ),
+                const SizedBox(height: 12),
+                Text(
+                  'Resumo rápido',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.av_timer_rounded,
-                      label: 'Horas de hoje',
-                      value: _formatHours(employee.todayWorkedMinutes),
-                    ),
-                  ),
-                  SizedBox(
-                    width: overviewItemWidth,
-                    child: _EmployeeOverviewCard(
-                      icon: Icons.history_toggle_off_rounded,
-                      label: 'Última batida',
-                      value: lastPunchLabel,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildDetailTabSelector(
-                activeTab: activeTab,
-                hasNotes: hasNotes,
-                useVerticalLayout: constraints.maxWidth < 360,
-              ),
-              const SizedBox(height: 12),
-              if (activeTab == _EmployeeDetailTab.registration)
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.82),
-                    border: Border.all(color: colorScheme.outlineVariant),
-                  ),
-                  child: Column(
-                    children: <Widget>[
-                      _EmployeeDetailRow(
-                        icon: Icons.alternate_email_rounded,
-                        label: 'E-mail',
-                        value: employee.email,
-                      ),
-                      Divider(color: colorScheme.outlineVariant, height: 1),
-                      _EmployeeDetailRow(
-                        icon: Icons.phone_outlined,
-                        label: 'Telefone',
-                        value: employee.phone,
-                      ),
-                    ],
-                  ),
-                )
-              else if (activeTab == _EmployeeDetailTab.policies)
-                Column(
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
                   children: <Widget>[
-                    _EmployeePolicyRow(
-                      icon: Icons.location_searching_rounded,
-                      title: 'Validação de localização',
-                      value: employee.requiresLocationOnPunch
-                          ? 'Obrigatória nas batidas'
-                          : 'Flexível para a operação',
-                      tone: employee.requiresLocationOnPunch
-                          ? const Color(0xFF1F4E79)
-                          : const Color(0xFF6B6254),
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.schedule_rounded,
+                        label: 'Jornada',
+                        value: employee.expectedShiftLabel,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _EmployeePolicyRow(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Dispositivo confiável',
-                      value: employee.trustedDeviceRequired
-                          ? 'Exigido para registrar ponto'
-                          : 'Sem restrição ativa',
-                      tone: employee.trustedDeviceRequired
-                          ? const Color(0xFF2F8F46)
-                          : const Color(0xFF6B6254),
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.av_timer_rounded,
+                        label: 'Horas de hoje',
+                        value: _formatHours(employee.todayWorkedMinutes),
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _EmployeePolicyRow(
-                      icon: employee.pendingAdjustments > 0
-                          ? Icons.warning_amber_rounded
-                          : Icons.task_alt_rounded,
-                      title: 'Ajustes pendentes',
-                      value: employee.pendingAdjustments > 0
-                          ? '${employee.pendingAdjustments} aguardando revisão'
-                          : 'Nenhum ajuste em aberto',
-                      tone: employee.pendingAdjustments > 0
-                          ? const Color(0xFF8C5D00)
-                          : const Color(0xFF2F8F46),
+                    SizedBox(
+                      width: overviewItemWidth,
+                      child: _EmployeeOverviewCard(
+                        icon: Icons.history_toggle_off_rounded,
+                        label: 'Última batida',
+                        value: lastPunchLabel,
+                      ),
                     ),
                   ],
-                )
-              else
-                _EmployeeNarrativeCard(
-                  icon: Icons.sticky_note_2_outlined,
-                  label: 'Notas da gestão',
-                  value: employee.notes,
                 ),
-            ],
-          );
-        },
+                const SizedBox(height: 16),
+                _buildDetailTabSelector(
+                  activeTab: activeTab,
+                  hasNotes: hasNotes,
+                  useVerticalLayout: constraints.maxWidth < 360,
+                ),
+                const SizedBox(height: 12),
+                if (activeTab == _EmployeeDetailTab.registration)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.82),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Column(
+                      children: <Widget>[
+                        _EmployeeDetailRow(
+                          icon: Icons.alternate_email_rounded,
+                          label: 'E-mail',
+                          value: employee.email,
+                        ),
+                        Divider(color: colorScheme.outlineVariant, height: 1),
+                        _EmployeeDetailRow(
+                          icon: Icons.phone_outlined,
+                          label: 'Telefone',
+                          value: employee.phone,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (activeTab == _EmployeeDetailTab.policies)
+                  Column(
+                    children: <Widget>[
+                      _EmployeePolicyRow(
+                        icon: Icons.location_searching_rounded,
+                        title: 'Validação de localização',
+                        value: employee.requiresLocationOnPunch
+                            ? 'Obrigatória nas batidas'
+                            : 'Flexível para a operação',
+                        tone: employee.requiresLocationOnPunch
+                            ? const Color(0xFF1F4E79)
+                            : const Color(0xFF6B6254),
+                      ),
+                      const SizedBox(height: 10),
+                      _EmployeePolicyRow(
+                        icon: Icons.verified_user_outlined,
+                        title: 'Dispositivo confiável',
+                        value: employee.trustedDeviceRequired
+                            ? 'Exigido para registrar ponto'
+                            : 'Sem restrição ativa',
+                        tone: employee.trustedDeviceRequired
+                            ? const Color(0xFF2F8F46)
+                            : const Color(0xFF6B6254),
+                      ),
+                      const SizedBox(height: 10),
+                      _EmployeePolicyRow(
+                        icon: employee.pendingAdjustments > 0
+                            ? Icons.warning_amber_rounded
+                            : Icons.task_alt_rounded,
+                        title: 'Ajustes pendentes',
+                        value: employee.pendingAdjustments > 0
+                            ? '${employee.pendingAdjustments} aguardando revisão'
+                            : 'Nenhum ajuste em aberto',
+                        tone: employee.pendingAdjustments > 0
+                            ? const Color(0xFF8C5D00)
+                            : const Color(0xFF2F8F46),
+                      ),
+                    ],
+                  )
+                else if (activeTab == _EmployeeDetailTab.timeClock)
+                  _buildPunchManagementSection(
+                    employee: employee,
+                    constraints: constraints,
+                  )
+                else
+                  _EmployeeNarrativeCard(
+                    icon: Icons.sticky_note_2_outlined,
+                    label: 'Notas da gestão',
+                    value: employee.notes,
+                  ),
+              ],
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildPunchManagementSection({
+    required EmployeeProfile employee,
+    required BoxConstraints constraints,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isCompact = constraints.maxWidth < 540;
+    final totalPages = _controller.employeePunchesTotalPages;
+    final currentPage = _controller.employeePunchesPage;
+    final visiblePunches = _employeePunches;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.82),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Gestão de ponto',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Crie ou ajuste batidas manuais sem misturar isso com navegação.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.45,
+                          ),
+                        ),
+                        if (_controller.employeePunchesTotal > 0) ...<Widget>[
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_controller.employeePunchesTotal} registros',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (!isCompact) ...<Widget>[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _openCreatePunchDialog(employee),
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: const Text('Novo ponto'),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Atualizar',
+                      child: IconButton.filledTonal(
+                        onPressed: () =>
+                            _loadEmployeePunches(employeeId: employee.id),
+                        icon: const Icon(Icons.refresh_rounded),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (isCompact) ...<Widget>[
+                const SizedBox(height: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    ElevatedButton.icon(
+                      onPressed: () => _openCreatePunchDialog(employee),
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: const Text('Novo ponto'),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          _loadEmployeePunches(employeeId: employee.id),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Atualizar'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (_isLoadingEmployeePunches)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_employeePunchesError != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _employeePunchesError!,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      _loadEmployeePunches(employeeId: employee.id),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Tentar novamente'),
+                ),
+              ],
+            ),
+          )
+        else if (_employeePunches.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.8),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Nenhum ponto manual registrado.',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Use a criação manual para corrigir batidas, ajustar horários ou registrar eventos passados.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () => _openCreatePunchDialog(employee),
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  label: const Text('Novo ponto'),
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: <Widget>[
+              ...visiblePunches.map((punch) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ManagedPunchTile(
+                    punch: punch,
+                    onEdit: () => _openEditPunchDialog(
+                      employee: employee,
+                      punch: punch,
+                    ),
+                    onDelete: () => _deleteManagedPunch(
+                      employee: employee,
+                      punch: punch,
+                    ),
+                  ),
+                );
+              }),
+              if (totalPages > 1) ...<Widget>[
+                const SizedBox(height: 8),
+                PaginationControls(
+                  page: currentPage,
+                  totalPages: totalPages,
+                  hasPrevious: _controller.employeePunchesHasPrevious,
+                  hasNext: _controller.employeePunchesHasNext,
+                  onPrevious: () {
+                    final previousPage = currentPage - 1;
+                    _controller.loadEmployeePunches(
+                      employee.id,
+                      page: previousPage,
+                    );
+                  },
+                  onNext: () {
+                    final nextPage = currentPage + 1;
+                    _controller.loadEmployeePunches(
+                      employee.id,
+                      page: nextPage,
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+      ],
     );
   }
 
@@ -780,6 +1133,11 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         label: 'Políticas',
       ),
       (
+        value: _EmployeeDetailTab.timeClock,
+        icon: Icons.schedule_rounded,
+        label: 'Ponto',
+      ),
+      (
         value: _EmployeeDetailTab.notes,
         icon: Icons.notes_rounded,
         label: 'Notas',
@@ -789,45 +1147,74 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final visibleItems = tabItems
         .where((item) => hasNotes || item.value != _EmployeeDetailTab.notes)
         .toList();
+    final selectedTab = visibleItems.any((item) => item.value == activeTab)
+        ? activeTab
+        : visibleItems.first.value;
+    final selectedTabForeground =
+        ThemeData.estimateBrightnessForColor(AppTheme.accent) == Brightness.dark
+            ? Colors.white
+            : Colors.black87;
 
-    if (!useVerticalLayout) {
-      return SegmentedButton<_EmployeeDetailTab>(
-        segments: visibleItems
-            .map(
-              (item) => ButtonSegment<_EmployeeDetailTab>(
-                value: item.value,
-                icon: Icon(item.icon),
-                label: Text(item.label),
-              ),
-            )
-            .toList(),
-        selected: <_EmployeeDetailTab>{activeTab},
-        showSelectedIcon: false,
+    Widget buildTabButton({
+      required _EmployeeDetailTab value,
+      required IconData icon,
+      required String label,
+    }) {
+      final selected = value == selectedTab;
+      return OutlinedButton.icon(
+        onPressed: () {
+          if (selected) {
+            return;
+          }
+          setState(() {
+            _detailTab = value;
+          });
+        },
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return AppTheme.accent;
-            }
-
-            return null;
+          animationDuration: Duration.zero,
+          minimumSize: MaterialStateProperty.all(const Size.fromHeight(48)),
+          backgroundColor: MaterialStateProperty.resolveWith((_) {
+            return selected ? AppTheme.accent : Colors.transparent;
           }),
-          foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return colorScheme.onPrimary;
-            }
-
-            return null;
+          foregroundColor: MaterialStateProperty.resolveWith((_) {
+            return selected ? selectedTabForeground : colorScheme.onSurface;
           }),
-          side:
-              const WidgetStatePropertyAll(BorderSide(color: AppTheme.accent)),
-          shape: const WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          side: MaterialStateProperty.all(
+            const BorderSide(color: AppTheme.accent),
+          ),
+          shape: MaterialStateProperty.all(
+            const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
         ),
-        onSelectionChanged: (selection) {
-          setState(() {
-            _detailTab = selection.first;
-          });
+        icon: Icon(icon),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    if (!useVerticalLayout) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth =
+              (constraints.maxWidth - (visibleItems.length > 1 ? 8 : 0)) / 2;
+
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: visibleItems.map((item) {
+              return SizedBox(
+                width: itemWidth,
+                child: buildTabButton(
+                  value: item.value,
+                  icon: item.icon,
+                  label: item.label,
+                ),
+              );
+            }).toList(),
+          );
         },
       );
     }
@@ -835,27 +1222,12 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: visibleItems.map((item) {
-        final selected = item.value == activeTab;
         return Padding(
           padding: EdgeInsets.only(bottom: item == visibleItems.last ? 0 : 8),
-          child: OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _detailTab = item.value;
-              });
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              backgroundColor: selected ? AppTheme.accent : null,
-              foregroundColor:
-                  selected ? colorScheme.onPrimary : colorScheme.onSurface,
-              side: const BorderSide(color: AppTheme.accent),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-            icon: Icon(item.icon),
-            label: Text(item.label),
+          child: buildTabButton(
+            value: item.value,
+            icon: item.icon,
+            label: item.label,
           ),
         );
       }).toList(),
@@ -867,4 +1239,4 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 }
 
-enum _EmployeeDetailTab { registration, policies, notes }
+enum _EmployeeDetailTab { registration, policies, timeClock, notes }

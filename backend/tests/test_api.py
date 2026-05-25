@@ -504,6 +504,7 @@ def test_manager_can_manage_employee_punches(client):
         email="caio.martins@bunchin.com",
         password=TEST_SEED_SECRET,
     )
+    _clear_employee_punches("emp-02")
 
     create_response = client.post(
         "/api/v1/time-clock/employees/emp-02/punches",
@@ -521,9 +522,15 @@ def test_manager_can_manage_employee_punches(client):
     assert created["type"] == "checkIn"
     assert created["detail"] == "Ajuste manual aprovado pelo gestor."
 
-    list_response = client.get("/api/v1/time-clock/employees/emp-02/punches", headers=headers)
+    list_response = client.get(
+        "/api/v1/time-clock/employees/emp-02/punches?limit=100",
+        headers=headers,
+    )
     assert list_response.status_code == 200
-    assert any(item["id"] == created["id"] for item in list_response.json())
+    payload = list_response.json()
+    assert payload["recordsPage"] == 1
+    assert payload["recordsPageSize"] == 100
+    assert any(item["id"] == created["id"] for item in payload["records"])
 
     update_response = client.put(
         f"/api/v1/time-clock/employees/emp-02/punches/{created['id']}",
@@ -549,7 +556,54 @@ def test_manager_can_manage_employee_punches(client):
 
     final_list_response = client.get("/api/v1/time-clock/employees/emp-02/punches", headers=headers)
     assert final_list_response.status_code == 200
-    assert all(item["id"] != created["id"] for item in final_list_response.json())
+    final_payload = final_list_response.json()
+    assert all(item["id"] != created["id"] for item in final_payload["records"])
+
+
+def test_manager_paginates_employee_punches(client):
+    headers = login_headers_for(
+        client,
+        email="caio.martins@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    _clear_employee_punches("emp-02")
+
+    for index in range(5):
+        response = client.post(
+            "/api/v1/time-clock/employees/emp-02/punches",
+            headers=headers,
+            json={
+                "type": "checkIn",
+                "timestamp": f"2026-05-2{index}T09:00:00-03:00",
+                "detail": f"Batch {index + 1}",
+            },
+        )
+        assert response.status_code == 201
+
+    page_one = client.get(
+        "/api/v1/time-clock/employees/emp-02/punches?page=1&limit=2",
+        headers=headers,
+    )
+    assert page_one.status_code == 200
+    payload = page_one.json()
+    assert payload["recordsPage"] == 1
+    assert payload["recordsPageSize"] == 2
+    assert payload["recordsTotal"] == 5
+    assert payload["recordsTotalPages"] == 3
+    assert payload["recordsHasPrevious"] is False
+    assert payload["recordsHasNext"] is True
+    assert [item["detail"] for item in payload["records"]] == ["Batch 5", "Batch 4"]
+
+    page_three = client.get(
+        "/api/v1/time-clock/employees/emp-02/punches?page=3&limit=2",
+        headers=headers,
+    )
+    assert page_three.status_code == 200
+    payload = page_three.json()
+    assert payload["recordsPage"] == 3
+    assert payload["recordsHasPrevious"] is True
+    assert payload["recordsHasNext"] is False
+    assert [item["detail"] for item in payload["records"]] == ["Batch 1"]
 
 
 def test_pii_is_not_stored_in_plain_text(client):

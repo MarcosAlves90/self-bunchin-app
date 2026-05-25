@@ -275,7 +275,7 @@ void main() {
   test('time clock endpoints use time-clock contracts end-to-end', () async {
     final client = _FakeApiClient(
       getResponses: {
-        '/time-clock/me': {
+        '/time-clock/me?page=1&limit=4': {
           'employee': {
             'id': 'emp-01',
             'name': 'Marina Costa',
@@ -310,6 +310,25 @@ void main() {
           'recordsHasPrevious': false,
           'recordsHasNext': false,
         },
+        '/time-clock/employees/emp-02/punches?page=2&limit=2': {
+          'records': [
+            {
+              'id': 'punch-02',
+              'employeeId': 'emp-02',
+              'type': 'checkIn',
+              'timestamp': '2026-04-25T11:00:00Z',
+              'detail': 'Segundo registro.',
+              'projectId': null,
+              'location': null,
+            },
+          ],
+          'recordsPage': 2,
+          'recordsPageSize': 2,
+          'recordsTotal': 3,
+          'recordsTotalPages': 2,
+          'recordsHasPrevious': true,
+          'recordsHasNext': false,
+        },
       },
       postResponses: {
         '/time-clock/me/punches': {
@@ -340,12 +359,24 @@ void main() {
         ),
       ),
     );
+    expect(client.lastPath, '/time-clock/me/punches');
+
+    final managedPunchPage = await api.listManagedPunches(
+      'emp-02',
+      page: 2,
+      limit: 2,
+    );
 
     expect(state.employee.name, 'Marina Costa');
     expect(state.currentStatus, ShiftStatus.working);
     expect(state.records.single.type, PunchType.checkIn);
     expect(punch.type, PunchType.checkOut);
-    expect(client.lastPath, '/time-clock/me/punches');
+
+    expect(managedPunchPage.recordsPage, 2);
+    expect(managedPunchPage.records.single.id, 'punch-02');
+    expect(managedPunchPage.recordsHasNext, isFalse);
+    expect(
+        client.lastPath, '/time-clock/employees/emp-02/punches?page=2&limit=2');
     expect(client.lastBody, <String, dynamic>{
       'type': 'checkOut',
       'location': {
@@ -451,12 +482,13 @@ class _FakeApiClient extends ApiClient {
     bool withAuth = false,
     Map<String, Object?>? queryParameters,
   }) async {
-    lastPath = path;
+    final lookupPath = _lookupPath(path, queryParameters);
+    lastPath = lookupPath;
     lastWithAuth = withAuth;
-    if (!getResponses.containsKey(path)) {
-      throw StateError('No fake GET response registered for $path');
+    if (!getResponses.containsKey(lookupPath)) {
+      throw StateError('No fake GET response registered for $lookupPath');
     }
-    return getResponses[path];
+    return getResponses[lookupPath];
   }
 
   @override
@@ -500,6 +532,21 @@ class _FakeApiClient extends ApiClient {
       throw StateError('No fake DELETE response registered for $path');
     }
     return deleteResponses[path];
+  }
+
+  String _lookupPath(
+    String path,
+    Map<String, Object?>? queryParameters,
+  ) {
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return path;
+    }
+
+    final query = Uri(
+        queryParameters: queryParameters.map(
+      (key, value) => MapEntry(key, value?.toString()),
+    )).query;
+    return '$path?$query';
   }
 }
 
