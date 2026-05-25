@@ -28,7 +28,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   late final bool _ownsController;
   _EmployeeDetailTab _detailTab = _EmployeeDetailTab.registration;
   final GlobalKey _employeeDetailKey = GlobalKey();
-  bool _isWideLayout = false;
 
   @override
   void initState() {
@@ -129,21 +128,21 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  void _selectEmployee(String employeeId) {
+  void _selectEmployee(String employeeId, {required bool isWide}) {
     _controller.selectEmployee(employeeId);
     _controller.loadEmployeePunches(employeeId);
-    _scrollToEmployeeDetails();
+    _scrollToEmployeeDetails(isWide: isWide);
   }
 
   Future<void> _loadEmployees() => _controller.loadEmployees();
 
-  void _scrollToEmployeeDetails() {
-    if (_isWideLayout) {
+  void _scrollToEmployeeDetails({required bool isWide}) {
+    if (isWide) {
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isWideLayout) {
+      if (!mounted || isWide) {
         return;
       }
       final detailContext = _employeeDetailKey.currentContext;
@@ -386,7 +385,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Widget _buildWorkspace({required bool isWide}) {
-    _isWideLayout = isWide;
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
@@ -518,7 +516,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(flex: 11, child: _buildEmployeesListCard()),
+              Expanded(flex: 11, child: _buildEmployeesListCard(isWide: isWide)),
               const SizedBox(width: 20),
               Expanded(flex: 9, child: _buildEmployeeDetailCard()),
             ],
@@ -528,7 +526,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _buildEmployeesListCard(),
+            _buildEmployeesListCard(isWide: isWide),
             const SizedBox(height: 20),
             _buildEmployeeDetailCard(),
           ],
@@ -537,7 +535,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
-  Widget _buildEmployeesListCard() {
+  Widget _buildEmployeesListCard({required bool isWide}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final visibleEmployees = _visibleEmployees;
@@ -676,7 +674,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                       statusIcon: _statusIcon(employee.status),
                       statusLabel: _statusLabel(employee.status),
                       needsAttention: _needsAttention(employee),
-                      onTap: () => _selectEmployee(employee.id),
+                      onTap: () => _selectEmployee(employee.id, isWide: isWide),
                       onEdit: () => _openEditEmployeeDialog(employee),
                       onDelete: () => _removeEmployee(employee),
                     ),
@@ -700,14 +698,20 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     );
   }
 
+  Widget _wrapEmployeeDetailCard({required Widget child}) {
+    return KeyedSubtree(
+      key: _employeeDetailKey,
+      child: child,
+    );
+  }
+
   Widget _buildEmployeeDetailCard() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final employee = _selectedEmployee;
 
     if (employee == null) {
-      return KeyedSubtree(
-        key: _employeeDetailKey,
+      return _wrapEmployeeDetailCard(
         child: WorkspaceSectionCard(
           child: Row(
             children: <Widget>[
@@ -735,8 +739,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
         ? 'Sem registro'
         : _formatDateTime(employee.lastPunchAt!);
 
-    return KeyedSubtree(
-      key: _employeeDetailKey,
+    return _wrapEmployeeDetailCard(
       child: WorkspaceSectionCard(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -799,91 +802,91 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                     ),
                   ],
                 ),
-              const SizedBox(height: 16),
-              _buildDetailTabSelector(
-                activeTab: activeTab,
-                hasNotes: hasNotes,
-                useVerticalLayout: constraints.maxWidth < 360,
-              ),
-              const SizedBox(height: 12),
-              if (activeTab == _EmployeeDetailTab.registration)
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.82),
-                    border: Border.all(color: colorScheme.outlineVariant),
-                  ),
-                  child: Column(
+                const SizedBox(height: 16),
+                _buildDetailTabSelector(
+                  activeTab: activeTab,
+                  hasNotes: hasNotes,
+                  useVerticalLayout: constraints.maxWidth < 360,
+                ),
+                const SizedBox(height: 12),
+                if (activeTab == _EmployeeDetailTab.registration)
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface.withValues(alpha: 0.82),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Column(
+                      children: <Widget>[
+                        _EmployeeDetailRow(
+                          icon: Icons.alternate_email_rounded,
+                          label: 'E-mail',
+                          value: employee.email,
+                        ),
+                        Divider(color: colorScheme.outlineVariant, height: 1),
+                        _EmployeeDetailRow(
+                          icon: Icons.phone_outlined,
+                          label: 'Telefone',
+                          value: employee.phone,
+                        ),
+                      ],
+                    ),
+                  )
+                else if (activeTab == _EmployeeDetailTab.policies)
+                  Column(
                     children: <Widget>[
-                      _EmployeeDetailRow(
-                        icon: Icons.alternate_email_rounded,
-                        label: 'E-mail',
-                        value: employee.email,
+                      _EmployeePolicyRow(
+                        icon: Icons.location_searching_rounded,
+                        title: 'Validação de localização',
+                        value: employee.requiresLocationOnPunch
+                            ? 'Obrigatória nas batidas'
+                            : 'Flexível para a operação',
+                        tone: employee.requiresLocationOnPunch
+                            ? const Color(0xFF1F4E79)
+                            : const Color(0xFF6B6254),
                       ),
-                      Divider(color: colorScheme.outlineVariant, height: 1),
-                      _EmployeeDetailRow(
-                        icon: Icons.phone_outlined,
-                        label: 'Telefone',
-                        value: employee.phone,
+                      const SizedBox(height: 10),
+                      _EmployeePolicyRow(
+                        icon: Icons.verified_user_outlined,
+                        title: 'Dispositivo confiável',
+                        value: employee.trustedDeviceRequired
+                            ? 'Exigido para registrar ponto'
+                            : 'Sem restrição ativa',
+                        tone: employee.trustedDeviceRequired
+                            ? const Color(0xFF2F8F46)
+                            : const Color(0xFF6B6254),
+                      ),
+                      const SizedBox(height: 10),
+                      _EmployeePolicyRow(
+                        icon: employee.pendingAdjustments > 0
+                            ? Icons.warning_amber_rounded
+                            : Icons.task_alt_rounded,
+                        title: 'Ajustes pendentes',
+                        value: employee.pendingAdjustments > 0
+                            ? '${employee.pendingAdjustments} aguardando revisão'
+                            : 'Nenhum ajuste em aberto',
+                        tone: employee.pendingAdjustments > 0
+                            ? const Color(0xFF8C5D00)
+                            : const Color(0xFF2F8F46),
                       ),
                     ],
+                  )
+                else if (activeTab == _EmployeeDetailTab.timeClock)
+                  _buildPunchManagementSection(
+                    employee: employee,
+                    constraints: constraints,
+                  )
+                else
+                  _EmployeeNarrativeCard(
+                    icon: Icons.sticky_note_2_outlined,
+                    label: 'Notas da gestão',
+                    value: employee.notes,
                   ),
-                )
-              else if (activeTab == _EmployeeDetailTab.policies)
-                Column(
-                  children: <Widget>[
-                    _EmployeePolicyRow(
-                      icon: Icons.location_searching_rounded,
-                      title: 'Validação de localização',
-                      value: employee.requiresLocationOnPunch
-                          ? 'Obrigatória nas batidas'
-                          : 'Flexível para a operação',
-                      tone: employee.requiresLocationOnPunch
-                          ? const Color(0xFF1F4E79)
-                          : const Color(0xFF6B6254),
-                    ),
-                    const SizedBox(height: 10),
-                    _EmployeePolicyRow(
-                      icon: Icons.verified_user_outlined,
-                      title: 'Dispositivo confiável',
-                      value: employee.trustedDeviceRequired
-                          ? 'Exigido para registrar ponto'
-                          : 'Sem restrição ativa',
-                      tone: employee.trustedDeviceRequired
-                          ? const Color(0xFF2F8F46)
-                          : const Color(0xFF6B6254),
-                    ),
-                    const SizedBox(height: 10),
-                    _EmployeePolicyRow(
-                      icon: employee.pendingAdjustments > 0
-                          ? Icons.warning_amber_rounded
-                          : Icons.task_alt_rounded,
-                      title: 'Ajustes pendentes',
-                      value: employee.pendingAdjustments > 0
-                          ? '${employee.pendingAdjustments} aguardando revisão'
-                          : 'Nenhum ajuste em aberto',
-                      tone: employee.pendingAdjustments > 0
-                          ? const Color(0xFF8C5D00)
-                          : const Color(0xFF2F8F46),
-                    ),
-                  ],
-                )
-              else if (activeTab == _EmployeeDetailTab.timeClock)
-                _buildPunchManagementSection(
-                  employee: employee,
-                  constraints: constraints,
-                )
-              else
-                _EmployeeNarrativeCard(
-                  icon: Icons.sticky_note_2_outlined,
-                  label: 'Notas da gestão',
-                  value: employee.notes,
-                ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-    ),
     );
   }
 
@@ -1080,24 +1083,29 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     }) {
       final selected = value == selectedTab;
       return OutlinedButton.icon(
-        onPressed: selected
-            ? null
-            : () {
-                setState(() {
-                  _detailTab = value;
-                });
-              },
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(48),
-          backgroundColor: selected ? AppTheme.accent : null,
-          disabledBackgroundColor: selected ? AppTheme.accent : null,
-          foregroundColor:
-              selected ? selectedTabForeground : colorScheme.onSurface,
-          disabledForegroundColor:
-              selected ? selectedTabForeground : colorScheme.onSurface,
-          side: const BorderSide(color: AppTheme.accent),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
+        onPressed: () {
+          if (selected) {
+            return;
+          }
+          setState(() {
+            _detailTab = value;
+          });
+        },
+        style: ButtonStyle(
+          animationDuration: Duration.zero,
+          minimumSize:
+              MaterialStateProperty.all(const Size.fromHeight(48)),
+          backgroundColor: MaterialStateProperty.resolveWith((_) {
+            return selected ? AppTheme.accent : Colors.transparent;
+          }),
+          foregroundColor: MaterialStateProperty.resolveWith((_) {
+            return selected ? selectedTabForeground : colorScheme.onSurface;
+          }),
+          side: MaterialStateProperty.all(
+            const BorderSide(color: AppTheme.accent),
+          ),
+          shape: MaterialStateProperty.all(
+            const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
           ),
         ),
         icon: Icon(icon),
