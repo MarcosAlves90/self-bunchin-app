@@ -1072,7 +1072,6 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
                   padding: const EdgeInsets.only(bottom: 10),
                   child: _ManagedPunchTile(
                     punch: punch,
-                    employee: employee,
                     onEdit: () => _openEditPunchDialog(
                       employee: employee,
                       punch: punch,

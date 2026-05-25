@@ -1640,13 +1640,11 @@ class _ManagedPunchEditorDialogState extends State<_ManagedPunchEditorDialog> {
 class _ManagedPunchTile extends StatelessWidget {
   const _ManagedPunchTile({
     required this.punch,
-    required this.employee,
     required this.onEdit,
     required this.onDelete,
   });
 
   final ManagedPunchRecord punch;
-  final EmployeeProfile employee;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -1655,126 +1653,108 @@ class _ManagedPunchTile extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tone = _punchTypeTone(punch.type);
-    final isCompact = MediaQuery.sizeOf(context).width < 560;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.82),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: tone.withValues(alpha: 0.12),
-                  border: Border.all(color: tone.withValues(alpha: 0.24)),
-                ),
-                child: Icon(
-                  _punchTypeIcon(punch.type),
-                  size: 18,
-                  color: tone,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: tone.withValues(alpha: 0.12),
+              border: Border.all(color: tone.withValues(alpha: 0.24)),
+            ),
+            child: Icon(
+              _punchTypeIcon(punch.type),
+              size: 17,
+              color: tone,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
                   children: <Widget>[
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: <Widget>[
-                        _InlinePill(
-                          label: _punchTypeLabel(punch.type),
-                          tone: tone,
-                          icon: _punchTypeIcon(punch.type),
-                        ),
-                        _InlinePill(
-                          label: _formatPunchTimestamp(punch.timestamp),
-                          tone: colorScheme.onSurfaceVariant,
-                          icon: Icons.schedule_rounded,
-                        ),
-                      ],
+                    _InlinePill(
+                      label: _punchTypeLabel(punch.type),
+                      tone: tone,
+                      icon: _punchTypeIcon(punch.type),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      punch.detail,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        height: 1.35,
-                      ),
-                    ),
-                    if (punch.projectId != null &&
-                        punch.projectId!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Projeto: ${punch.projectId}',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _formatPunchTimestamp(punch.timestamp),
+                        style: theme.textTheme.labelMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          if (!isCompact) const SizedBox(height: 8),
-          if (!isCompact)
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar'),
+                const SizedBox(height: 4),
+                Text(
+                  punch.detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Remover'),
+                if (punch.projectId != null && punch.projectId!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Projeto: ${punch.projectId}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
-            )
-          else ...<Widget>[
-            const SizedBox(height: 8),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline_rounded),
-                    label: const Text('Remover'),
-                  ),
-                ),
+                ],
               ],
             ),
-          ],
+          ),
+          PopupMenuButton<_ManagedPunchAction>(
+            icon: const Icon(Icons.more_horiz_rounded),
+            onSelected: (action) {
+              if (action == _ManagedPunchAction.edit) {
+                onEdit();
+              } else {
+                onDelete();
+              }
+            },
+            itemBuilder: (context) {
+              return const <PopupMenuEntry<_ManagedPunchAction>>[
+                PopupMenuItem<_ManagedPunchAction>(
+                  value: _ManagedPunchAction.edit,
+                  child: Text('Editar'),
+                ),
+                PopupMenuItem<_ManagedPunchAction>(
+                  value: _ManagedPunchAction.delete,
+                  child: Text('Remover'),
+                ),
+              ];
+            },
+          ),
         ],
       ),
     );
   }
 }
+
+enum _ManagedPunchAction { edit, delete }
 
 String _formatPunchTimestamp(DateTime value) {
   final day = value.day.toString().padLeft(2, '0');
