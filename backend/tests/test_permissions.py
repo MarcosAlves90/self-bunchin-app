@@ -1,4 +1,4 @@
-from app.permissions import get_permissions_for_role
+from app.authorization import get_permissions_for_role
 
 
 def test_admin_has_employee_permissions():
