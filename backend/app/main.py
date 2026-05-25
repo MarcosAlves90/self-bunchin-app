@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.config import get_settings
-from app.db import SessionLocal, init_database
+from app.bootstrap import lifespan
 from app.errors import DomainError, ErrorKind
-from app.seed import seed_database_if_empty
 
 
 ERROR_STATUS_CODES = {
@@ -20,17 +17,6 @@ ERROR_STATUS_CODES = {
     ErrorKind.not_found: 404,
     ErrorKind.conflict: 409,
 }
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    settings = get_settings()
-    init_database()
-    if settings.seed_on_startup:
-        with SessionLocal() as db:
-            seed_database_if_empty(db)
-    yield
-
 
 def create_app() -> FastAPI:
     settings = get_settings()
