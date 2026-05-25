@@ -901,47 +901,82 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        if (isCompact)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: 0.82),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              ElevatedButton.icon(
-                onPressed: () => _openCreatePunchDialog(employee),
-                icon: const Icon(Icons.add_circle_outline_rounded),
-                label: const Text('Novo ponto'),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Gestão de ponto',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Crie ou ajuste batidas manuais sem misturar isso com navegação.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isCompact) ...<Widget>[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => _openCreatePunchDialog(employee),
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: const Text('Novo ponto'),
+                    ),
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: 'Atualizar',
+                      child: IconButton.filledTonal(
+                        onPressed: () =>
+                            _loadEmployeePunches(employeeId: employee.id),
+                        icon: const Icon(Icons.refresh_rounded),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => _loadEmployeePunches(employeeId: employee.id),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Atualizar'),
-              ),
-            ],
-          )
-        else
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: <Widget>[
-              SizedBox(
-                width: 180,
-                child: ElevatedButton.icon(
-                  onPressed: () => _openCreatePunchDialog(employee),
-                  icon: const Icon(Icons.add_circle_outline_rounded),
-                  label: const Text('Novo ponto'),
+              if (isCompact) ...<Widget>[
+                const SizedBox(height: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    ElevatedButton.icon(
+                      onPressed: () => _openCreatePunchDialog(employee),
+                      icon: const Icon(Icons.add_circle_outline_rounded),
+                      label: const Text('Novo ponto'),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          _loadEmployeePunches(employeeId: employee.id),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Atualizar'),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(
-                width: 180,
-                child: OutlinedButton.icon(
-                  onPressed: () =>
-                      _loadEmployeePunches(employeeId: employee.id),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Atualizar'),
-                ),
-              ),
+              ],
             ],
           ),
+        ),
         const SizedBox(height: 16),
         if (_isLoadingEmployeePunches)
           const Padding(

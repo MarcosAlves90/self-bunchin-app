@@ -32,6 +32,14 @@ void main() {
     expect(find.text('Políticas'), findsOneWidget);
     expect(find.text('Notas'), findsOneWidget);
 
+    final punchTab = find.text('Ponto').last;
+    await tester.ensureVisible(punchTab);
+    await tester.tap(punchTab);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gestão de ponto'), findsOneWidget);
+    expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+
     expect(find.text('Novo funcionário'), findsOneWidget);
   });
 
@@ -89,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Novo ponto'), findsWidgets);
-    expect(find.text('Atualizar'), findsWidgets);
+    expect(find.byIcon(Icons.refresh_rounded), findsWidgets);
     expect(find.text('Nenhum ponto manual registrado.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
