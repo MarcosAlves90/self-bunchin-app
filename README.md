@@ -208,6 +208,20 @@ dart run build_runner build
 flutter run -d web-server
 ```
 
+## Deploy no Vercel
+
+O frontend pode ser publicado como site estático no Vercel usando o diretório `frontend/` como root do projeto.
+
+### Configuração esperada
+
+- Root Directory: `frontend`
+- Build Command: `bash scripts/vercel-build.sh`
+- Output Directory: `build/web`
+- Environment Variable: `API_BASE_URL` com a URL pública da API, por exemplo `https://api.suaempresa.com/api/v1`
+- O backend precisa permitir o origin do domínio do Vercel em `BUNCHIN_ALLOWED_ORIGINS`
+
+O build script baixa o Flutter SDK quando necessário, gera o web build e falha com mensagem clara se o `API_BASE_URL` não estiver definido no ambiente do Vercel.
+
 ## Configuração
 
 As variáveis mais importantes são:
@@ -222,6 +236,7 @@ As variáveis mais importantes são:
 - `BUNCHIN_BREVO_SENDER_EMAIL`
 - `BUNCHIN_BREVO_SENDER_NAME`
 - `BUNCHIN_BREVO_WELCOME_ENABLED`
+- `API_BASE_URL` para o frontend web publicado no Vercel
 
 O backend também documenta seed, autenticação, permissões e endpoints em [backend/README.md](backend/README.md).
 
