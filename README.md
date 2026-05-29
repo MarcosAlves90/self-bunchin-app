@@ -1,109 +1,164 @@
 # Bunchin App
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115.x-009688?logo=fastapi)
-![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql)
-![SQLite](https://img.shields.io/badge/SQLite-dev-003B57?logo=sqlite)
-![License](https://img.shields.io/badge/license-Proprietary-red)
+<p align="left">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/MarcosAlves90/self-bunchin-app/ci.yml?branch=main&label=CI">
+  <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115.x-009688?logo=fastapi&logoColor=white">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white">
+  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-dev-003B57?logo=sqlite&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/license-Proprietary-red">
+</p>
 
-Ponto eletrônico e gestão de equipe com criptografia de dados sensíveis em nível de aplicação.
-
----
-
-> [Visão Geral](#visão-geral) • [Recursos](#recursos) • [Stack](#stack) • [Arquitetura](#arquitetura) • [Estrutura](#estrutura) • [Início Rápido](#início-rápido) • [Comandos](#comandos) • [Variáveis de Ambiente](#variáveis-de-ambiente) • [API](#api) • [Segurança](#segurança) • [Projeto Atual](#projeto-atual) • [Licença](#licença)
-
----
+Sistema de ponto eletrônico e gestão de equipe com frontend em Flutter e backend em FastAPI. O foco do repositório é um fluxo corporativo enxuto, com autenticação por token opaco, proteção de dados sensíveis em nível de aplicação e uma base pensada para evoluir sem acoplamento desnecessário.
 
 ## Visão Geral
 
-O Bunchin App é um sistema de gerenciamento empresarial focado em registro de ponto eletrônico, controle de jornada, alocação de funcionários em projetos e comunicação por e-mail transacional.
+O Bunchin App reúne:
 
-Ele foi desenhado para manter dados pessoais sensíveis protegidos por criptografia simétrica AES-GCM antes da persistência. A autenticação usa token aleatório armazenado em hash, o que permite revogação individual sem depender de JWT.
+- app Flutter para operação diária, autenticação, configurações e time tracking
+- API FastAPI para autenticação, funcionários, projetos, admin e ponto
+- persistência local com SQLite em desenvolvimento e PostgreSQL em ambientes superiores
+- criptografia de PII antes da persistência e sessões rastreáveis por token hash
 
-O repositório é um monorepo com:
+Para detalhes da API e dos contratos do backend, veja [backend/README.md](backend/README.md).
 
-- Backend em FastAPI
-- Frontend em Flutter
-- Documentação compartilhada em `CONTEXT.md`
+## Arquitetura
 
----
+```mermaid
+flowchart LR
+  subgraph App["Flutter app"]
+    Auth[Auth]
+    Admin[Admin]
+    Settings[Settings]
+    Time[Time tracking]
+  end
 
-## Recursos
+  subgraph Api["FastAPI backend"]
+    Routes[api/routes]
+    Services[services]
+    Domain[domain]
+    Authz[authorization]
+    Boot[bootstrap / seed]
+  end
 
-| Recurso | Descrição | Observação |
-|---|---|---|
-| Ponto eletrônico | Clock-in, clock-out, pausa e retorno | Timestamp gerado no servidor |
-| Gestão de equipe | CRUD de funcionários e regras de operação | Dados PII criptografados |
-| Projetos | Vínculo N:1 e N:N para alocação de equipe | Status e políticas separadas |
-| Autenticação | Login com sessão rastreável | Token aleatório com hash |
-| Tema global | Tema claro, escuro e seguir sistema | Persistido no dispositivo |
-| Configurações | Tela global de aparência | Acesso pelo workspace |
-| E-mail transacional | Envio via Brevo | Falha não bloqueia o fluxo principal |
-| Seed automático | Criação de dados iniciais em dev | Controlado por variável de ambiente |
+  DB[(SQLite / PostgreSQL)]
+  Mail[Brevo]
 
----
+  App -->|HTTPS JSON| Api
+  Routes --> Services
+  Services --> Domain
+  Services --> Authz
+  Boot --> DB
+  Api --> DB
+  Api --> Mail
+```
+
+## Diagramas Úteis
+
+### Fluxo de autenticação
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor User as Usuário
+  participant App as Flutter app
+  participant Api as FastAPI
+  participant Db as Banco
+
+  User->>App: Informa email e senha
+  App->>Api: POST /auth/login
+  Api->>Db: Valida credenciais e cria sessão
+  Db-->>Api: Token hash persistido
+  Api-->>App: Access token opaco
+  App-->>User: Usuário autenticado
+  User->>App: Logout
+  App->>Api: POST /auth/logout
+  Api->>Db: Revoga sessão atual
+```
+
+### Fluxo de ponto
+
+```mermaid
+flowchart TD
+  Start([Usuário abre a área de ponto]) --> Action{Qual ação?}
+  Action -->|Clock-in| In[Registrar entrada]
+  Action -->|Pause| Pause[Registrar pausa]
+  Action -->|Return| Back[Registrar retorno]
+  Action -->|Clock-out| Out[Registrar saída]
+
+  In --> Api1[POST/PUT na API de time clock]
+  Pause --> Api2[POST/PUT na API de time clock]
+  Back --> Api3[POST/PUT na API de time clock]
+  Out --> Api4[POST/PUT na API de time clock]
+
+  Api1 --> Db[(Persistência)]
+  Api2 --> Db
+  Api3 --> Db
+  Api4 --> Db
+  Db --> View[Histórico paginado de ponto]
+```
+
+### Mapa do repositório
+
+```mermaid
+flowchart LR
+  Root["self-bunchin-app"]
+  Root --> Frontend["frontend/"]
+  Root --> Backend["backend/"]
+  Root --> Docs["CONTEXT.md + README.md"]
+
+  Frontend --> UI["lib/features/*"]
+  Frontend --> Core["lib/core/*"]
+  Frontend --> Tests["test/"]
+
+  Backend --> Api["app/api/*"]
+  Backend --> Domain["app/domain/*"]
+  Backend --> Services["app/services/*"]
+  Backend --> Db["app/models.py + database_schema.py"]
+  Backend --> Seed["app/seed.py"]
+  Backend --> Tests2["tests/"]
+```
+
+## Recursos Principais
+
+| Área | O que cobre |
+| --- | --- |
+| Autenticação | Login, logout, sessão persistida e revogação individual |
+| Ponto | Clock-in, clock-out, pausa, retorno e histórico paginado |
+| Gestão de equipe | CRUD de funcionários, vínculo com projetos e regras por papel |
+| Admin | Operação interna com permissões separadas |
+| Configurações | Tema global com modos claro, escuro e seguir sistema |
+| E-mail transacional | Fluxos de convite, redefinição e boas-vindas via Brevo |
+| Segurança | PII criptografada, token opaco com hash e CORS configurável |
 
 ## Stack
 
 ### Backend
 
-| Tecnologia | Versão | Função |
-|---|---:|---|
-| Python | 3.x | Linguagem principal |
-| FastAPI | 0.115.x | API REST |
-| SQLAlchemy | 2.0.x | ORM |
-| SQLite | dev | Banco local |
-| PostgreSQL | 15.x | Banco de produção/staging |
-| Uvicorn | 0.32.x | Servidor ASGI |
-| Cryptography | 44.x | Criptografia AES-GCM |
-| Pytest | 8.3.x | Testes |
-| Brevo API | — | E-mail transacional |
+| Tecnologia | Uso |
+| --- | --- |
+| Python | Linguagem principal |
+| FastAPI | API REST |
+| SQLAlchemy | ORM |
+| Pydantic | Schemas e validação |
+| Cryptography | AES-GCM para PII |
+| Pytest | Testes |
+| SQLite | Banco local |
+| PostgreSQL | Banco de produção/staging |
 
 ### Frontend
 
-| Tecnologia | Versão | Função |
-|---|---:|---|
-| Flutter | 3.x | UI mobile/web |
-| Dart | >=3.0 | Linguagem |
-| Freezed | 3.2.x | Modelos imutáveis |
-| Build Runner | 2.4.x | Geração de código |
-| Flutter Localizations | — | Localização pt-BR |
-| Geolocator | 14.x | Geolocalização |
-| HTTP | 1.2.x | Cliente HTTP |
-| Flutter Secure Storage | 9.2.x | Armazenamento seguro |
-| Google Fonts | 6.3.x | Tipografia |
-| Flutter Lints | 6.0.x | Análise estática |
-
----
-
-## Arquitetura
-
-### Backend
-
-O backend segue um monólito modular com camadas claras:
-
-- `api/routes/` expõe os endpoints
-- `schemas/` define contratos de entrada e saída
-- `services/` concentra comandos e orquestração
-- `domain/` guarda read models e regras reutilizáveis
-- `domain/auth_session.py` concentra a montagem de respostas e criação de sessão
-- `bootstrap.py` concentra o ciclo de inicialização
-- `database_schema.py` concentra upgrades de schema legados
-
-### Frontend
-
-O frontend usa Clean Architecture por feature, com módulos independentes para:
-
-- `auth`
-- `admin`
-- `settings`
-- `time_tracking`
-- `shared`
-
-O tema visual é global e é controlado por um `ThemeModeController` com persistência em `flutter_secure_storage`.
-
----
+| Tecnologia | Uso |
+| --- | --- |
+| Flutter | UI mobile/web |
+| Dart | Linguagem |
+| Freezed | Modelos imutáveis |
+| Build Runner | Geração de código |
+| Flutter Secure Storage | Persistência segura |
+| Geolocator | Geolocalização |
+| HTTP | Cliente HTTP |
+| Google Fonts | Tipografia |
 
 ## Estrutura
 
@@ -111,48 +166,25 @@ O tema visual é global e é controlado por um `ThemeModeController` com persist
 backend/
   app/
     api/
-      router.py
-      routes/
     domain/
     schemas/
     services/
     main.py
-    models.py
-    security.py
-    crypto.py
-    authorization.py
     bootstrap.py
     database_schema.py
-    dependencies.py
-    seed.py
-    scripts/
   tests/
-  README.md
+  .env.example
   requirements.txt
-  pytest.ini
 
 frontend/
   lib/
-    main.dart
-    contracts/
     core/
-      config/
-      forms/
-      network/
-      storage/
-      theme/
     features/
-      admin/
-      auth/
-      settings/
-      shared/
-      time_tracking/
     theme/
+    main.dart
   test/
   pubspec.yaml
 ```
-
----
 
 ## Início Rápido
 
@@ -176,106 +208,60 @@ dart run build_runner build
 flutter run -d web-server
 ```
 
----
+## Configuração
 
-## Comandos
+As variáveis mais importantes são:
 
-### Backend
+- `BUNCHIN_TOKEN_SECRET`
+- `BUNCHIN_ENCRYPTION_SECRET`
+- `BUNCHIN_ALLOWED_ORIGINS`
+- `BUNCHIN_ENFORCE_HTTPS`
+- `BUNCHIN_SEED_ON_STARTUP`
+- `BUNCHIN_SEED_ADMIN_PASSWORD`
+- `BUNCHIN_BREVO_API_KEY`
+- `BUNCHIN_BREVO_SENDER_EMAIL`
+- `BUNCHIN_BREVO_SENDER_NAME`
+- `BUNCHIN_BREVO_WELCOME_ENABLED`
 
-```bash
-pytest
-uvicorn app.main:app --reload
-python -m app.scripts.create_postgres
-python -m app.scripts.clean_postgres
-```
-
-### Frontend
-
-```bash
-flutter test
-dart run build_runner build
-dart format lib test
-```
-
----
-
-## Variáveis de Ambiente
-
-| Variável | Função |
-|---|---|
-| `BUNCHIN_TOKEN_SECRET` | Secret obrigatório para tokens |
-| `BUNCHIN_ENCRYPTION_SECRET` | Secret obrigatório para PII |
-| `BUNCHIN_ALLOWED_ORIGINS` | Origens liberadas para CORS |
-| `BUNCHIN_ENFORCE_HTTPS` | Ativa o guard de HTTPS |
-| `BUNCHIN_SEED_ON_STARTUP` | Cria admin padrão em ambiente vazio |
-| `BUNCHIN_SEED_ADMIN_PASSWORD` | Senha do admin seed |
-| `BUNCHIN_BREVO_API_KEY` | Chave da API Brevo |
-| `BUNCHIN_BREVO_SENDER_EMAIL` | E-mail remetente |
-| `BUNCHIN_BREVO_SENDER_NAME` | Nome do remetente |
-| `BUNCHIN_BREVO_WELCOME_ENABLED` | Ativa e-mail de boas-vindas |
-
----
+O backend também documenta seed, autenticação, permissões e endpoints em [backend/README.md](backend/README.md).
 
 ## API
 
-- Prefixo: `/api/v1`
+- Base path: `/api/v1`
 - Formato: JSON
 - Autenticação: `Authorization: Bearer <token>`
 - Erros: `{"detail":"mensagem"}`
-- Recursos principais:
-  - `/auth/login`
-  - `/auth/logout`
-  - `/employees`
-  - `/projects`
-  - `/time-clock`
-  - `/time-clock/me?page=&limit=`
-  - `/time-clock/employees/{employee_id}/punches?page=&limit=`
-  - `/admin`
 
----
+Rotas principais:
 
-## Segurança
+- `/auth/login`
+- `/auth/logout`
+- `/employees`
+- `/projects`
+- `/time-clock`
+- `/time-clock/me?page=&limit=`
+- `/time-clock/employees/{employee_id}/punches?page=&limit=`
+- `/admin`
 
-- PII criptografada com AES-GCM antes de persistir
-- Tokens gerados de forma aleatória e armazenados em hash
-- Senhas com PBKDF2-SHA256
-- CORS configurável por ambiente
-- Middleware de HTTPS em ambiente não local
-- Secrets obrigatórios via variáveis de ambiente
+## Validação
 
----
+O CI do repositório executa:
 
-## Projeto Atual
+- `pytest` em `backend/`
+- `flutter test` em `frontend/`
 
-Estado atual do frontend:
+Comandos úteis localmente:
 
-- Tema global com três modos: claro, escuro e seguir sistema
-- Tela de configurações para alternar o tema
-- `admin_employees_page.dart` dividido em arquivo principal e widgets auxiliares
-- Lista de membros e pontos do admin mais compacta, com ações em menu e paginação no backend
-- Seletor desktop do admin ajustado para evitar quebra de texto nas abas
-- Módulo de auth simplificado com widgets comuns de formulário
-- Login sem botão de Google
+```bash
+cd backend && pytest
+cd frontend && flutter test
+cd frontend && dart format lib test
+```
 
-Estado atual do backend:
+## Documentação
 
-- Monólito modular com rotas por domínio
-- `services/` focado em comandos e orquestração
-- `domain/` dividido em read models para auth, employees, projects e time clock
-- `authorization.py` concentra as permissões de papel
-- `bootstrap.py` concentra o lifecycle da aplicação
-- `database_schema.py` concentra o upgrade de schema legado
-- `seed.py` ficou com builders pequenos e `seed_database` como entrada simples
-- Endpoints para auth, employees, projects, time clock, admin e health
-- `time-clock/me` e `time-clock/employees/{employee_id}/punches` suportam paginação por `page` e `limit`
-
-Estado atual de dados e seed:
-
-- Seed gera empresa, usuários, funcionários e pontos iniciais
-- Seed roda no startup quando `BUNCHIN_SEED_ON_STARTUP=true`
-- O ambiente de dev usa SQLite; staging e prod usam PostgreSQL
-
----
+- [backend/README.md](backend/README.md) - detalhes da API, seed e permissões
+- [CONTEXT.md](CONTEXT.md) - regras e contexto compartilhado do projeto
 
 ## Licença
 
