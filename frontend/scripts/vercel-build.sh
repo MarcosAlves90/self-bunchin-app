@@ -47,6 +47,7 @@ if [[ ! -x "$SDK_DIR/bin/flutter" ]]; then
 fi
 
 export PATH="$SDK_DIR/bin:$PATH"
+git config --global --add safe.directory "$SDK_DIR"
 cd "$FRONTEND_DIR"
 
 flutter --version
