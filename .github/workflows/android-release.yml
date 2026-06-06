@@ -85,6 +85,14 @@ jobs:
       - name: Build Android App Bundle
         run: flutter build appbundle --release
 
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Verify Android release artifacts
+        run: |
+          test -f build/app/outputs/bundle/release/app-release.aab
+          test -f build/app/outputs/flutter-apk/app-release.apk
+
       - name: Create release tag
         run: |
           git config user.name "github-actions[bot]"
@@ -98,5 +106,6 @@ jobs:
         run: |
           gh release create "$RELEASE_TAG" \
             build/app/outputs/bundle/release/app-release.aab \
+            build/app/outputs/flutter-apk/app-release.apk \
             --title "$RELEASE_NAME" \
-            --notes "Android App Bundle for $RELEASE_NAME."
+            --notes "Android App Bundle and APK for $RELEASE_NAME."

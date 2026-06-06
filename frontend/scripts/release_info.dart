@@ -116,6 +116,12 @@ void validateCatalog(Map<String, dynamic> catalog) {
     throw StateError(
         'Android release config must stay enabled for appbundle publishing.');
   }
+
+  final extraArtifacts = androidConfig['extraArtifacts'] as List<dynamic>?;
+  if (extraArtifacts == null || !extraArtifacts.contains('apk')) {
+    throw StateError(
+        'Android release config must include apk as an extra artifact.');
+  }
 }
 
 ReleaseInfo buildReleaseInfo({

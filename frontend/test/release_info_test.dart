@@ -61,6 +61,15 @@ void main() {
 
       expect(() => validateCatalog(catalog), throwsA(isA<StateError>()));
     });
+
+    test('requires APK to stay configured as an extra Android artifact', () {
+      final catalog = _catalog();
+      final platforms = catalog['platforms'] as Map<String, dynamic>;
+      final android = platforms['android'] as Map<String, dynamic>;
+      android['extraArtifacts'] = <String>[];
+
+      expect(() => validateCatalog(catalog), throwsA(isA<StateError>()));
+    });
   });
 }
 
@@ -78,6 +87,9 @@ Map<String, dynamic> _catalog() {
     "android": {
       "enabled": true,
       "artifact": "appbundle",
+      "extraArtifacts": [
+        "apk"
+      ],
       "signing": {
         "propertiesFile": "android/key.properties",
         "exampleFile": "android/key.properties.example"

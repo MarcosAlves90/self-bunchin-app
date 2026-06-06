@@ -10,6 +10,9 @@
     "android": {
       "enabled": true,
       "artifact": "appbundle",
+      "extraArtifacts": [
+        "apk"
+      ],
       "signing": {
         "propertiesFile": "android/key.properties",
         "exampleFile": "android/key.properties.example"

@@ -247,7 +247,7 @@ flutter build appbundle --release
 Automação no GitHub:
 
 - pushes em branches `release/**` rodam `.github/workflows/android-release.yml`
-- o workflow valida o catálogo, roda `flutter test`, gera `app-release.aab`, cria a tag `vX.Y.Z` e publica uma GitHub Release
+- o workflow valida o catálogo, roda `flutter test`, gera `app-release.aab` e `app-release.apk`, cria a tag `vX.Y.Z` e publica uma GitHub Release
 - se a tag já existir, o workflow falha e exige bump em `frontend/pubspec.yaml`
 - o workflow exige os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD` e `ANDROID_KEY_ALIAS`
 

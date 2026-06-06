@@ -36,6 +36,7 @@ O workflow:
 - valida `frontend/release/catalog.json`
 - roda `flutter test`
 - monta `build/app/outputs/bundle/release/app-release.aab`
+- monta `build/app/outputs/flutter-apk/app-release.apk`
 - cria a tag `vX.Y.Z`
 - publica uma GitHub Release com o nome completo da versão
 
