@@ -205,7 +205,7 @@ uvicorn app.main:app --reload
 cd frontend
 flutter pub get
 dart run build_runner build
-flutter run -d web-server
+flutter run -d web-server --dart-define=API_BASE_URL=http://localhost:8071/api/v1
 ```
 
 ## Deploy no Vercel
@@ -241,7 +241,8 @@ cd frontend
 cp android/key.properties.example android/key.properties
 # preencha os segredos do keystore
 dart run scripts/release_info.dart validate
-flutter build appbundle --release
+flutter build appbundle --release --dart-define=API_BASE_URL=https://self-bunchin-app.onrender.com/api/v1
+flutter build apk --release --dart-define=API_BASE_URL=https://self-bunchin-app.onrender.com/api/v1
 ```
 
 Automação no GitHub:
