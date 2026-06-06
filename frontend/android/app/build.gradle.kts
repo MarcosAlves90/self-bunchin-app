@@ -26,7 +26,7 @@ if (gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = tr
 }
 
 android {
-    namespace = "com.example.bunchin_flutter"
+    namespace = "com.bunchin.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -51,8 +51,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.bunchin_flutter"
+        applicationId = "com.bunchin.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

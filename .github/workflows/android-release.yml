@@ -93,8 +93,10 @@ jobs:
           test -f build/app/outputs/bundle/release/app-release.aab
           test -f build/app/outputs/flutter-apk/app-release.apk
           AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/aapt"
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep "package: name='com.bunchin.app'"
           "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep "application-label:'Bunchin'"
           "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep "versionName='$RELEASE_VERSION'"
+          "$AAPT" dump badging build/app/outputs/flutter-apk/app-release.apk | grep "uses-permission: name='android.permission.INTERNET'"
           unzip -p build/app/outputs/flutter-apk/app-release.apk lib/arm64-v8a/libapp.so | strings | grep 'https://self-bunchin-app.onrender.com/api/v1'
 
       - name: Create release tag
