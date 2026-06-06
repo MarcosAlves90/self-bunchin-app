@@ -7,6 +7,7 @@ class ReleaseInfo {
     required this.buildNumber,
     required this.lineName,
     required this.releaseName,
+    required this.releaseNotes,
     required this.tagName,
   });
 
@@ -14,6 +15,7 @@ class ReleaseInfo {
   final int buildNumber;
   final String lineName;
   final String releaseName;
+  final String releaseNotes;
   final String tagName;
 
   Map<String, Object> toJson() => <String, Object>{
@@ -21,6 +23,7 @@ class ReleaseInfo {
         'buildNumber': buildNumber,
         'lineName': lineName,
         'releaseName': releaseName,
+        'releaseNotes': releaseNotes,
         'tagName': tagName,
       };
 }
@@ -136,12 +139,15 @@ ReleaseInfo buildReleaseInfo({
   final releaseLines = catalog['releaseLines'] as List<dynamic>;
   final line = releaseLineForMajor(releaseLines, major);
   final lineName = line['name'] as String;
+  final releaseSuffix = lineName.toLowerCase();
+  final releaseName = 'Bunchin $version-$releaseSuffix';
 
   return ReleaseInfo(
     version: version,
     buildNumber: pubspec['buildNumber'] as int,
     lineName: lineName,
-    releaseName: '$lineName $version',
+    releaseName: releaseName,
+    releaseNotes: 'Android App Bundle and APK for $releaseName.',
     tagName: 'v$version',
   );
 }
@@ -183,6 +189,7 @@ void githubEnv() {
   stdout.writeln('RELEASE_BUILD_NUMBER=${info.buildNumber}');
   stdout.writeln('RELEASE_LINE_NAME=${info.lineName}');
   stdout.writeln('RELEASE_NAME=${info.releaseName}');
+  stdout.writeln('RELEASE_NOTES=${info.releaseNotes}');
   stdout.writeln('RELEASE_TAG=${info.tagName}');
 }
 

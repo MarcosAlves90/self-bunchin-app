@@ -15,8 +15,28 @@ void main() {
       expect(info.version, '1.4.2');
       expect(info.buildNumber, 18);
       expect(info.lineName, 'Woodpecker');
-      expect(info.releaseName, 'Woodpecker 1.4.2');
+      expect(info.releaseName, 'Bunchin 1.4.2-woodpecker');
+      expect(info.releaseNotes,
+          'Android App Bundle and APK for Bunchin 1.4.2-woodpecker.');
       expect(info.tagName, 'v1.4.2');
+    });
+
+    test('keeps the same release line for every version with the same major',
+        () {
+      final catalog = _catalog();
+      final firstMinor = buildReleaseInfo(
+        catalog: catalog,
+        pubspecContents: 'version: 1.0.0+1',
+      );
+      final laterMinor = buildReleaseInfo(
+        catalog: catalog,
+        pubspecContents: 'version: 1.99.99+999',
+      );
+
+      expect(firstMinor.releaseName, 'Bunchin 1.0.0-woodpecker');
+      expect(laterMinor.releaseName, 'Bunchin 1.99.99-woodpecker');
+      expect(firstMinor.tagName, 'v1.0.0');
+      expect(laterMinor.tagName, 'v1.99.99');
     });
 
     test('maps 2.x.x versions to the Atlas release line', () {
@@ -26,7 +46,9 @@ void main() {
       );
 
       expect(info.lineName, 'Atlas');
-      expect(info.releaseName, 'Atlas 2.0.0');
+      expect(info.releaseName, 'Bunchin 2.0.0-atlas');
+      expect(info.releaseNotes,
+          'Android App Bundle and APK for Bunchin 2.0.0-atlas.');
       expect(info.tagName, 'v2.0.0');
     });
 

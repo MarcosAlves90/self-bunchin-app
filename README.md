@@ -229,9 +229,10 @@ O versionamento de release do app está concentrado em `frontend/`:
 
 Regras atuais:
 
-- `1.x.x` pertence à linha `Woodpecker`
-- `2.x.x` pertence à linha `Atlas`
-- o nome completo de uma release segue o padrão `<linha> <versão>`
+- `1.y.z` pertence à linha `Woodpecker`
+- `2.y.z` pertence à linha `Atlas`
+- o `x` de `x.y.z` define o nome da linha da release
+- o nome completo de uma release segue o padrão `Bunchin <x.y.z>-<linha>`
 - a estrutura já reserva pontos de expansão para iOS e web no futuro
 
 Fluxo de publicação:
@@ -248,7 +249,7 @@ flutter build apk --release --dart-define=API_BASE_URL=https://self-bunchin-app.
 Automação no GitHub:
 
 - pushes em branches `release/**` rodam `.github/workflows/android-release.yml`
-- o workflow valida o catálogo, roda `flutter test`, gera `app-release.aab` e `app-release.apk`, cria a tag `vX.Y.Z` e publica uma GitHub Release
+- o workflow valida o catálogo, roda `flutter test`, gera `app-release.aab` e `app-release.apk`, cria a tag `vX.Y.Z` e publica uma GitHub pre-release
 - se a tag já existir, o workflow falha e exige bump em `frontend/pubspec.yaml`
 - o workflow exige os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD` e `ANDROID_KEY_ALIAS`
 

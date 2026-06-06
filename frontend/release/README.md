@@ -6,9 +6,10 @@ Arquivo de referência para versão e publicação do app Flutter, hoje focado e
 
 - `frontend/pubspec.yaml` continua sendo fonte da versão técnica do build (`x.y.z+build`)
 - `frontend/release/catalog.json` define nome de linha e regras de publicação
-- `releaseName` segue o padrão `{lineName} {version}`
-- `1.x.x` pertence a `Woodpecker`
-- `2.x.x` pertence a `Atlas`
+- `releaseName` segue o padrão `Bunchin {x.y.z}-{lineNameSlug}`
+- o `x` de `x.y.z` define a linha da release
+- `1.y.z` pertence a `Woodpecker`
+- `2.y.z` pertence a `Atlas`
 - novas plataformas entram em `platforms.<nome>` sem quebrar o formato atual
 
 ## Android
@@ -38,7 +39,7 @@ O workflow:
 - monta `build/app/outputs/bundle/release/app-release.aab`
 - monta `build/app/outputs/flutter-apk/app-release.apk`
 - cria a tag `vX.Y.Z`
-- publica uma GitHub Release com o nome completo da versão
+- publica uma GitHub Release pre-release com o nome completo da versão
 
 Secrets necessários:
 
