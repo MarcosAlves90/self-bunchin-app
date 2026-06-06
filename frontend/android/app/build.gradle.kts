@@ -1,8 +1,28 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val releaseKeystorePropertiesFile = rootProject.file("key.properties")
+val releaseKeystoreProperties = Properties()
+val releaseKeystoreConfigured = releaseKeystorePropertiesFile.exists()
+
+if (releaseKeystoreConfigured) {
+    FileInputStream(releaseKeystorePropertiesFile).use { stream ->
+        releaseKeystoreProperties.load(stream)
+    }
+}
+
+if (gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) } && !releaseKeystoreConfigured) {
+    error(
+        "Missing android/key.properties. Copy android/key.properties.example to android/key.properties " +
+            "and configure release signing before building a release artifact."
+    )
 }
 
 android {
@@ -19,6 +39,17 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    signingConfigs {
+        if (releaseKeystoreConfigured) {
+            create("release") {
+                keyAlias = releaseKeystoreProperties["keyAlias"] as String
+                keyPassword = releaseKeystoreProperties["keyPassword"] as String
+                storeFile = file(releaseKeystoreProperties["storeFile"] as String)
+                storePassword = releaseKeystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.bunchin_flutter"
@@ -32,9 +63,10 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseKeystoreConfigured) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
 }

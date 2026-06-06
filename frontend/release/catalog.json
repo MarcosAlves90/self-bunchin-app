@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "versioning": {
+    "scheme": "semver",
+    "lineIdentity": "major",
+    "releaseNamePattern": "{lineName} {version}",
+    "buildNumberPolicy": "monotonic"
+  },
+  "platforms": {
+    "android": {
+      "enabled": true,
+      "artifact": "appbundle",
+      "signing": {
+        "propertiesFile": "android/key.properties",
+        "exampleFile": "android/key.properties.example"
+      }
+    },
+    "ios": {
+      "enabled": false,
+      "reservedForFuture": true
+    },
+    "web": {
+      "enabled": false,
+      "reservedForFuture": true
+    }
+  },
+  "releaseLines": [
+    {
+      "major": 1,
+      "name": "Woodpecker",
+      "status": "active",
+      "description": "Linha 1.x.x"
+    },
+    {
+      "major": 2,
+      "name": "Atlas",
+      "status": "planned",
+      "description": "Linha 2.x.x"
+    }
+  ]
+}

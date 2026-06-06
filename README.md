@@ -217,7 +217,40 @@ O frontend pode ser publicado como site estático no Vercel usando o diretório 
 - Root Directory: `frontend`
 - Build Command: `bash scripts/vercel-build.sh`
 - Output Directory: `build/web`
-- Environment Variable: `API_BASE_URL` com a URL pública da API, por exemplo `https://api.suaempresa.com/api/v1`
+- Environment Variable: `API_BASE_URL` com a URL pública oficial da API, por exemplo `https://self-bunchin-app.onrender.com/api/v1`
+
+## Publicação Android
+
+O versionamento de release do app está concentrado em `frontend/`:
+
+- `frontend/pubspec.yaml` define a versão técnica do build (`x.y.z+build`)
+- `frontend/release/catalog.json` define a linha de release e o nome humano da versão completa
+- `frontend/android/app/build.gradle.kts` lê signing de release de `frontend/android/key.properties`
+
+Regras atuais:
+
+- `1.x.x` pertence à linha `Woodpecker`
+- `2.x.x` pertence à linha `Atlas`
+- o nome completo de uma release segue o padrão `<linha> <versão>`
+- a estrutura já reserva pontos de expansão para iOS e web no futuro
+
+Fluxo de publicação:
+
+```bash
+cd frontend
+cp android/key.properties.example android/key.properties
+# preencha os segredos do keystore
+dart run scripts/release_info.dart validate
+flutter build appbundle --release
+```
+
+Automação no GitHub:
+
+- pushes em branches `release/**` rodam `.github/workflows/android-release.yml`
+- o workflow valida o catálogo, roda `flutter test`, gera `app-release.aab`, cria a tag `vX.Y.Z` e publica uma GitHub Release
+- se a tag já existir, o workflow falha e exige bump em `frontend/pubspec.yaml`
+- o workflow exige os secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_PASSWORD` e `ANDROID_KEY_ALIAS`
+
 - O backend precisa permitir o origin do domínio do Vercel em `BUNCHIN_ALLOWED_ORIGINS`
 
 O build script baixa o Flutter SDK quando necessário, gera o web build e falha com mensagem clara se o `API_BASE_URL` não estiver definido no ambiente do Vercel.
@@ -236,7 +269,7 @@ As variáveis mais importantes são:
 - `BUNCHIN_BREVO_SENDER_EMAIL`
 - `BUNCHIN_BREVO_SENDER_NAME`
 - `BUNCHIN_BREVO_WELCOME_ENABLED`
-- `API_BASE_URL` para o frontend web publicado no Vercel
+- `API_BASE_URL` para o frontend web publicado no Vercel, apontando para `https://self-bunchin-app.onrender.com/api/v1`
 
 O backend também documenta seed, autenticação, permissões e endpoints em [backend/README.md](backend/README.md).
 
