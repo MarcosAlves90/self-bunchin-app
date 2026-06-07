@@ -71,6 +71,7 @@ class _TimeClockPageState extends State<TimeClockPage> {
   PunchLocationResult get _locationState => _controller.locationState;
   bool get _isSubmittingPunch => _controller.isSubmittingPunch;
   bool get _isLoadingState => _controller.isLoadingState;
+  bool get _hasLoadError => _loadError != null;
   String? get _loadError => _controller.loadError;
   String get _employeeName => _controller.employeeName;
   String get _employeeUnit => _controller.employeeUnit;
@@ -240,6 +241,9 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildSummaryPanel() {
+    final isLoading = _isLoadingState;
+    final hasError = _hasLoadError;
+
     return WorkspaceSidebar(
       title: 'Ponto digital em tempo real.',
       description:
@@ -247,24 +251,56 @@ class _TimeClockPageState extends State<TimeClockPage> {
       summaryChildren: <Widget>[
         WorkspaceSummaryStripe(
           label: 'Status',
-          value: _statusLabel(),
-          helper: _statusDescription(),
+          value: isLoading
+              ? 'Carregando...'
+              : hasError
+                  ? 'Falha ao carregar'
+                  : _statusLabel(),
+          helper: isLoading
+              ? 'Buscando o estado atual da jornada.'
+              : hasError
+                  ? 'Use o botão de recarregar no conteúdo.'
+                  : _statusDescription(),
         ),
         WorkspaceSummaryStripe(
           label: 'Funcionário',
-          value: _employeeName,
-          helper: _employeeUnit,
+          value: isLoading
+              ? 'Carregando...'
+              : hasError
+                  ? '--'
+                  : _employeeName,
+          helper: isLoading
+              ? 'Aguardando resposta da API.'
+              : hasError
+                  ? 'Sem dados disponíveis.'
+                  : _employeeUnit,
         ),
         WorkspaceSummaryStripe(
           label: 'Última batida',
-          value: _lastPunchAt == null ? '--:--' : _formatTime(_lastPunchAt!),
-          helper: _lastPunchAt == null
-              ? 'Nenhum registro no dia'
-              : 'Último evento recebido',
+          value: isLoading
+              ? '--:--'
+              : hasError
+                  ? '--:--'
+                  : _lastPunchAt == null
+                      ? '--:--'
+                      : _formatTime(_lastPunchAt!),
+          helper: isLoading
+              ? 'O histórico ainda está sendo carregado.'
+              : hasError
+                  ? 'Falha ao carregar o histórico do dia.'
+                  : _lastPunchAt == null
+                      ? 'Nenhum registro no dia'
+                      : 'Último evento recebido',
         ),
       ],
       highlightChips: <Widget>[
-        WorkspaceHighlightChip(label: _locationChipLabel()),
+        WorkspaceHighlightChip(
+          label: isLoading
+              ? 'Sincronizando estado'
+              : hasError
+                  ? 'Dados indisponíveis'
+                  : _locationChipLabel(),
+        ),
         const WorkspaceHighlightChip(label: 'Dispositivo confiável'),
         const WorkspaceHighlightChip(label: 'Jornada auditável'),
       ],
@@ -272,33 +308,6 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildWorkspace({required bool isWide}) {
-    if (_isLoadingState) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_loadError != null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: WorkspaceSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_loadError!),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _loadTimeClockState,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Recarregar'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
@@ -326,6 +335,111 @@ class _TimeClockPageState extends State<TimeClockPage> {
   Widget _buildHeroCard(bool isWide) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    if (_isLoadingState) {
+      return WorkspaceSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: 0.10),
+                    border: Border.all(
+                      color: AppTheme.accent.withValues(alpha: 0.20),
+                    ),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _LoadingBar(width: 120, height: 24),
+                      const SizedBox(height: 16),
+                      const _LoadingBar(width: 180, height: 56),
+                      const SizedBox(height: 10),
+                      const _LoadingBar(width: 160, height: 18),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const _LoadingBar(width: double.infinity, height: 18),
+            const SizedBox(height: 10),
+            const _LoadingBar(width: 280, height: 18),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withValues(alpha: 0.8),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Carregando estado do ponto...',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                SizedBox(
+                  width: isWide ? 240 : double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.login_rounded),
+                    label: const Text('Carregando...'),
+                  ),
+                ),
+                SizedBox(
+                  width: isWide ? 220 : double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Carregando...'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return WorkspaceSectionCard(
       child: Column(
@@ -529,6 +643,54 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildMetricGrid(bool isWide) {
+    if (_isLoadingState) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final width =
+              isWide ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth;
+
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: width,
+                child: WorkspaceMetricCard(
+                  label: 'Horas hoje',
+                  value: '--h --m',
+                  helper: 'Carregando jornada do dia',
+                ),
+              ),
+              SizedBox(
+                width: width,
+                child: WorkspaceMetricCard(
+                  label: 'Pausa acumulada',
+                  value: '--h --m',
+                  helper: 'Carregando intervalo do dia',
+                ),
+              ),
+              SizedBox(
+                width: width,
+                child: WorkspaceMetricCard(
+                  label: 'Primeira entrada',
+                  value: '--:--',
+                  helper: 'Aguardando resposta da API',
+                ),
+              ),
+              SizedBox(
+                width: width,
+                child: WorkspaceMetricCard(
+                  label: 'Último evento',
+                  value: '--:--',
+                  helper: 'Aguardando resposta da API',
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width =
@@ -591,6 +753,95 @@ class _TimeClockPageState extends State<TimeClockPage> {
     final hasPagination = _controller.hasTimelinePagination;
     final visibleRecords = _records;
 
+    if (_isLoadingState) {
+      return WorkspaceSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Jornada do dia',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Histórico cronológico das batidas com contexto suficiente para auditoria operacional.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Carregando histórico do dia...',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const _LoadingTimelineItem(),
+            const SizedBox(height: 12),
+            const _LoadingTimelineItem(),
+            const SizedBox(height: 12),
+            const _LoadingTimelineItem(),
+          ],
+        ),
+      );
+    }
+
+    if (_hasLoadError) {
+      return WorkspaceSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Jornada do dia',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Não foi possível carregar o histórico agora.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _loadError!,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: _loadTimeClockState,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Recarregar'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return WorkspaceSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,7 +894,75 @@ class _TimeClockPageState extends State<TimeClockPage> {
   }
 
   Widget _buildContextCard(bool isWide) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final lastLocation = _lastRegisteredLocation;
+
+    if (_isLoadingState) {
+      return WorkspaceSectionCard(
+        child: isWide
+            ? Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  const SizedBox(
+                    width: 240,
+                    child: _InfoFlag(label: 'Permissão', value: 'Carregando'),
+                  ),
+                  const SizedBox(
+                    width: 240,
+                    child: _InfoFlag(
+                      label: 'Última coordenada',
+                      value: 'Carregando',
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 240,
+                    child: _InfoFlag(label: 'Precisão', value: 'Carregando'),
+                  ),
+                  const SizedBox(
+                    width: 240,
+                    child: _InfoFlag(label: 'Modo', value: 'Carregando'),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: const [
+                  _InfoFlag(label: 'Permissão', value: 'Carregando'),
+                  SizedBox(height: 12),
+                  _InfoFlag(label: 'Última coordenada', value: 'Carregando'),
+                  SizedBox(height: 12),
+                  _InfoFlag(label: 'Precisão', value: 'Carregando'),
+                  SizedBox(height: 12),
+                  _InfoFlag(label: 'Modo', value: 'Carregando'),
+                ],
+              ),
+      );
+    }
+
+    if (_hasLoadError) {
+      return WorkspaceSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contexto operacional',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Sem dados para exibir enquanto a API não responde.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return WorkspaceSectionCard(
       child: isWide
@@ -764,6 +1083,66 @@ class _TimelineTile extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _LoadingBar extends StatelessWidget {
+  const _LoadingBar({this.width, this.height = 12});
+
+  final double? width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+      ),
+    );
+  }
+}
+
+class _LoadingTimelineItem extends StatelessWidget {
+  const _LoadingTimelineItem();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LoadingBar(width: 150, height: 16),
+              SizedBox(height: 8),
+              _LoadingBar(width: double.infinity, height: 12),
+              SizedBox(height: 6),
+              _LoadingBar(width: 220, height: 12),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        const _LoadingBar(width: 40, height: 16),
       ],
     );
   }
