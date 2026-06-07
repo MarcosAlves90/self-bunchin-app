@@ -55,6 +55,24 @@ class _FakeTimeClockController extends TimeClockController {
   }
 }
 
+class _LoadingTimeClockController extends TimeClockController {
+  _LoadingTimeClockController()
+      : super(
+          api: _FakeTimeClockApi(),
+          punchLocationService: _FakePunchLocationService(),
+        );
+
+  @override
+  Future<void> start() async {}
+
+  @override
+  Future<void> loadTimeClockState({
+    int page = 1,
+    int limit = 4,
+    bool showLoading = true,
+  }) async {}
+}
+
 class _FakeTimeClockApi extends BunchinApi {}
 
 class _FakePunchLocationService extends PunchLocationService {
@@ -103,6 +121,28 @@ TimeClockState _timelineState({
 }
 
 void main() {
+  testWidgets('keeps workspace visible while initial state loads',
+      (WidgetTester tester) async {
+    final controller = _LoadingTimeClockController();
+
+    tester.view.physicalSize = const Size(1400, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TimeClockPage(controller: controller),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('Ponto digital em tempo real.'), findsOneWidget);
+    expect(find.text('Bater ponto'), findsOneWidget);
+    expect(find.text('Carregando estado do ponto...'), findsOneWidget);
+    expect(find.text('Carregando...'), findsWidgets);
+  });
+
   testWidgets('tap on register entry calls punch handler',
       (WidgetTester tester) async {
     final controller = _FakeTimeClockController(<int, TimeClockState>{
