@@ -38,7 +38,7 @@ class ApiClient {
     if (withAuth) {
       final token = await _tokenStorage.readAccessToken();
       if (token == null || token.isEmpty) {
-        throw ApiException('Sessao expirada. Faca login novamente.');
+        throw ApiException('Sessão expirada. Faça login novamente.');
       }
       headers['Authorization'] = 'Bearer $token';
     }
@@ -104,8 +104,10 @@ class ApiClient {
       return parsedBody;
     }
 
-    final message =
-        _extractMessage(parsedBody) ?? 'Falha na comunicacao com a API.';
+    final message = _translateMessage(
+          _extractMessage(parsedBody) ?? 'Falha na comunicacao com a API.',
+        ) ??
+        'Falha na comunicacao com a API.';
     throw ApiException(message, statusCode: response.statusCode);
   }
 
@@ -121,5 +123,20 @@ class ApiClient {
       }
     }
     return null;
+  }
+
+  String? _translateMessage(String message) {
+    return switch (message) {
+      'Invalid email or password.' => 'E-mail ou senha inválidos.',
+      'Invalid password.' => 'Senha inválida.',
+      'Invalid or expired access token.' =>
+        'Sessão expirada. Faça login novamente.',
+      'The account associated with this token is unavailable.' =>
+        'A sessão autenticada não está mais disponível.',
+      'The company account is inactive.' =>
+        'A conta da empresa está inativa.',
+      'This account is inactive.' => 'Esta conta está inativa.',
+      _ => null,
+    };
   }
 }
