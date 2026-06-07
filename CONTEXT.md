@@ -130,8 +130,8 @@ frontend/
 3. `POST /api/v1/auth/reset-password` gera senha temporária e dispara e-mail em background
 4. `POST /api/v1/auth/change-password` exige contexto autenticado e envia confirmação por e-mail
 5. `GET /api/v1/auth/me` devolve o contexto autenticado
-6. `POST /api/v1/auth/logout` revoga a sessão e limpa o token local
-7. O frontend armazena o token em `flutter_secure_storage` e envia `Authorization: Bearer <token>`
+6. `POST /api/v1/auth/logout` revoga a sessão e limpa token + sessão local
+7. O frontend armazena a sessão auth em `flutter_secure_storage`, revalida no startup e envia `Authorization: Bearer <token>`
 
 ### Criação de Funcionário
 1. Admin cria ou edita funcionário em `/api/v1/employees`
@@ -198,7 +198,7 @@ frontend/
 - **Secrets:** `BUNCHIN_TOKEN_SECRET` e `BUNCHIN_ENCRYPTION_SECRET` são obrigatórios
 - **RBAC:** `authorization.py` concentra permissões por papel e checagem de acesso
 - **Seed:** `seed.py` tem builders pequenos e `seed_database` como entrada simples para testes e bootstrap
-- **Frontend:** tokens ficam no `flutter_secure_storage`, não em armazenamento comum
+- **Frontend:** sessão auth fica no `flutter_secure_storage`, não em armazenamento comum
 
 ---
 

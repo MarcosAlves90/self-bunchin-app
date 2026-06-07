@@ -30,6 +30,7 @@ void main() {
     expect(session.accessToken, 'token-123');
     expect(session.user.isAdmin, isTrue);
     expect(tokenStorage.savedToken, 'token-123');
+    expect(tokenStorage.savedSession?.user.email, 'marina.costa@bunchin.com');
     expect(client.lastPath, '/auth/login');
     expect(client.lastBody, <String, dynamic>{
       'email': 'marina.costa@bunchin.com',
@@ -62,6 +63,7 @@ void main() {
 
     expect(session.company.tradeName, 'Bunchin');
     expect(session.user.email, 'marina.costa@bunchin.com');
+    expect(tokenStorage.savedSession?.company.tradeName, 'Bunchin');
     expect(client.lastPath, '/auth/register-company');
     expect(client.lastBody, <String, dynamic>{
       'companyName': 'Bunchin Tecnologia LTDA',
@@ -552,6 +554,7 @@ class _FakeApiClient extends ApiClient {
 
 class _InMemoryTokenStorage extends TokenStorage {
   String? savedToken;
+  AuthSession? savedSession;
   bool clearCalled = false;
 
   @override
@@ -560,13 +563,25 @@ class _InMemoryTokenStorage extends TokenStorage {
   }
 
   @override
+  Future<void> saveAuthSession(AuthSession session) async {
+    savedToken = session.accessToken;
+    savedSession = session;
+  }
+
+  @override
   Future<String?> readAccessToken() async {
-    return savedToken;
+    return savedToken ?? savedSession?.accessToken;
+  }
+
+  @override
+  Future<AuthSession?> readAuthSession() async {
+    return savedSession;
   }
 
   @override
   Future<void> clearAccessToken() async {
     clearCalled = true;
     savedToken = null;
+    savedSession = null;
   }
 }

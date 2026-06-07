@@ -1,3 +1,4 @@
+import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/core/storage/token_storage.dart';
@@ -73,6 +74,7 @@ class _FakeLogoutApiClient extends ApiClient {
 
 class _InMemoryTokenStorage extends TokenStorage {
   String? savedToken;
+  AuthSession? savedSession;
   bool clearCalled = false;
 
   @override
@@ -81,13 +83,25 @@ class _InMemoryTokenStorage extends TokenStorage {
   }
 
   @override
+  Future<void> saveAuthSession(AuthSession session) async {
+    savedToken = session.accessToken;
+    savedSession = session;
+  }
+
+  @override
   Future<String?> readAccessToken() async {
-    return savedToken;
+    return savedToken ?? savedSession?.accessToken;
+  }
+
+  @override
+  Future<AuthSession?> readAuthSession() async {
+    return savedSession;
   }
 
   @override
   Future<void> clearAccessToken() async {
     clearCalled = true;
     savedToken = null;
+    savedSession = null;
   }
 }
