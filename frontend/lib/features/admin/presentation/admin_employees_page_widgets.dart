@@ -643,6 +643,73 @@ class _EmployeeListTile extends StatelessWidget {
         employee.status != EmployeeStatus.active || needsAttention;
     final showLeadingIcon = !isCompact;
 
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  employee.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Builder(
+              builder: (buttonContext) {
+                return IconButton(
+                  onPressed: () => _showActionsMenu(
+                    buttonContext,
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                  ),
+                  icon: const Icon(Icons.more_horiz_rounded, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Ações',
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '${employee.role} | ${employee.department}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.2,
+            ),
+          ),
+          if (hasSignals) ...<Widget>[
+            const SizedBox(height: 6),
+            Text(
+              _compactSignalsLabel(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[

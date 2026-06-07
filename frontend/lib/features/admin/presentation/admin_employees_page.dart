@@ -554,14 +554,22 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   List<Widget> _buildHeaderActions(bool isWide) {
-    final createButton = SizedBox(
-      width: isWide ? 210 : double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _openCreateEmployeeDialog,
-        icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const Text('Novo funcionário'),
-      ),
-    );
+    final createButton = isWide
+        ? SizedBox(
+            width: 210,
+            child: ElevatedButton.icon(
+              onPressed: _openCreateEmployeeDialog,
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('Novo funcionário'),
+            ),
+          )
+        : SizedBox(
+            width: 240,
+            child: ElevatedButton(
+              onPressed: _openCreateEmployeeDialog,
+              child: const Text('Novo funcionário'),
+            ),
+          );
 
     return <Widget>[createButton];
   }
