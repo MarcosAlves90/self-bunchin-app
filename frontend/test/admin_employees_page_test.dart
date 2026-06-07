@@ -3,11 +3,30 @@ import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:bunchin_flutter/features/admin/presentation/admin_employees_controller.dart';
 import 'package:bunchin_flutter/features/admin/presentation/admin_employees_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('shows local loading state without hiding workspace shell',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1440, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminEmployeesPage(controller: _LoadingAdminController()),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Administrar equipe'), findsOneWidget);
+    expect(find.text('Carregando funcionários'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+  });
+
   testWidgets('renders desktop admin header with create action on the right',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1440, 1200);
@@ -276,4 +295,11 @@ class _FakeAdminApi extends BunchinApi {
     required String employeeId,
     required String punchId,
   }) async {}
+}
+
+class _LoadingAdminController extends AdminEmployeesController {
+  _LoadingAdminController() : super(api: _FakeAdminApi());
+
+  @override
+  Future<void> start() async {}
 }

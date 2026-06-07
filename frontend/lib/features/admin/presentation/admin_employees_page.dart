@@ -353,6 +353,7 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
     final company = _authContext?.company;
     final companyName = _companyDisplayName(company);
     final companyIdentity = _companyIdentitySummary(company);
+    final isLoading = _isLoading;
 
     return WorkspaceSidebar(
       title: 'Painel administrativo da empresa.',
@@ -361,18 +362,22 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
       summaryChildren: <Widget>[
         WorkspaceSummaryStripe(
           label: 'Empresa',
-          value: companyName,
-          helper: companyIdentity,
+          value: isLoading ? 'Carregando...' : companyName,
+          helper: isLoading ? 'Sincronizando cadastro da empresa' : companyIdentity,
         ),
         WorkspaceSummaryStripe(
           label: 'Headcount',
-          value: '${_employees.length} funcionários',
-          helper: '$_activeEmployees ativos e $_leadershipEmployees lideranças',
+          value: isLoading ? 'Carregando...' : '${_employees.length} funcionários',
+          helper: isLoading
+              ? 'Aguardando lista de funcionários'
+              : '$_activeEmployees ativos e $_leadershipEmployees lideranças',
         ),
         WorkspaceSummaryStripe(
           label: 'Pendências',
-          value: '$_attentionEmployees em atenção',
-          helper: 'Onboarding, afastamentos e ajustes',
+          value: isLoading ? 'Carregando...' : '$_attentionEmployees em atenção',
+          helper: isLoading
+              ? 'Aguardando cálculos operacionais'
+              : 'Onboarding, afastamentos e ajustes',
         ),
       ],
       highlightChips: _buildSidebarHighlightChips(),
@@ -391,6 +396,10 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
   }
 
   Widget _buildWorkspace({required bool isWide}) {
+    if (_isLoading) {
+      return _buildLoadingWorkspace(isWide: isWide);
+    }
+
     return Padding(
       padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
       child: Column(
@@ -401,6 +410,112 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
           _buildMetricGrid(isWide),
           const SizedBox(height: 20),
           _buildEmployeesSection(isWide),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingWorkspace({required bool isWide}) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(isWide ? 32 : 24, 28, isWide ? 32 : 24, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          WorkspaceHeader(
+            title: 'Administrar equipe',
+            description: 'Carregando funcionários, métricas e dados da empresa.',
+            maxContentWidth: 620,
+          ),
+          const SizedBox(height: 16),
+          _buildLoadingMetricGrid(isWide),
+          const SizedBox(height: 20),
+          _buildLoadingEmployeesSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingMetricGrid(bool isWide) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = isWide ? (constraints.maxWidth - 12) / 3 : constraints.maxWidth;
+
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: <Widget>[
+            SizedBox(
+              width: width,
+              child: WorkspaceMetricCard(
+                label: 'Funcionários',
+                value: '...',
+                helper: 'Carregando headcount',
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: WorkspaceMetricCard(
+                label: 'Em atenção',
+                value: '...',
+                helper: 'Carregando pendências',
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: WorkspaceMetricCard(
+                label: 'Lideranças',
+                value: '...',
+                helper: 'Carregando perfil de acesso',
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingEmployeesSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return WorkspaceSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Carregando funcionários',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Atualizando lista, detalhes e pontos manuais.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const _LoadingEmployeeRow(),
+          const SizedBox(height: 12),
+          const _LoadingEmployeeRow(),
+          const SizedBox(height: 12),
+          const _LoadingEmployeeRow(),
         ],
       ),
     );
@@ -1240,3 +1355,53 @@ class _AdminEmployeesPageState extends State<AdminEmployeesPage> {
 }
 
 enum _EmployeeDetailTab { registration, policies, timeClock, notes }
+
+class _LoadingEmployeeRow extends StatelessWidget {
+  const _LoadingEmployeeRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Container(
+            height: 14,
+            width: 180,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            height: 10,
+            width: 260,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: <Widget>[
+              Container(
+                height: 10,
+                width: 80,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                height: 10,
+                width: 100,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

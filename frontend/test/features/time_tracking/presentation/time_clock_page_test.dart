@@ -103,6 +103,25 @@ TimeClockState _timelineState({
 }
 
 void main() {
+  testWidgets('shows local loading state without hiding workspace shell',
+      (WidgetTester tester) async {
+    final controller = _FakeTimeClockController(<int, TimeClockState>{});
+
+    await tester.binding.setSurfaceSize(const Size(1400, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TimeClockPage(controller: controller),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Bater ponto'), findsOneWidget);
+    expect(find.text('Carregando estado de ponto'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+  });
+
   testWidgets('tap on register entry calls punch handler',
       (WidgetTester tester) async {
     final controller = _FakeTimeClockController(<int, TimeClockState>{
