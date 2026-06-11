@@ -148,6 +148,7 @@ frontend/
 5. Metadados e payloads opcionais ficam criptografados
 6. Regras de localização e dispositivo confiável são aplicadas quando habilitadas
 7. O módulo de time clock exige vínculo com employee para acesso ao fluxo próprio do usuário
+8. Os tipos de ponto expostos no contrato atual são `checkIn`, `checkOut`, `breakStart` e `breakEnd`
 
 ### Tema Global
 1. O app inicia com `ThemeModeController`

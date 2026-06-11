@@ -136,6 +136,7 @@ Authorization: Bearer <accessToken>
 - O banco guarda apenas `token_hash`.
 - `POST /api/v1/auth/logout` revoga a sessão atual.
 - `keepConnected=true` usa o TTL longo configurado em `BUNCHIN_REMEMBER_ME_TTL_DAYS`.
+- `keepConnected=false` usa o TTL curto configurado em `BUNCHIN_TOKEN_TTL_HOURS`; o frontend ainda pode reaproveitar a sessão salva localmente até `expiresAt`, então isso não faz logout imediato.
 
 ### Rotas de auth
 
