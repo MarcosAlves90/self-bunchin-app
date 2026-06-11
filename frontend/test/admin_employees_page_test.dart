@@ -22,7 +22,8 @@ void main() {
     expect(find.text('Administrar equipe'), findsOneWidget);
     expect(find.text('Novo funcionário'), findsOneWidget);
     expect(find.text('Editar selecionado'), findsNothing);
-    expect(find.byIcon(Icons.more_horiz_rounded), findsWidgets);
+    expect(find.byTooltip('Editar funcionário'), findsOneWidget);
+    expect(find.byTooltip('Remover funcionário'), findsOneWidget);
     expect(find.text('renata.souza@bunchin.com'), findsOneWidget);
     expect(find.text('Sem batida recente'), findsNothing);
     expect(find.textContaining('Hoje:'), findsNothing);
