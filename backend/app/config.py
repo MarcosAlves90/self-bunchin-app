@@ -41,9 +41,14 @@ class Settings:
             os.getenv("BUNCHIN_ENFORCE_HTTPS"),
             default=False,
         )
+        seed_on_startup_default = self.environment in {"development", "test"}
         self.seed_on_startup = _parse_bool(
             os.getenv("BUNCHIN_SEED_ON_STARTUP"),
-            default=True,
+            default=seed_on_startup_default,
+        )
+        self.bootstrap_database_on_startup = _parse_bool(
+            os.getenv("BUNCHIN_BOOTSTRAP_DATABASE_ON_STARTUP"),
+            default=seed_on_startup_default,
         )
         self.allowed_origins = _parse_csv(
             os.getenv("BUNCHIN_ALLOWED_ORIGINS"),

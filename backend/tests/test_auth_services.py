@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pytest
 
-from app.db import SessionLocal
-from app.models import UserAccount
+from app.config import Settings, get_settings
+from app.crypto import lookup_digest
+from app.db import SessionLocal, ensure_utc, utcnow
+from app.models import AuthSession, UserAccount
 from app.services.auth import change_password, login, reset_password
 from app.services.auth import _resolve_user, _ensure_accounts_active, resolve_context
 from app.schemas.auth import LoginRequest
-from app.crypto import lookup_digest
-from app.config import get_settings
 
 
 def test_resolve_user_returns_user_and_email_hash(client):
@@ -126,3 +128,52 @@ def test_login_response_includes_must_change_password(client):
         ),
     )
     assert auth_response.must_change_password is False
+
+
+def test_resolve_context_throttles_last_used_touch(client, monkeypatch):
+    db = SessionLocal()
+    try:
+        auth_response = login(
+            db=db,
+            payload=LoginRequest(
+                email="marina.costa@bunchin.com",
+                password=get_settings().seed_admin_password,
+                keep_connected=True,
+            ),
+        )
+        session = db.query(AuthSession).filter(
+            AuthSession.token_hash == lookup_digest(
+                auth_response.access_token,
+                get_settings().token_secret or "",
+            )
+        ).first()
+        assert session is not None
+        assert session.last_used_at is None
+
+        first_touch = utcnow()
+        monkeypatch.setattr("app.domain.auth_read.utcnow", lambda: first_touch)
+        resolve_context(db=db, token=auth_response.access_token)
+        db.refresh(session)
+        assert ensure_utc(session.last_used_at) == first_touch
+
+        second_touch = first_touch + timedelta(minutes=1)
+        monkeypatch.setattr("app.domain.auth_read.utcnow", lambda: second_touch)
+        resolve_context(db=db, token=auth_response.access_token)
+        db.refresh(session)
+        assert ensure_utc(session.last_used_at) == first_touch
+    finally:
+        db.close()
+
+
+def test_seed_on_startup_defaults_off_in_production(monkeypatch):
+    monkeypatch.setenv("BUNCHIN_ENV", "production")
+    monkeypatch.delenv("BUNCHIN_SEED_ON_STARTUP", raising=False)
+    monkeypatch.delenv("BUNCHIN_BOOTSTRAP_DATABASE_ON_STARTUP", raising=False)
+    monkeypatch.setenv("BUNCHIN_TOKEN_SECRET", "token-secret")
+    monkeypatch.setenv("BUNCHIN_ENCRYPTION_SECRET", "encryption-secret")
+    monkeypatch.setenv("BUNCHIN_SEED_ADMIN_PASSWORD", "admin-password")
+
+    settings = Settings()
+
+    assert settings.seed_on_startup is False
+    assert settings.bootstrap_database_on_startup is False

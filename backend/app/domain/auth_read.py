@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -12,6 +14,7 @@ from app.models import AuthSession, Company, Employee, UserAccount
 from app.schemas.auth import AuthContextResponse, CompanySummary, UserSummary
 
 _MSG_COMPANY_INACTIVE = "The company account is inactive."
+_LAST_USED_TOUCH_INTERVAL = timedelta(minutes=5)
 
 
 def cipher() -> FieldCipher:
@@ -124,8 +127,14 @@ def resolve_context(db: Session, token: str):
     if company is None or not company.is_active:
         raise DomainError(ErrorKind.unauthorized, _MSG_COMPANY_INACTIVE)
 
-    auth_session.last_used_at = now
-    db.commit()
+    last_used_at = ensure_utc(auth_session.last_used_at)
+    should_touch_session = (
+        last_used_at is None
+        or now - last_used_at >= _LAST_USED_TOUCH_INTERVAL
+    )
+    if should_touch_session:
+        auth_session.last_used_at = now
+        db.commit()
     employee = db.get(Employee, user.employee_id) if user.employee_id else None
     return auth_session, user, company, employee
 
