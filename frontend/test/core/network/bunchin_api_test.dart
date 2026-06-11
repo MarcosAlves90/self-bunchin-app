@@ -5,6 +5,7 @@ import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/contracts/location.dart';
 import 'package:bunchin_flutter/contracts/punch.dart';
 import 'package:bunchin_flutter/contracts/time_clock.dart';
+import 'package:bunchin_flutter/core/config/app_config.dart';
 import 'package:bunchin_flutter/core/network/api_client.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/core/storage/token_storage.dart';
@@ -13,6 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
+  final baseUrl = AppConfig.apiBaseUrl;
+
   test('login posts credentials contract and stores session token', () async {
     final client = _FakeApiClient(
       postResponses: {
@@ -46,7 +49,7 @@ void main() {
     final apiClient = ApiClient(
       client: _FakeHttpClient(
         responses: {
-          'POST http://localhost:8071/api/v1/auth/login': http.Response(
+          'POST $baseUrl/auth/login': http.Response(
             '{"detail":"Invalid email or password."}',
             401,
             headers: {'content-type': 'application/json'},
@@ -83,7 +86,7 @@ void main() {
       tokenStorage: tokenStorage,
       client: _FakeHttpClient(
         responses: {
-          'GET http://localhost:8071/api/v1/auth/me': http.Response(
+          'GET $baseUrl/auth/me': http.Response(
             '{"detail":"Invalid or expired access token."}',
             401,
             headers: {'content-type': 'application/json'},
