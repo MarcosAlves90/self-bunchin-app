@@ -85,12 +85,15 @@ Variáveis mais importantes:
 - `BUNCHIN_ENCRYPTION_SECRET`: segredo para criptografia de PII
 - `BUNCHIN_ALLOWED_ORIGINS`: CSV de origens liberadas no CORS
 - `BUNCHIN_ENFORCE_HTTPS`: exige HTTPS fora de localhost quando `true`
+- `BUNCHIN_BOOTSTRAP_DATABASE_ON_STARTUP`: cria tabelas e faz upgrade legado na inicialização
 - `BUNCHIN_SEED_ON_STARTUP`: cria seed de desenvolvimento quando `true`
 - `BUNCHIN_SEED_ADMIN_PASSWORD`: senha usada pelos usuários seed
 - `BUNCHIN_BREVO_API_KEY`: chave opcional da Brevo
 - `BUNCHIN_BREVO_SENDER_EMAIL`: remetente das mensagens
 - `BUNCHIN_BREVO_SENDER_NAME`: nome do remetente
 - `BUNCHIN_BREVO_WELCOME_ENABLED`: habilita e-mails de boas-vindas
+
+Em produção, mantenha `BUNCHIN_BOOTSTRAP_DATABASE_ON_STARTUP=false` quando o banco já tiver o schema provisionado. Isso evita trabalho extra no boot do Render.
 
 ## Seed de Desenvolvimento
 

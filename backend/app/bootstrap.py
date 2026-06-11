@@ -12,7 +12,8 @@ from app.config import get_settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    init_database()
+    if settings.bootstrap_database_on_startup or settings.seed_on_startup:
+        init_database()
     if settings.seed_on_startup:
         with SessionLocal() as db:
             seed_database_if_empty(db)
