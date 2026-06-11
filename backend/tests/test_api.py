@@ -359,6 +359,17 @@ def test_create_employee_triggers_credentials_email_task(client, monkeypatch):
     assert calls[0]["employee_name"] == "Gabriel Paiva"
     assert len(calls[0]["temp_password"]) >= 12
 
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "gabriel.paiva@bunchin.com",
+            "password": calls[0]["temp_password"],
+            "keepConnected": True,
+        },
+    )
+    assert login_response.status_code == 200
+    assert login_response.json()["mustChangePassword"] is True
+
 
 def test_delete_employee(client):
     headers = login_headers(client)
@@ -390,6 +401,10 @@ def test_delete_employee(client):
         headers=headers,
     )
     assert delete_response.status_code == 204
+
+    with SessionLocal() as db:
+        user = db.scalar(select(UserAccount).where(UserAccount.employee_id == employee["id"]))
+        assert user is None
 
     list_response = client.get("/api/v1/employees", headers=headers)
     assert list_response.status_code == 200

@@ -90,7 +90,12 @@ def _display_name_for_user(
     return display_name_for_user(db, user=user, field_cipher=cipher)
 
 
-def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessionResponse:
+def register_company(
+    db: Session,
+    payload: CompanyRegisterRequest,
+    *,
+    send_welcome_email: bool = True,
+) -> AuthSessionResponse:
     settings = get_settings()
     cipher = _cipher()
     normalized_email = normalize_email(str(payload.email))
@@ -142,11 +147,12 @@ def register_company(db: Session, payload: CompanyRegisterRequest) -> AuthSessio
     db.refresh(company)
     db.refresh(user)
     db.refresh(auth_session)
-    send_company_welcome_email(
-        recipient_email=normalized_email,
-        company_name=payload.company_name,
-        trade_name=payload.trade_name,
-    )
+    if send_welcome_email:
+        send_company_welcome_email(
+            recipient_email=normalized_email,
+            company_name=payload.company_name,
+            trade_name=payload.trade_name,
+        )
     return build_auth_response(token, auth_session, user, company, cipher)
 
 

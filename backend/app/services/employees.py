@@ -121,6 +121,7 @@ def create_employee(
         email_ciphertext=cipher.encrypt(normalized_email) or "",
         email_hash=email_hash,
         password_hash=hash_password(temp_password),
+        must_change_password=True,
         role=_access_role_value(payload),
         employee=employee,
     )
@@ -236,7 +237,7 @@ def delete_employee(
         ),
     ).all()
     for account in linked_accounts:
-        account.employee_id = None
+        db.delete(account)
 
     db.delete(employee)
     db.commit()

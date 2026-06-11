@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bunchin_flutter/contracts/auth.dart';
 import 'package:bunchin_flutter/contracts/employee.dart';
 import 'package:bunchin_flutter/contracts/location.dart';
@@ -8,6 +10,7 @@ import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/core/storage/token_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   test('login posts credentials contract and stores session token', () async {
@@ -30,12 +33,76 @@ void main() {
     expect(session.accessToken, 'token-123');
     expect(session.user.isAdmin, isTrue);
     expect(tokenStorage.savedToken, 'token-123');
+    expect(tokenStorage.savedSession?.user.email, 'marina.costa@bunchin.com');
     expect(client.lastPath, '/auth/login');
     expect(client.lastBody, <String, dynamic>{
       'email': 'marina.costa@bunchin.com',
       'password': 'Bunchin@123',
       'keepConnected': true,
     });
+  });
+
+  test('login invalid credentials are translated to pt-BR', () async {
+    final apiClient = ApiClient(
+      client: _FakeHttpClient(
+        responses: {
+          'POST http://localhost:8071/api/v1/auth/login': http.Response(
+            '{"detail":"Invalid email or password."}',
+            401,
+            headers: {'content-type': 'application/json'},
+          ),
+        },
+      ),
+    );
+    final api = BunchinApi(
+      client: apiClient,
+      tokenStorage: _InMemoryTokenStorage(),
+    );
+
+    await expectLater(
+      api.login(
+        credentials: const LoginCredentials(
+          email: 'marina.costa@bunchin.com',
+          password: 'wrong-password',
+          keepConnected: true,
+        ),
+      ),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'E-mail ou senha inválidos.',
+        ),
+      ),
+    );
+  });
+
+  test('auth context expired token is translated to pt-BR', () async {
+    final tokenStorage = _InMemoryTokenStorage()..savedToken = 'token-123';
+    final apiClient = ApiClient(
+      tokenStorage: tokenStorage,
+      client: _FakeHttpClient(
+        responses: {
+          'GET http://localhost:8071/api/v1/auth/me': http.Response(
+            '{"detail":"Invalid or expired access token."}',
+            401,
+            headers: {'content-type': 'application/json'},
+          ),
+        },
+      ),
+    );
+    final api = BunchinApi(client: apiClient, tokenStorage: tokenStorage);
+
+    await expectLater(
+      api.getAuthContext(),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'Sessão expirada. Faça login novamente.',
+        ),
+      ),
+    );
   });
 
   test('registerCompany posts payload contract and parses full session',
@@ -62,6 +129,7 @@ void main() {
 
     expect(session.company.tradeName, 'Bunchin');
     expect(session.user.email, 'marina.costa@bunchin.com');
+    expect(tokenStorage.savedSession?.company.tradeName, 'Bunchin');
     expect(client.lastPath, '/auth/register-company');
     expect(client.lastBody, <String, dynamic>{
       'companyName': 'Bunchin Tecnologia LTDA',
@@ -550,8 +618,32 @@ class _FakeApiClient extends ApiClient {
   }
 }
 
+class _FakeHttpClient extends http.BaseClient {
+  _FakeHttpClient({required this.responses});
+
+  final Map<String, http.Response> responses;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final key =
+        '${request.method.toUpperCase()} ${request.url.scheme}://${request.url.authority}${request.url.path}${request.url.hasQuery ? '?${request.url.query}' : ''}';
+    final response = responses[key];
+    if (response == null) {
+      throw StateError('No fake HTTP response registered for $key');
+    }
+    return http.StreamedResponse(
+      Stream<List<int>>.fromIterable([response.bodyBytes]),
+      response.statusCode,
+      headers: response.headers,
+      reasonPhrase: response.reasonPhrase,
+      request: request,
+    );
+  }
+}
+
 class _InMemoryTokenStorage extends TokenStorage {
   String? savedToken;
+  AuthSession? savedSession;
   bool clearCalled = false;
 
   @override
@@ -560,13 +652,25 @@ class _InMemoryTokenStorage extends TokenStorage {
   }
 
   @override
+  Future<void> saveAuthSession(AuthSession session) async {
+    savedToken = session.accessToken;
+    savedSession = session;
+  }
+
+  @override
   Future<String?> readAccessToken() async {
-    return savedToken;
+    return savedToken ?? savedSession?.accessToken;
+  }
+
+  @override
+  Future<AuthSession?> readAuthSession() async {
+    return savedSession;
   }
 
   @override
   Future<void> clearAccessToken() async {
     clearCalled = true;
     savedToken = null;
+    savedSession = null;
   }
 }

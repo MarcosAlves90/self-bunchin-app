@@ -23,11 +23,8 @@ from app.services.auth import (
     register_company,
     reset_password,
 )
-from app.services.brevo import (
-    send_company_welcome_email,
-    send_password_changed_email,
-    send_password_reset_email,
-)
+from app.services import auth as auth_service
+from app.services.brevo import send_password_changed_email, send_password_reset_email
 
 
 router = APIRouter()
@@ -40,9 +37,17 @@ router = APIRouter()
 )
 def register_company_route(
     payload: CompanyRegisterRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> AuthSessionResponse:
-    return register_company(db, payload)
+    response = register_company(db, payload, send_welcome_email=False)
+    background_tasks.add_task(
+        auth_service.send_company_welcome_email,
+        recipient_email=str(payload.email).strip(),
+        company_name=payload.company_name,
+        trade_name=payload.trade_name,
+    )
+    return response
 
 
 @router.post("/login", response_model=AuthSessionResponse)

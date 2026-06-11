@@ -685,24 +685,29 @@ class _EmployeeListTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Builder(
-                    builder: (buttonContext) {
-                      return IconButton(
-                        onPressed: () => _showActionsMenu(
-                          buttonContext,
-                          onEdit: onEdit,
-                          onDelete: onDelete,
-                        ),
-                        icon: const Icon(Icons.more_horiz_rounded, size: 18),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 32,
-                          height: 32,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'Ações',
-                      );
-                    },
+                  const SizedBox(width: 6),
+                  IconButton(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Editar funcionário',
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Remover funcionário',
                   ),
                 ],
               ),
@@ -743,50 +748,7 @@ class _EmployeeListTile extends StatelessWidget {
     return labels.join(' • ');
   }
 
-  Future<void> _showActionsMenu(
-    BuildContext context, {
-    required VoidCallback onEdit,
-    required VoidCallback onDelete,
-  }) async {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final button = context.findRenderObject() as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero),
-            ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
-
-    final action = await showMenu<_EmployeeListAction>(
-      context: context,
-      position: position,
-      items: const <PopupMenuEntry<_EmployeeListAction>>[
-        PopupMenuItem<_EmployeeListAction>(
-          value: _EmployeeListAction.edit,
-          child: Text('Editar'),
-        ),
-        PopupMenuItem<_EmployeeListAction>(
-          value: _EmployeeListAction.delete,
-          child: Text('Remover'),
-        ),
-      ],
-    );
-
-    if (!context.mounted || action == null) {
-      return;
-    }
-
-    if (action == _EmployeeListAction.edit) {
-      onEdit();
-    } else {
-      onDelete();
-    }
-  }
 }
-
-enum _EmployeeListAction { edit, delete }
 
 class _AdminMetricItem extends StatelessWidget {
   const _AdminMetricItem({

@@ -246,7 +246,7 @@ class BunchinApi {
   }
 
   Future<AuthSession> _persistSession(AuthSession session) async {
-    await _tokenStorage.saveAccessToken(session.accessToken);
+    await _tokenStorage.saveAuthSession(session);
     return session;
   }
 

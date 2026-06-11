@@ -77,6 +77,12 @@ sequenceDiagram
   Api->>Db: Revoga sessão atual
 ```
 
+Observação de sessão:
+
+- `keepConnected=true` pede o TTL longo no backend.
+- `keepConnected=false` pede o TTL curto, mas a sessão ainda fica armazenada localmente e pode ser reaproveitada até `expiresAt`.
+- `POST /api/v1/auth/logout` continua sendo o caminho para revogação imediata.
+
 ### Fluxo de ponto
 
 ```mermaid
