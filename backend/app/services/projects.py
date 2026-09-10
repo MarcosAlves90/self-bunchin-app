@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.db import begin_serialized_write
 from app.domain.project_policy import validate_project_for_punch as _validate_project_for_punch
 from app.domain.project_read import (
     cipher,
@@ -12,7 +13,8 @@ from app.domain.project_read import (
     serialize_project,
     status_value,
 )
-from app.models import EmployeeProject, Project
+from app.errors import DomainError, ErrorKind
+from app.models import EmployeeProject, Project, Task, TaskEmployee
 from app.schemas.project import ProjectDraftPayload, ProjectMemberSummary, ProjectResponse, ProjectStatus
 
 
@@ -21,7 +23,8 @@ def create_project(db: Session, *, company_id: str, payload: ProjectDraftPayload
     project = Project(
         company_id=company_id,
         name_ciphertext=field_cipher.encrypt(payload.name) or "",
-        description_ciphertext=field_cipher.encrypt(payload.description),
+        description_ciphertext=field_cipher.encrypt(payload.description) or "",
+        task_employee_limit=payload.task_employee_limit or 1,
         status=status_value(payload.status),
     )
     db.add(project)
@@ -37,10 +40,36 @@ def update_project(
     project_id: str,
     payload: ProjectDraftPayload,
 ) -> ProjectResponse:
+    begin_serialized_write(db)
+
+    query = select(Project).where(Project.company_id == company_id, Project.id == project_id)
+    if db.bind is not None and db.bind.dialect.name != "sqlite":
+        query = query.with_for_update()
+    project = db.scalar(query)
+    if project is None:
+        raise DomainError(ErrorKind.not_found, "Project not found.")
+
+    new_limit = payload.task_employee_limit
+    if new_limit is None:
+        new_limit = project.task_employee_limit
+
+    if new_limit < project.task_employee_limit:
+        counts = db.scalars(
+            select(func.count(TaskEmployee.employee_id))
+            .join(Task, Task.id == TaskEmployee.task_id)
+            .where(Task.project_id == project.id)
+            .group_by(TaskEmployee.task_id),
+        ).all()
+        if any(count > new_limit for count in counts):
+            raise DomainError(
+                ErrorKind.conflict,
+                "Project task employee limit is below current task membership.",
+            )
+
     field_cipher = cipher()
-    project = project_or_404(db, company_id=company_id, project_id=project_id)
     project.name_ciphertext = field_cipher.encrypt(payload.name) or ""
-    project.description_ciphertext = field_cipher.encrypt(payload.description)
+    project.description_ciphertext = field_cipher.encrypt(payload.description) or ""
+    project.task_employee_limit = new_limit
     project.status = status_value(payload.status)
     db.commit()
     db.refresh(project)

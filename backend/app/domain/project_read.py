@@ -38,6 +38,7 @@ def serialize_project(project: Project, *, cipher: FieldCipher) -> ProjectRespon
         id=project.id,
         name=cipher.decrypt(project.name_ciphertext) or "",
         description=cipher.decrypt(project.description_ciphertext),
+        task_employee_limit=project.task_employee_limit,
         status=project.status,
         created_at=project.created_at,
         updated_at=project.updated_at,

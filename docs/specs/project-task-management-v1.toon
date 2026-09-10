@@ -1,0 +1,211 @@
+title: Project and Task Management
+version: 1.0.0
+status: accepted
+language: en
+
+objective: >
+  Extend the existing company-scoped project model with required project
+  descriptions, a default per-task employee capacity, typed hierarchical tasks,
+  and employee-managed task membership while preserving existing project
+  allocation used by time tracking.
+
+authority:
+  preserve:
+    - existing company-scoped RBAC
+    - existing project soft-delete behavior
+    - existing employee-project allocation used by project-filtered time punches
+    - existing encrypted storage for project and task human-readable fields
+  change:
+    - project description becomes required and semantically non-empty at API boundary
+    - project stores task_employee_limit with default 1 for legacy API compatibility
+    - tasks and task employee memberships are introduced
+
+authorization:
+  managerial_roles:
+    - manager
+    - admin
+    - super_admin
+  employee_role:
+    - employee
+  rules:
+    - company-scoped users with projects.create may create projects
+    - company-scoped users with projects.update may update projects and their capacity
+    - company-scoped users with projects.delete may soft-delete projects
+    - company-scoped users with projects.assign may manage project allocations
+    - company-scoped users with tasks.create may create tasks
+    - company-scoped users with tasks.update may update tasks
+    - authenticated users with an employee profile may join, leave, add, and remove task members
+    - task membership operations cannot target employees outside the authenticated company
+    - role and company identity are resolved from the authenticated backend context, never from client claims
+
+project:
+  required_fields:
+    name:
+      type: string
+      constraints:
+        - trimmed length 1..160
+        - whitespace-only values rejected
+    description:
+      type: string
+      constraints:
+        - trimmed length 1..2000
+        - whitespace-only values rejected
+    task_employee_limit:
+      type: integer
+      constraints:
+        - minimum 1
+      default: 1
+      rationale: preserve compatibility with existing project create/update clients that predate this field
+  relationships:
+    tasks: one_to_many
+    employee_allocations: existing_many_to_many_preserved
+
+task:
+  required_fields:
+    name:
+      type: string
+      constraints:
+        - trimmed length 1..160
+        - whitespace-only values rejected
+    description:
+      type: string
+      constraints:
+        - trimmed length 1..2000
+        - whitespace-only values rejected
+    type:
+      enum:
+        - bug
+        - improvement
+        - feature
+  relationships:
+    project: many_to_one_required
+    parent: optional_many_to_one_self_reference
+    employees: many_to_many
+  hierarchy_invariants:
+    - task cannot parent itself
+    - parent must belong to the same project
+    - assigning a parent cannot create a direct or indirect cycle
+
+membership:
+  operations:
+    join_self:
+      actor: authenticated employee
+      result_when_new: 201
+      result_when_duplicate: 200
+    leave_self:
+      actor: authenticated employee
+      result: 204
+      absent_membership: idempotent 204
+    add_other:
+      actor: authenticated employee
+      result_when_new: 201
+      result_when_duplicate: 200
+    remove_other:
+      actor: authenticated employee
+      result: 204
+      absent_membership: idempotent 204
+  invariants:
+    - employee and task belong to the same company through the task project
+    - duplicate employee-task memberships are impossible
+    - membership count never exceeds the project task_employee_limit
+  capacity_failure:
+    status: 409
+    detail: Task employee capacity reached.
+  concurrency:
+    mechanism: >
+      Serialize capacity-sensitive writes on the project. Databases that support
+      SELECT FOR UPDATE lock the project row before checking/inserting memberships
+      or lowering the limit. SQLite starts an explicit BEGIN IMMEDIATE transaction
+      before the same checks.
+    invariant: count(task_employees for task) <= project.task_employee_limit
+
+capacity_changes:
+  increase: always allowed when positive
+  decrease:
+    allowed_when: new limit is greater than or equal to every existing task membership count
+    rejected_when: any task currently has more members than the requested limit
+    failure:
+      status: 409
+      detail: Project task employee limit is below current task membership.
+
+persistence:
+  projects:
+    add_column:
+      name: task_employee_limit
+      type: integer
+      nullable: false
+      default: 1
+  tasks:
+    columns:
+      - id
+      - project_id
+      - parent_task_id nullable
+      - name_ciphertext
+      - description_ciphertext
+      - type
+      - created_at
+      - updated_at
+    constraints:
+      - project foreign key
+      - parent task foreign key
+      - self-parent check
+  task_employees:
+    primary_key:
+      - task_id
+      - employee_id
+    foreign_keys:
+      - task_id -> tasks.id
+      - employee_id -> employees.id
+
+api:
+  project_changes:
+    - POST /api/v1/projects accepts and returns taskEmployeeLimit
+    - PUT/PATCH /api/v1/projects/{project_id} accepts and returns taskEmployeeLimit
+  task_routes:
+    - GET /api/v1/projects/{project_id}/tasks
+    - POST /api/v1/projects/{project_id}/tasks
+    - GET /api/v1/projects/{project_id}/tasks/{task_id}
+    - PUT /api/v1/projects/{project_id}/tasks/{task_id}
+    - PATCH /api/v1/projects/{project_id}/tasks/{task_id}
+    - GET /api/v1/projects/{project_id}/tasks/{task_id}/members
+    - POST /api/v1/projects/{project_id}/tasks/{task_id}/members/me
+    - DELETE /api/v1/projects/{project_id}/tasks/{task_id}/members/me
+    - POST /api/v1/projects/{project_id}/tasks/{task_id}/members
+    - DELETE /api/v1/projects/{project_id}/tasks/{task_id}/members/{employee_id}
+
+errors:
+  validation: framework 422 response for invalid request payload
+  unauthorized: 401
+  forbidden: 403
+  not_found: 404
+  conflict: 409
+
+compatibility:
+  - existing project reads continue to work and gain taskEmployeeLimit
+  - legacy rows that already have a null description are preserved on read; every create or update now requires a valid description, so no new null/empty description state can be persisted through the API
+  - existing project creation clients may omit taskEmployeeLimit and receive default 1
+  - existing project membership endpoints remain unchanged
+  - existing time-clock project validation remains unchanged
+  - the Flutter workspace exposes a Projects and Tasks screen through the existing navigation drawer
+  - managerial actions are hidden for employee-only accounts while read and membership actions remain available according to backend permissions
+
+acceptance_criteria:
+  - managerial role can create a valid project and task
+  - employee role cannot create, update, delete, or assign members to projects
+  - employee role cannot create or update tasks
+  - project and task reject missing, empty, or whitespace-only names/descriptions
+  - project persists and returns taskEmployeeLimit
+  - project can contain multiple tasks
+  - task persists and returns type and optional parentTaskId
+  - self-parent, cross-project parent, direct cycle, and indirect cycle are rejected
+  - authenticated employee can join/leave a task and add/remove another company employee
+  - duplicate membership is idempotent and consumes one slot
+  - membership at exactly capacity is allowed and the next distinct membership is rejected
+  - removing a member releases capacity
+  - project capacity cannot be lowered below an existing task membership count
+  - persistence schema upgrade adds task_employee_limit to legacy projects
+  - existing project allocation and punch behavior remains green
+  - Flutter contracts parse project/task responses and serialize create/update payloads
+  - Flutter managers can create/edit projects and create/edit tasks from the workspace
+  - Flutter employees can inspect tasks and join/leave task membership
+  - Flutter task membership UI reflects project capacity and current members

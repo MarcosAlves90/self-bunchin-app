@@ -1,0 +1,323 @@
+import 'package:bunchin_flutter/contracts/auth.dart';
+import 'package:bunchin_flutter/contracts/employee.dart';
+import 'package:bunchin_flutter/contracts/project.dart';
+import 'package:bunchin_flutter/contracts/task.dart';
+import 'package:bunchin_flutter/core/network/api_client.dart';
+import 'package:bunchin_flutter/core/network/bunchin_api.dart';
+import 'package:flutter/foundation.dart';
+
+class ProjectTasksController extends ChangeNotifier {
+  ProjectTasksController({BunchinApi? api}) : _api = api ?? BunchinApi();
+
+  final BunchinApi _api;
+
+  AuthContext? authContext;
+  List<ProjectSummary> projects = <ProjectSummary>[];
+  List<TaskRecord> tasks = <TaskRecord>[];
+  List<TaskMemberSummary> taskMembers = <TaskMemberSummary>[];
+  List<EmployeeProfile> employees = <EmployeeProfile>[];
+  String? selectedProjectId;
+  String? selectedTaskId;
+  bool isLoading = true;
+  bool isLoadingTasks = false;
+  bool isLoadingMembers = false;
+  bool isMutating = false;
+  String? loadError;
+  String? tasksError;
+  String? membersError;
+
+  bool get canManageProjects {
+    final user = authContext?.user;
+    return user?.isManager == true ||
+        user?.isAdmin == true ||
+        user?.isSuperAdmin == true;
+  }
+
+  bool get canManageTasks => canManageProjects;
+
+  bool get canManageMembership => authContext?.user.hasEmployeeProfile == true;
+
+  String? get currentEmployeeId => authContext?.user.employeeId;
+
+  ProjectSummary? get selectedProject {
+    for (final project in projects) {
+      if (project.id == selectedProjectId) {
+        return project;
+      }
+    }
+    return null;
+  }
+
+  TaskRecord? get selectedTask {
+    for (final task in tasks) {
+      if (task.id == selectedTaskId) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  bool get currentEmployeeIsMember {
+    final employeeId = currentEmployeeId;
+    if (employeeId == null) {
+      return false;
+    }
+    return taskMembers.any((member) => member.employeeId == employeeId);
+  }
+
+  Future<void> start() async {
+    isLoading = true;
+    loadError = null;
+    notifyListeners();
+
+    try {
+      authContext = await _api.getAuthContext();
+      projects = await _api.listProjects();
+      if (canManageProjects) {
+        employees = await _api.listEmployees();
+      }
+
+      if (projects.isNotEmpty) {
+        selectedProjectId = projects.first.id;
+        await _loadTasksForSelectedProject(notifyLoading: false);
+      } else {
+        selectedProjectId = null;
+        selectedTaskId = null;
+        tasks = <TaskRecord>[];
+        taskMembers = <TaskMemberSummary>[];
+      }
+      isLoading = false;
+      notifyListeners();
+    } catch (error) {
+      isLoading = false;
+      loadError = _errorMessage(error, 'Não foi possível carregar os projetos.');
+      notifyListeners();
+    }
+  }
+
+  Future<void> retry() => start();
+
+  Future<void> selectProject(String projectId) async {
+    if (selectedProjectId == projectId && tasksError == null) {
+      return;
+    }
+    selectedProjectId = projectId;
+    selectedTaskId = null;
+    taskMembers = <TaskMemberSummary>[];
+    membersError = null;
+    notifyListeners();
+    await _loadTasksForSelectedProject();
+  }
+
+  Future<void> reloadTasks() => _loadTasksForSelectedProject();
+
+  Future<void> _loadTasksForSelectedProject({bool notifyLoading = true}) async {
+    final projectId = selectedProjectId;
+    if (projectId == null) {
+      tasks = <TaskRecord>[];
+      selectedTaskId = null;
+      taskMembers = <TaskMemberSummary>[];
+      return;
+    }
+
+    isLoadingTasks = true;
+    tasksError = null;
+    if (notifyLoading) {
+      notifyListeners();
+    }
+
+    try {
+      tasks = await _api.listTasks(projectId);
+      if (tasks.isEmpty) {
+        selectedTaskId = null;
+        taskMembers = <TaskMemberSummary>[];
+      } else {
+        final currentSelectionStillExists =
+            tasks.any((task) => task.id == selectedTaskId);
+        if (!currentSelectionStillExists) {
+          selectedTaskId = tasks.first.id;
+        }
+        await _loadMembersForSelectedTask(notifyLoading: false);
+      }
+      isLoadingTasks = false;
+      notifyListeners();
+    } catch (error) {
+      isLoadingTasks = false;
+      tasksError = _errorMessage(error, 'Não foi possível carregar as tarefas.');
+      notifyListeners();
+    }
+  }
+
+  Future<void> selectTask(String taskId) async {
+    if (selectedTaskId == taskId && membersError == null) {
+      return;
+    }
+    selectedTaskId = taskId;
+    notifyListeners();
+    await _loadMembersForSelectedTask();
+  }
+
+  Future<void> reloadMembers() => _loadMembersForSelectedTask();
+
+  Future<void> _loadMembersForSelectedTask({bool notifyLoading = true}) async {
+    final projectId = selectedProjectId;
+    final taskId = selectedTaskId;
+    if (projectId == null || taskId == null) {
+      taskMembers = <TaskMemberSummary>[];
+      return;
+    }
+
+    isLoadingMembers = true;
+    membersError = null;
+    if (notifyLoading) {
+      notifyListeners();
+    }
+
+    try {
+      taskMembers = await _api.listTaskMembers(projectId, taskId);
+      isLoadingMembers = false;
+      notifyListeners();
+    } catch (error) {
+      isLoadingMembers = false;
+      membersError = _errorMessage(
+        error,
+        'Não foi possível carregar os membros da tarefa.',
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<ProjectSummary> createProject(ProjectDraft draft) async {
+    return _mutate(() async {
+      final created = await _api.createProject(draft);
+      projects = <ProjectSummary>[created, ...projects];
+      selectedProjectId = created.id;
+      selectedTaskId = null;
+      tasks = <TaskRecord>[];
+      taskMembers = <TaskMemberSummary>[];
+      await _loadTasksForSelectedProject(notifyLoading: false);
+      return created;
+    });
+  }
+
+  Future<ProjectSummary> updateProject(
+    ProjectSummary project,
+    ProjectDraft draft,
+  ) async {
+    return _mutate(() async {
+      final updated = await _api.updateProject(project.id, draft);
+      projects = projects
+          .map((current) => current.id == updated.id ? updated : current)
+          .toList();
+      return updated;
+    });
+  }
+
+  Future<void> deleteProject(ProjectSummary project) async {
+    await _mutate(() async {
+      await _api.deleteProject(project.id);
+      projects = projects.where((current) => current.id != project.id).toList();
+      if (selectedProjectId == project.id) {
+        selectedProjectId = projects.isEmpty ? null : projects.first.id;
+        selectedTaskId = null;
+        tasks = <TaskRecord>[];
+        taskMembers = <TaskMemberSummary>[];
+        if (selectedProjectId != null) {
+          await _loadTasksForSelectedProject(notifyLoading: false);
+        }
+      }
+    });
+  }
+
+  Future<TaskRecord> createTask(TaskDraft draft) async {
+    final projectId = selectedProjectId;
+    if (projectId == null) {
+      throw StateError('Nenhum projeto selecionado.');
+    }
+
+    return _mutate(() async {
+      final created = await _api.createTask(projectId, draft);
+      tasks = <TaskRecord>[created, ...tasks];
+      selectedTaskId = created.id;
+      taskMembers = <TaskMemberSummary>[];
+      await _loadMembersForSelectedTask(notifyLoading: false);
+      return created;
+    });
+  }
+
+  Future<TaskRecord> updateTask(TaskRecord task, TaskDraft draft) async {
+    return _mutate(() async {
+      final updated = await _api.updateTask(task.projectId, task.id, draft);
+      tasks = tasks
+          .map((current) => current.id == updated.id ? updated : current)
+          .toList();
+      return updated;
+    });
+  }
+
+  Future<void> joinSelectedTask() async {
+    final projectId = selectedProjectId;
+    final taskId = selectedTaskId;
+    if (projectId == null || taskId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.joinTask(projectId, taskId);
+      await _loadMembersForSelectedTask(notifyLoading: false);
+    });
+  }
+
+  Future<void> leaveSelectedTask() async {
+    final projectId = selectedProjectId;
+    final taskId = selectedTaskId;
+    if (projectId == null || taskId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.leaveTask(projectId, taskId);
+      await _loadMembersForSelectedTask(notifyLoading: false);
+    });
+  }
+
+  Future<void> addMemberToSelectedTask(String employeeId) async {
+    final projectId = selectedProjectId;
+    final taskId = selectedTaskId;
+    if (projectId == null || taskId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.addTaskMember(projectId, taskId, employeeId);
+      await _loadMembersForSelectedTask(notifyLoading: false);
+    });
+  }
+
+  Future<void> removeMemberFromSelectedTask(String employeeId) async {
+    final projectId = selectedProjectId;
+    final taskId = selectedTaskId;
+    if (projectId == null || taskId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.removeTaskMember(projectId, taskId, employeeId);
+      await _loadMembersForSelectedTask(notifyLoading: false);
+    });
+  }
+
+  Future<T> _mutate<T>(Future<T> Function() action) async {
+    isMutating = true;
+    notifyListeners();
+    try {
+      return await action();
+    } finally {
+      isMutating = false;
+      notifyListeners();
+    }
+  }
+
+  String _errorMessage(Object error, String fallback) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return fallback;
+  }
+}
