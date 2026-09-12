@@ -115,7 +115,7 @@ void main() {
 
     expect(api.joinCalls, 1);
     expect(find.text('Sair da tarefa'), findsOneWidget);
-    expect(find.text('Você • emp-04'), findsOneWidget);
+    expect(find.text('1 de 2 vaga(s) ocupada(s).'), findsOneWidget);
   });
 }
 
