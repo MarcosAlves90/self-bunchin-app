@@ -21,6 +21,7 @@ PROJECTS_DELETE = "projects.delete"
 PROJECTS_ASSIGN = "projects.assign"
 TASKS_CREATE = "tasks.create"
 TASKS_UPDATE = "tasks.update"
+TASKS_MEMBERS_SELF = "tasks.members.self"
 TASKS_MEMBERS_MANAGE = "tasks.members.manage"
 COMPANIES_MANAGE = "companies.manage"
 ADMIN_CROSS_COMPANY = "admin.cross_company"
@@ -31,7 +32,7 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
     "employee": {
         AUTH_READ_CONTEXT,
         PROJECTS_READ,
-        TASKS_MEMBERS_MANAGE,
+        TASKS_MEMBERS_SELF,
         TIME_CLOCK_READ,
         TIME_CLOCK_PUNCH,
     },
@@ -48,6 +49,7 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
         PROJECTS_ASSIGN,
         TASKS_CREATE,
         TASKS_UPDATE,
+        TASKS_MEMBERS_SELF,
         TASKS_MEMBERS_MANAGE,
         TIME_CLOCK_READ,
         TIME_CLOCK_PUNCH,
@@ -67,6 +69,7 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
         PROJECTS_ASSIGN,
         TASKS_CREATE,
         TASKS_UPDATE,
+        TASKS_MEMBERS_SELF,
         TASKS_MEMBERS_MANAGE,
         TIME_CLOCK_READ,
         TIME_CLOCK_PUNCH,
@@ -87,6 +90,7 @@ ROLE_PERMISSIONS: dict[str, set[str]] = {
         PROJECTS_ASSIGN,
         TASKS_CREATE,
         TASKS_UPDATE,
+        TASKS_MEMBERS_SELF,
         TASKS_MEMBERS_MANAGE,
         TIME_CLOCK_READ,
         TIME_CLOCK_PUNCH,

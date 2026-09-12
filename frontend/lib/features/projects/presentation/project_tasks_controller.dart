@@ -38,8 +38,7 @@ class ProjectTasksController extends ChangeNotifier {
 
   bool get canManageTasks => canManageProjects;
 
-  bool get canManageMembership =>
-      canManageProjects || authContext?.user.hasEmployeeProfile == true;
+  bool get canManageMembership => canManageProjects;
 
   bool get canManageOwnTaskMembership =>
       authContext?.user.hasEmployeeProfile == true &&
@@ -80,6 +79,21 @@ class ProjectTasksController extends ChangeNotifier {
     }
     return taskMembers.any((member) => member.employeeId == employeeId);
   }
+
+  bool get selectedTaskHasCapacity {
+    final project = selectedProject;
+    if (project == null) {
+      return false;
+    }
+    return taskMembers.length < project.taskEmployeeLimit;
+  }
+
+  bool get canJoinSelectedTask =>
+      canManageOwnTaskMembership &&
+      !currentEmployeeIsMember &&
+      !isLoadingMembers &&
+      membersError == null &&
+      selectedTaskHasCapacity;
 
   Future<void> start() async {
     isLoading = true;

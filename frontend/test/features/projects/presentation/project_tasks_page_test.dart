@@ -4,6 +4,7 @@ import 'package:bunchin_flutter/contracts/project.dart';
 import 'package:bunchin_flutter/contracts/task.dart';
 import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/projects/presentation/project_tasks_page.dart';
+import 'package:bunchin_flutter/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,6 +30,37 @@ void main() {
     expect(find.text('Adicionar membro'), findsOneWidget);
   });
 
+  testWidgets('selected project icon keeps contrast in dark theme',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        home: ProjectTasksPage(
+          api: _FakeProjectTasksApi(role: 'employee', employeeId: 'emp-04'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final projectChip = find.byType(ChoiceChip);
+    final projectIcon = find.descendant(
+      of: projectChip,
+      matching: find.byIcon(Icons.folder_open_rounded),
+    );
+
+    expect(projectIcon, findsOneWidget);
+    expect(
+      tester.widget<Icon>(projectIcon).color,
+      AppTheme.darkTheme.colorScheme.primary,
+    );
+    expect(
+      tester.widget<ChoiceChip>(projectChip).checkmarkColor,
+      AppTheme.darkTheme.colorScheme.primary,
+    );
+  });
+
   testWidgets('employee can access tasks without project editing actions',
       (tester) async {
     await tester.pumpWidget(
@@ -46,6 +78,8 @@ void main() {
     expect(find.text('Nova tarefa'), findsNothing);
     expect(find.text('Adicionar ao projeto'), findsNothing);
     expect(find.text('Entrar na tarefa'), findsOneWidget);
+    expect(find.text('Adicionar membro'), findsNothing);
+    expect(find.byTooltip('Remover da tarefa'), findsNothing);
   });
 
   testWidgets('project and task editors mirror backend text limits',
@@ -103,6 +137,21 @@ void main() {
     expect(taskDescriptionField.maxLength, taskDescriptionMaxLength);
   });
 
+  testWidgets('full task does not offer join action', (tester) async {
+    final api = _FakeProjectTasksApi(
+      role: 'employee',
+      employeeId: 'emp-04',
+      taskInitiallyFull: true,
+    );
+    await tester.pumpWidget(MaterialApp(home: ProjectTasksPage(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 de 2 vaga(s) ocupada(s).'), findsOneWidget);
+    expect(find.text('Entrar na tarefa'), findsNothing);
+    expect(find.text('Sair da tarefa'), findsNothing);
+    expect(api.joinCalls, 0);
+  });
+
   testWidgets('joining a task refreshes membership state', (tester) async {
     final api = _FakeProjectTasksApi(role: 'employee', employeeId: 'emp-04');
     await tester.pumpWidget(MaterialApp(home: ProjectTasksPage(api: api)));
@@ -120,10 +169,15 @@ void main() {
 }
 
 class _FakeProjectTasksApi extends BunchinApi {
-  _FakeProjectTasksApi({required this.role, required this.employeeId});
+  _FakeProjectTasksApi({
+    required this.role,
+    required this.employeeId,
+    this.taskInitiallyFull = false,
+  });
 
   final String role;
   final String? employeeId;
+  final bool taskInitiallyFull;
   int joinCalls = 0;
   bool joined = false;
 
@@ -204,6 +258,22 @@ class _FakeProjectTasksApi extends BunchinApi {
     String projectId,
     String taskId,
   ) async {
+    if (taskInitiallyFull) {
+      return <TaskMemberSummary>[
+        TaskMemberSummary(
+          employeeId: 'emp-05',
+          taskId: taskId,
+          employeeName: 'Ana Lima',
+          createdAt: DateTime(2026, 9, 9),
+        ),
+        TaskMemberSummary(
+          employeeId: 'emp-06',
+          taskId: taskId,
+          employeeName: 'Bruno Costa',
+          createdAt: DateTime(2026, 9, 9),
+        ),
+      ];
+    }
     if (!joined || employeeId == null) {
       return <TaskMemberSummary>[];
     }

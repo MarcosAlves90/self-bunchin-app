@@ -77,7 +77,7 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
       highlightChips: <Widget>[
         if (_controller.canManageProjects)
           const WorkspaceHighlightChip(label: 'Acesso gerencial'),
-        if (_controller.canManageMembership)
+        if (_controller.canManageOwnTaskMembership)
           const WorkspaceHighlightChip(label: 'Participação em tarefas'),
       ],
     );
@@ -176,12 +176,14 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
                 final selected = project.id == _controller.selectedProjectId;
                 return ChoiceChip(
                   selected: selected,
+                  checkmarkColor: Theme.of(context).colorScheme.primary,
                   label: Text(project.name),
                   avatar: Icon(
                     project.status == ProjectStatus.active
                         ? Icons.folder_open_rounded
                         : Icons.folder_off_outlined,
                     size: 18,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   onSelected: _controller.isMutating
                       ? null
@@ -433,29 +435,29 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
                 '${_controller.taskMembers.length} de ${project.taskEmployeeLimit} vaga(s) ocupada(s).',
             maxContentWidth: 520,
             actions: <Widget>[
-              if (_controller.canManageOwnTaskMembership)
-                if (_controller.currentEmployeeIsMember)
-                  OutlinedButton.icon(
-                    onPressed: _controller.isMutating
-                        ? null
-                        : () => _runAction(
-                              _controller.leaveSelectedTask,
-                              successMessage: 'Você saiu da tarefa.',
-                            ),
-                    icon: const Icon(Icons.logout_rounded),
-                    label: const Text('Sair da tarefa'),
-                  )
-                else
-                  FilledButton.tonalIcon(
-                    onPressed: _controller.isMutating
-                        ? null
-                        : () => _runAction(
-                              _controller.joinSelectedTask,
-                              successMessage: 'Você entrou na tarefa.',
-                            ),
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('Entrar na tarefa'),
-                  ),
+              if (_controller.canManageOwnTaskMembership &&
+                  _controller.currentEmployeeIsMember)
+                OutlinedButton.icon(
+                  onPressed: _controller.isMutating
+                      ? null
+                      : () => _runAction(
+                            _controller.leaveSelectedTask,
+                            successMessage: 'Você saiu da tarefa.',
+                          ),
+                  icon: const Icon(Icons.logout_rounded),
+                  label: const Text('Sair da tarefa'),
+                )
+              else if (_controller.canJoinSelectedTask)
+                FilledButton.tonalIcon(
+                  onPressed: _controller.isMutating
+                      ? null
+                      : () => _runAction(
+                            _controller.joinSelectedTask,
+                            successMessage: 'Você entrou na tarefa.',
+                          ),
+                  icon: const Icon(Icons.person_add_alt_1_rounded),
+                  label: const Text('Entrar na tarefa'),
+                ),
               if (_controller.canManageMembership)
                 OutlinedButton.icon(
                   onPressed:
@@ -469,7 +471,7 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
           if (!_controller.canManageMembership)
             const _InfoBanner(
               message:
-                  'Sua conta pode consultar participantes, mas não gerenciar responsabilidades nesta tarefa.',
+                  'Você pode entrar ou sair da tarefa, mas somente gestores podem adicionar ou remover outras pessoas.',
             ),
           if (_controller.isLoadingMembers)
             const Padding(

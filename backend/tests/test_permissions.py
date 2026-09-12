@@ -55,9 +55,11 @@ def test_task_permissions_by_role():
     employee_permissions = get_permissions_for_role("employee")
     assert "tasks.create" not in employee_permissions
     assert "tasks.update" not in employee_permissions
-    assert "tasks.members.manage" in employee_permissions
+    assert "tasks.members.self" in employee_permissions
+    assert "tasks.members.manage" not in employee_permissions
 
     manager_permissions = get_permissions_for_role("manager")
     assert "tasks.create" in manager_permissions
     assert "tasks.update" in manager_permissions
+    assert "tasks.members.self" in manager_permissions
     assert "tasks.members.manage" in manager_permissions

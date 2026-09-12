@@ -220,7 +220,7 @@ def test_task_hierarchy_persists_and_rejects_invalid_relationships(client):
     assert indirect_cycle.status_code == 409
 
 
-def test_employee_can_join_leave_and_manage_other_task_members_with_capacity(client):
+def test_employee_can_join_leave_and_manager_can_manage_other_task_members_with_capacity(client):
     manager_headers = _manager_headers(client)
     employee_headers = _employee_headers(client)
     project = _create_project(client, manager_headers, limit=2)
@@ -236,14 +236,17 @@ def test_employee_can_join_leave_and_manage_other_task_members_with_capacity(cli
     duplicate_join = client.post(f"{base}/me", headers=employee_headers)
     assert duplicate_join.status_code == 200
 
-    added_other = client.post(base, headers=employee_headers, json={"employeeId": "emp-05"})
+    forbidden_add = client.post(base, headers=employee_headers, json={"employeeId": "emp-05"})
+    assert forbidden_add.status_code == 403
+
+    added_other = client.post(base, headers=manager_headers, json={"employeeId": "emp-05"})
     assert added_other.status_code == 201
     assert added_other.json()["employeeId"] == "emp-05"
 
-    duplicate_other = client.post(base, headers=employee_headers, json={"employeeId": "emp-05"})
+    duplicate_other = client.post(base, headers=manager_headers, json={"employeeId": "emp-05"})
     assert duplicate_other.status_code == 200
 
-    full = client.post(base, headers=employee_headers, json={"employeeId": "emp-03"})
+    full = client.post(base, headers=manager_headers, json={"employeeId": "emp-03"})
     assert full.status_code == 409
     assert full.json()["detail"] == "Task employee capacity reached."
 
@@ -251,12 +254,15 @@ def test_employee_can_join_leave_and_manage_other_task_members_with_capacity(cli
     assert members.status_code == 200
     assert {item["employeeId"] for item in members.json()} == {"emp-04", "emp-05"}
 
-    removed_other = client.delete(f"{base}/emp-05", headers=employee_headers)
+    forbidden_remove = client.delete(f"{base}/emp-05", headers=employee_headers)
+    assert forbidden_remove.status_code == 403
+
+    removed_other = client.delete(f"{base}/emp-05", headers=manager_headers)
     assert removed_other.status_code == 204
-    duplicate_remove_other = client.delete(f"{base}/emp-05", headers=employee_headers)
+    duplicate_remove_other = client.delete(f"{base}/emp-05", headers=manager_headers)
     assert duplicate_remove_other.status_code == 204
 
-    newly_available = client.post(base, headers=employee_headers, json={"employeeId": "emp-03"})
+    newly_available = client.post(base, headers=manager_headers, json={"employeeId": "emp-03"})
     assert newly_available.status_code == 201
 
     left = client.delete(f"{base}/me", headers=employee_headers)
@@ -281,7 +287,7 @@ def test_task_membership_rejects_unknown_employee_and_cross_project_task_lookup(
 
     unknown = client.post(
         f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members",
-        headers=employee_headers,
+        headers=manager_headers,
         json={"employeeId": "missing"},
     )
     assert unknown.status_code == 404
@@ -307,7 +313,7 @@ def test_task_membership_requires_project_access(client):
     _assign_project_member(client, manager_headers, project["id"], "emp-04")
     other_not_in_project = client.post(
         base,
-        headers=employee_headers,
+        headers=manager_headers,
         json={"employeeId": "emp-05"},
     )
     assert other_not_in_project.status_code == 409
@@ -316,7 +322,7 @@ def test_task_membership_requires_project_access(client):
     _assign_project_member(client, manager_headers, project["id"], "emp-05")
     accepted = client.post(
         base,
-        headers=employee_headers,
+        headers=manager_headers,
         json={"employeeId": "emp-05"},
     )
     assert accepted.status_code == 201
@@ -332,7 +338,7 @@ def test_project_capacity_cannot_be_lowered_below_existing_task_members(client):
     base = f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members"
     assert client.post(f"{base}/me", headers=employee_headers).status_code == 201
     assert (
-        client.post(base, headers=employee_headers, json={"employeeId": "emp-05"}).status_code
+        client.post(base, headers=manager_headers, json={"employeeId": "emp-05"}).status_code
         == 201
     )
 

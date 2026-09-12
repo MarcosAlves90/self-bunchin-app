@@ -135,7 +135,7 @@ def join_task_route(
     project_id: str,
     task_id: str,
     response: Response,
-    context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
+    context: AuthenticatedContext = Depends(require_permission("tasks.members.self")),
     db: Session = Depends(get_db),
 ) -> TaskMemberSummary:
     _ensure_project_access(db, context=context, project_id=project_id)
@@ -155,7 +155,7 @@ def join_task_route(
 def leave_task_route(
     project_id: str,
     task_id: str,
-    context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
+    context: AuthenticatedContext = Depends(require_permission("tasks.members.self")),
     db: Session = Depends(get_db),
 ) -> Response:
     _ensure_project_access(db, context=context, project_id=project_id)
