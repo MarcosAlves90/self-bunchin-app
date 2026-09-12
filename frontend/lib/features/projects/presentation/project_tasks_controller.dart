@@ -14,16 +14,19 @@ class ProjectTasksController extends ChangeNotifier {
   AuthContext? authContext;
   List<ProjectSummary> projects = <ProjectSummary>[];
   List<TaskRecord> tasks = <TaskRecord>[];
+  List<ProjectMemberSummary> projectMembers = <ProjectMemberSummary>[];
   List<TaskMemberSummary> taskMembers = <TaskMemberSummary>[];
   List<EmployeeProfile> employees = <EmployeeProfile>[];
   String? selectedProjectId;
   String? selectedTaskId;
   bool isLoading = true;
   bool isLoadingTasks = false;
+  bool isLoadingProjectMembers = false;
   bool isLoadingMembers = false;
   bool isMutating = false;
   String? loadError;
   String? tasksError;
+  String? projectMembersError;
   String? membersError;
 
   bool get canManageProjects {
@@ -35,7 +38,12 @@ class ProjectTasksController extends ChangeNotifier {
 
   bool get canManageTasks => canManageProjects;
 
-  bool get canManageMembership => authContext?.user.hasEmployeeProfile == true;
+  bool get canManageMembership =>
+      canManageProjects || authContext?.user.hasEmployeeProfile == true;
+
+  bool get canManageOwnTaskMembership =>
+      authContext?.user.hasEmployeeProfile == true &&
+      currentEmployeeIsProjectMember;
 
   String? get currentEmployeeId => authContext?.user.employeeId;
 
@@ -55,6 +63,14 @@ class ProjectTasksController extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  bool get currentEmployeeIsProjectMember {
+    final employeeId = currentEmployeeId;
+    if (employeeId == null) {
+      return false;
+    }
+    return projectMembers.any((member) => member.employeeId == employeeId);
   }
 
   bool get currentEmployeeIsMember {
@@ -79,11 +95,13 @@ class ProjectTasksController extends ChangeNotifier {
 
       if (projects.isNotEmpty) {
         selectedProjectId = projects.first.id;
+        await _loadProjectMembersForSelectedProject(notifyLoading: false);
         await _loadTasksForSelectedProject(notifyLoading: false);
       } else {
         selectedProjectId = null;
         selectedTaskId = null;
         tasks = <TaskRecord>[];
+        projectMembers = <ProjectMemberSummary>[];
         taskMembers = <TaskMemberSummary>[];
       }
       isLoading = false;
@@ -98,15 +116,52 @@ class ProjectTasksController extends ChangeNotifier {
   Future<void> retry() => start();
 
   Future<void> selectProject(String projectId) async {
-    if (selectedProjectId == projectId && tasksError == null) {
+    if (selectedProjectId == projectId &&
+        tasksError == null &&
+        projectMembersError == null) {
       return;
     }
     selectedProjectId = projectId;
     selectedTaskId = null;
+    projectMembers = <ProjectMemberSummary>[];
     taskMembers = <TaskMemberSummary>[];
+    projectMembersError = null;
     membersError = null;
     notifyListeners();
+    await _loadProjectMembersForSelectedProject();
     await _loadTasksForSelectedProject();
+  }
+
+  Future<void> reloadProjectMembers() =>
+      _loadProjectMembersForSelectedProject();
+
+  Future<void> _loadProjectMembersForSelectedProject({
+    bool notifyLoading = true,
+  }) async {
+    final projectId = selectedProjectId;
+    if (projectId == null) {
+      projectMembers = <ProjectMemberSummary>[];
+      return;
+    }
+
+    isLoadingProjectMembers = true;
+    projectMembersError = null;
+    if (notifyLoading) {
+      notifyListeners();
+    }
+
+    try {
+      projectMembers = await _api.listProjectMembers(projectId);
+      isLoadingProjectMembers = false;
+      notifyListeners();
+    } catch (error) {
+      isLoadingProjectMembers = false;
+      projectMembersError = _errorMessage(
+        error,
+        'Não foi possível carregar os acessos do projeto.',
+      );
+      notifyListeners();
+    }
   }
 
   Future<void> reloadTasks() => _loadTasksForSelectedProject();
@@ -194,7 +249,9 @@ class ProjectTasksController extends ChangeNotifier {
       selectedProjectId = created.id;
       selectedTaskId = null;
       tasks = <TaskRecord>[];
+      projectMembers = <ProjectMemberSummary>[];
       taskMembers = <TaskMemberSummary>[];
+      await _loadProjectMembersForSelectedProject(notifyLoading: false);
       await _loadTasksForSelectedProject(notifyLoading: false);
       return created;
     });
@@ -221,11 +278,36 @@ class ProjectTasksController extends ChangeNotifier {
         selectedProjectId = projects.isEmpty ? null : projects.first.id;
         selectedTaskId = null;
         tasks = <TaskRecord>[];
+        projectMembers = <ProjectMemberSummary>[];
         taskMembers = <TaskMemberSummary>[];
         if (selectedProjectId != null) {
+          await _loadProjectMembersForSelectedProject(notifyLoading: false);
           await _loadTasksForSelectedProject(notifyLoading: false);
         }
       }
+    });
+  }
+
+  Future<void> addMemberToSelectedProject(String employeeId) async {
+    final projectId = selectedProjectId;
+    if (projectId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.addProjectMember(projectId, employeeId);
+      await _loadProjectMembersForSelectedProject(notifyLoading: false);
+    });
+  }
+
+  Future<void> removeMemberFromSelectedProject(String employeeId) async {
+    final projectId = selectedProjectId;
+    if (projectId == null) {
+      return;
+    }
+    await _mutate(() async {
+      await _api.removeProjectMember(projectId, employeeId);
+      await _loadProjectMembersForSelectedProject(notifyLoading: false);
+      await _loadMembersForSelectedTask(notifyLoading: false);
     });
   }
 

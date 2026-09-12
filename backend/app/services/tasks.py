@@ -7,7 +7,7 @@ from app.db import begin_serialized_write
 from app.domain.project_read import cipher, employee_or_404
 from app.domain.task_read import serialize_task, serialize_task_member
 from app.errors import DomainError, ErrorKind
-from app.models import Project, Task, TaskEmployee
+from app.models import EmployeeProject, Project, Task, TaskEmployee
 from app.schemas.task import TaskDraftPayload, TaskMemberSummary, TaskResponse, TaskType
 
 
@@ -142,6 +142,14 @@ def add_task_member(
     project = _locked_project_or_404(db, company_id=company_id, project_id=project_id)
     task = _locked_task_or_404(db, project_id=project_id, task_id=task_id)
     employee = employee_or_404(db, company_id=company_id, employee_id=employee_id)
+    project_link = db.scalar(
+        select(EmployeeProject).where(
+            EmployeeProject.project_id == project.id,
+            EmployeeProject.employee_id == employee.id,
+        ),
+    )
+    if project_link is None:
+        raise DomainError(ErrorKind.conflict, "Employee is not assigned to this project.")
 
     existing = db.scalar(
         select(TaskEmployee)

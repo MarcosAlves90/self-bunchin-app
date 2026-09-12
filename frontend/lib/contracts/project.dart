@@ -1,5 +1,8 @@
 import 'package:bunchin_flutter/contracts/contract_parsing.dart';
 
+const int projectNameMaxLength = 160;
+const int projectDescriptionMaxLength = 2000;
+
 enum ProjectStatus { active, inactive }
 
 ProjectStatus projectStatusFromApi(String value) {
@@ -47,6 +50,30 @@ class ProjectSummary {
       status: projectStatusFromApi(requireString(json, 'status')),
       createdAt: requireDateTime(json, 'createdAt'),
       updatedAt: requireDateTime(json, 'updatedAt'),
+    );
+  }
+}
+
+
+class ProjectMemberSummary {
+  const ProjectMemberSummary({
+    required this.employeeId,
+    required this.projectId,
+    required this.employeeName,
+    required this.createdAt,
+  });
+
+  final String employeeId;
+  final String projectId;
+  final String employeeName;
+  final DateTime createdAt;
+
+  factory ProjectMemberSummary.fromJson(JsonMap json) {
+    return ProjectMemberSummary(
+      employeeId: requireString(json, 'employeeId'),
+      projectId: requireString(json, 'projectId'),
+      employeeName: requireString(json, 'employeeName'),
+      createdAt: requireDateTime(json, 'createdAt'),
     );
   }
 }

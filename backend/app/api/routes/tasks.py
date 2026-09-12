@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.authorization import require_permission
+from app.authorization import is_managerial_role, require_permission
 from app.dependencies import get_db
+from app.domain.project_read import project_or_404
 from app.domain.task_read import get_task, list_task_members, list_tasks
 from app.schemas.task import TaskDraftPayload, TaskMemberPayload, TaskMemberSummary, TaskResponse
 from app.services.auth import AuthenticatedContext
@@ -23,13 +24,41 @@ def _employee_id_or_403(context: AuthenticatedContext) -> str:
     return context.employee.id
 
 
+def _project_read_employee_id(context: AuthenticatedContext) -> str | None:
+    if is_managerial_role(context.user.role):
+        return None
+    return _employee_id_or_403(context)
+
+
+def _ensure_project_access(
+    db: Session,
+    *,
+    context: AuthenticatedContext,
+    project_id: str,
+) -> None:
+    employee_id = _project_read_employee_id(context)
+    if employee_id is None:
+        return
+    project_or_404(
+        db,
+        company_id=context.company.id,
+        project_id=project_id,
+        employee_id=employee_id,
+    )
+
+
 @router.get("/{project_id}/tasks", response_model=list[TaskResponse])
 def list_tasks_route(
     project_id: str,
     context: AuthenticatedContext = Depends(require_permission("projects.read")),
     db: Session = Depends(get_db),
 ) -> list[TaskResponse]:
-    return list_tasks(db, company_id=context.company.id, project_id=project_id)
+    return list_tasks(
+        db,
+        company_id=context.company.id,
+        project_id=project_id,
+        employee_id=_project_read_employee_id(context),
+    )
 
 
 @router.post("/{project_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -59,6 +88,7 @@ def get_task_route(
         company_id=context.company.id,
         project_id=project_id,
         task_id=task_id,
+        employee_id=_project_read_employee_id(context),
     )
 
 
@@ -92,6 +122,7 @@ def list_task_members_route(
         company_id=context.company.id,
         project_id=project_id,
         task_id=task_id,
+        employee_id=_project_read_employee_id(context),
     )
 
 
@@ -107,6 +138,7 @@ def join_task_route(
     context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
     db: Session = Depends(get_db),
 ) -> TaskMemberSummary:
+    _ensure_project_access(db, context=context, project_id=project_id)
     member, created = add_task_member(
         db,
         company_id=context.company.id,
@@ -126,6 +158,7 @@ def leave_task_route(
     context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
     db: Session = Depends(get_db),
 ) -> Response:
+    _ensure_project_access(db, context=context, project_id=project_id)
     remove_task_member(
         db,
         company_id=context.company.id,
@@ -149,7 +182,7 @@ def add_task_member_route(
     context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
     db: Session = Depends(get_db),
 ) -> TaskMemberSummary:
-    _employee_id_or_403(context)
+    _ensure_project_access(db, context=context, project_id=project_id)
     member, created = add_task_member(
         db,
         company_id=context.company.id,
@@ -173,7 +206,7 @@ def remove_task_member_route(
     context: AuthenticatedContext = Depends(require_permission("tasks.members.manage")),
     db: Session = Depends(get_db),
 ) -> Response:
-    _employee_id_or_403(context)
+    _ensure_project_access(db, context=context, project_id=project_id)
     remove_task_member(
         db,
         company_id=context.company.id,

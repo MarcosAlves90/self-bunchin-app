@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.crypto import FieldCipher
 from app.domain.project_read import cipher, project_or_404
 from app.errors import DomainError, ErrorKind
-from app.models import Employee, Project, Task, TaskEmployee
+from app.models import Employee, Task, TaskEmployee
 from app.schemas.task import TaskMemberSummary, TaskResponse
 
 
@@ -16,15 +16,16 @@ def task_or_404(
     company_id: str,
     project_id: str,
     task_id: str,
+    employee_id: str | None = None,
 ) -> Task:
+    project_or_404(
+        db,
+        company_id=company_id,
+        project_id=project_id,
+        employee_id=employee_id,
+    )
     task = db.scalar(
-        select(Task)
-        .join(Project, Project.id == Task.project_id)
-        .where(
-            Project.company_id == company_id,
-            Task.project_id == project_id,
-            Task.id == task_id,
-        ),
+        select(Task).where(Task.project_id == project_id, Task.id == task_id),
     )
     if task is None:
         raise DomainError(ErrorKind.not_found, "Task not found.")
@@ -53,9 +54,20 @@ def serialize_task_member(link: TaskEmployee, *, field_cipher: FieldCipher) -> T
     )
 
 
-def list_tasks(db: Session, *, company_id: str, project_id: str) -> list[TaskResponse]:
+def list_tasks(
+    db: Session,
+    *,
+    company_id: str,
+    project_id: str,
+    employee_id: str | None = None,
+) -> list[TaskResponse]:
     field_cipher = cipher()
-    project_or_404(db, company_id=company_id, project_id=project_id)
+    project_or_404(
+        db,
+        company_id=company_id,
+        project_id=project_id,
+        employee_id=employee_id,
+    )
     tasks = db.scalars(
         select(Task)
         .where(Task.project_id == project_id)
@@ -70,6 +82,7 @@ def get_task(
     company_id: str,
     project_id: str,
     task_id: str,
+    employee_id: str | None = None,
 ) -> TaskResponse:
     field_cipher = cipher()
     task = task_or_404(
@@ -77,6 +90,7 @@ def get_task(
         company_id=company_id,
         project_id=project_id,
         task_id=task_id,
+        employee_id=employee_id,
     )
     return serialize_task(task, field_cipher=field_cipher)
 
@@ -87,6 +101,7 @@ def list_task_members(
     company_id: str,
     project_id: str,
     task_id: str,
+    employee_id: str | None = None,
 ) -> list[TaskMemberSummary]:
     field_cipher = cipher()
     task_or_404(
@@ -94,6 +109,7 @@ def list_task_members(
         company_id=company_id,
         project_id=project_id,
         task_id=task_id,
+        employee_id=employee_id,
     )
     links = db.scalars(
         select(TaskEmployee)

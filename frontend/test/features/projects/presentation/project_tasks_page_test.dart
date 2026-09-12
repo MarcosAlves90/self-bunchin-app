@@ -23,6 +23,8 @@ void main() {
     expect(find.text('Implementar tela'), findsWidgets);
     expect(find.text('Novo projeto'), findsOneWidget);
     expect(find.text('Nova tarefa'), findsOneWidget);
+    expect(find.text('Acesso ao projeto'), findsOneWidget);
+    expect(find.text('Adicionar ao projeto'), findsOneWidget);
     expect(find.text('Entrar na tarefa'), findsOneWidget);
     expect(find.text('Adicionar membro'), findsOneWidget);
   });
@@ -42,7 +44,61 @@ void main() {
     expect(find.text('Implementar tela'), findsWidgets);
     expect(find.text('Novo projeto'), findsNothing);
     expect(find.text('Nova tarefa'), findsNothing);
+    expect(find.text('Adicionar ao projeto'), findsNothing);
     expect(find.text('Entrar na tarefa'), findsOneWidget);
+  });
+
+  testWidgets('project and task editors mirror backend text limits',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ProjectTasksPage(
+          api: _FakeProjectTasksApi(role: 'manager', employeeId: 'emp-02'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Novo projeto'));
+    await tester.pumpAndSettle();
+
+    final projectNameField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == 'Nome',
+      ),
+    );
+    final projectDescriptionField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Descrição',
+      ),
+    );
+    expect(projectNameField.maxLength, projectNameMaxLength);
+    expect(projectDescriptionField.maxLength, projectDescriptionMaxLength);
+
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Nova tarefa'));
+    await tester.pumpAndSettle();
+
+    final taskNameField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == 'Nome',
+      ),
+    );
+    final taskDescriptionField = tester.widget<TextField>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'Descrição',
+      ),
+    );
+    expect(taskNameField.maxLength, taskNameMaxLength);
+    expect(taskDescriptionField.maxLength, taskDescriptionMaxLength);
   });
 
   testWidgets('joining a task refreshes membership state', (tester) async {
@@ -50,7 +106,9 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: ProjectTasksPage(api: api)));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Entrar na tarefa'));
+    final joinButton = find.text('Entrar na tarefa');
+    await tester.ensureVisible(joinButton);
+    await tester.tap(joinButton);
     await tester.pumpAndSettle();
 
     expect(api.joinCalls, 1);
@@ -98,6 +156,27 @@ class _FakeProjectTasksApi extends BunchinApi {
         status: ProjectStatus.active,
         createdAt: DateTime(2026, 9, 9),
         updatedAt: DateTime(2026, 9, 9),
+      ),
+    ];
+  }
+
+  @override
+  Future<List<ProjectMemberSummary>> listProjectMembers(String projectId) async {
+    if (employeeId == null) {
+      return <ProjectMemberSummary>[];
+    }
+    return <ProjectMemberSummary>[
+      ProjectMemberSummary(
+        employeeId: employeeId!,
+        projectId: projectId,
+        employeeName: role == 'manager' ? 'Caio Martins' : 'João Lima',
+        createdAt: DateTime(2026, 9, 9),
+      ),
+      ProjectMemberSummary(
+        employeeId: 'emp-05',
+        projectId: projectId,
+        employeeName: 'Ana Lima',
+        createdAt: DateTime(2026, 9, 9),
       ),
     ];
   }

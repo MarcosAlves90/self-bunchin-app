@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select, text
 
 from app.db import SessionLocal
-from app.models import Punch
+from app.models import Punch, TaskEmployee
 
 from test_api import TEST_SEED_SECRET, login_headers, login_headers_for
 
@@ -139,15 +139,84 @@ def test_project_member_assignment_and_employee_project_listing(client):
         assert link is None
 
 
-def test_employee_can_read_but_cannot_create_projects(client):
+
+def test_removing_project_member_revokes_task_assignments(client):
+    admin_headers = login_headers(client)
     employee_headers = login_headers_for(
         client,
         email="joao.lima@bunchin.com",
         password=TEST_SEED_SECRET,
     )
+    project = _create_project(client, admin_headers, name="Projeto revogável")
+    assert client.post(
+        f"/api/v1/projects/{project['id']}/members",
+        headers=admin_headers,
+        json={"employeeId": "emp-04"},
+    ).status_code == 201
+    task_response = client.post(
+        f"/api/v1/projects/{project['id']}/tasks",
+        headers=admin_headers,
+        json={
+            "name": "Responsabilidade temporária",
+            "description": "Será removida com o acesso ao projeto.",
+            "type": "feature",
+        },
+    )
+    assert task_response.status_code == 201
+    task = task_response.json()
+    assert client.post(
+        f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members/me",
+        headers=employee_headers,
+    ).status_code == 201
+
+    remove_response = client.delete(
+        f"/api/v1/projects/{project['id']}/members/emp-04",
+        headers=admin_headers,
+    )
+    assert remove_response.status_code == 204
+
+    with SessionLocal() as db:
+        task_link = db.scalar(
+            select(TaskEmployee).where(
+                TaskEmployee.task_id == task["id"],
+                TaskEmployee.employee_id == "emp-04",
+            ),
+        )
+        assert task_link is None
+
+    project_response = client.get(
+        f"/api/v1/projects/{project['id']}",
+        headers=employee_headers,
+    )
+    assert project_response.status_code == 404
+
+
+def test_employee_can_read_only_assigned_projects_and_cannot_create_projects(client):
+    admin_headers = login_headers(client)
+    employee_headers = login_headers_for(
+        client,
+        email="joao.lima@bunchin.com",
+        password=TEST_SEED_SECRET,
+    )
+    assigned = _create_project(client, admin_headers, name="Projeto permitido")
+    hidden = _create_project(client, admin_headers, name="Projeto oculto")
+    assign_response = client.post(
+        f"/api/v1/projects/{assigned['id']}/members",
+        headers=admin_headers,
+        json={"employeeId": "emp-04"},
+    )
+    assert assign_response.status_code == 201
 
     list_response = client.get("/api/v1/projects", headers=employee_headers)
     assert list_response.status_code == 200
+    listed_ids = {item["id"] for item in list_response.json()}
+    assert assigned["id"] in listed_ids
+    assert hidden["id"] not in listed_ids
+
+    allowed_get = client.get(f"/api/v1/projects/{assigned['id']}", headers=employee_headers)
+    assert allowed_get.status_code == 200
+    hidden_get = client.get(f"/api/v1/projects/{hidden['id']}", headers=employee_headers)
+    assert hidden_get.status_code == 404
 
     create_response = client.post(
         "/api/v1/projects",

@@ -20,6 +20,15 @@ def _employee_headers(client):
     return login_headers_for(client, email=EMPLOYEE_EMAIL, password=TEST_SEED_SECRET)
 
 
+def _assign_project_member(client, headers, project_id: str, employee_id: str) -> None:
+    response = client.post(
+        f"/api/v1/projects/{project_id}/members",
+        headers=headers,
+        json={"employeeId": employee_id},
+    )
+    assert response.status_code in {200, 201}, response.text
+
+
 def _create_project(client, headers, *, name="Projeto Tasks", limit=2):
     response = client.post(
         "/api/v1/projects",
@@ -87,6 +96,7 @@ def test_manager_can_create_typed_tasks_and_employee_cannot(client):
         task_type="improvement",
     )
     assert improvement["type"] == "improvement"
+    _assign_project_member(client, manager_headers, project["id"], "emp-04")
 
     denied = client.post(
         f"/api/v1/projects/{project['id']}/tasks",
@@ -214,6 +224,8 @@ def test_employee_can_join_leave_and_manage_other_task_members_with_capacity(cli
     manager_headers = _manager_headers(client)
     employee_headers = _employee_headers(client)
     project = _create_project(client, manager_headers, limit=2)
+    for employee_id in ("emp-03", "emp-04", "emp-05"):
+        _assign_project_member(client, manager_headers, project["id"], employee_id)
     task = _create_task(client, manager_headers, project["id"])
     base = f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members"
 
@@ -264,6 +276,7 @@ def test_task_membership_rejects_unknown_employee_and_cross_project_task_lookup(
     employee_headers = _employee_headers(client)
     project = _create_project(client, manager_headers)
     other_project = _create_project(client, manager_headers, name="Outro")
+    _assign_project_member(client, manager_headers, project["id"], "emp-04")
     task = _create_task(client, manager_headers, project["id"])
 
     unknown = client.post(
@@ -280,10 +293,41 @@ def test_task_membership_rejects_unknown_employee_and_cross_project_task_lookup(
     assert wrong_project.status_code == 404
 
 
+
+def test_task_membership_requires_project_access(client):
+    manager_headers = _manager_headers(client)
+    employee_headers = _employee_headers(client)
+    project = _create_project(client, manager_headers, limit=2)
+    task = _create_task(client, manager_headers, project["id"])
+    base = f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members"
+
+    self_join = client.post(f"{base}/me", headers=employee_headers)
+    assert self_join.status_code == 404
+
+    _assign_project_member(client, manager_headers, project["id"], "emp-04")
+    other_not_in_project = client.post(
+        base,
+        headers=employee_headers,
+        json={"employeeId": "emp-05"},
+    )
+    assert other_not_in_project.status_code == 409
+    assert other_not_in_project.json()["detail"] == "Employee is not assigned to this project."
+
+    _assign_project_member(client, manager_headers, project["id"], "emp-05")
+    accepted = client.post(
+        base,
+        headers=employee_headers,
+        json={"employeeId": "emp-05"},
+    )
+    assert accepted.status_code == 201
+
+
 def test_project_capacity_cannot_be_lowered_below_existing_task_members(client):
     manager_headers = _manager_headers(client)
     employee_headers = _employee_headers(client)
     project = _create_project(client, manager_headers, limit=2)
+    for employee_id in ("emp-04", "emp-05"):
+        _assign_project_member(client, manager_headers, project["id"], employee_id)
     task = _create_task(client, manager_headers, project["id"])
     base = f"/api/v1/projects/{project['id']}/tasks/{task['id']}/members"
     assert client.post(f"{base}/me", headers=employee_headers).status_code == 201
@@ -344,7 +388,7 @@ def test_concurrent_task_membership_cannot_exceed_capacity(tmp_path):
     from app.schemas.project import ProjectDraftPayload
     from app.schemas.task import TaskDraftPayload
     from app.seed import seed_database
-    from app.services.projects import create_project
+    from app.services.projects import assign_project_member, create_project
     from app.services.tasks import add_task_member, create_task
 
     engine = create_engine(
@@ -365,6 +409,13 @@ def test_concurrent_task_membership_cannot_exceed_capacity(tmp_path):
                 task_employee_limit=1,
             ),
         )
+        for employee_id in ("emp-04", "emp-05"):
+            assign_project_member(
+                db,
+                company_id="company-bunchin",
+                project_id=project.id,
+                employee_id=employee_id,
+            )
         task = create_task(
             db,
             company_id="company-bunchin",

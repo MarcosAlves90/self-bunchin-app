@@ -9,15 +9,21 @@ void main() {
     final client = _ProjectTaskApiClient(
       getResponses: <String, dynamic>{
         '/projects': <dynamic>[_projectJson()],
+        '/projects/project-01/members': <dynamic>[_projectMemberJson()],
       },
       postResponses: <String, dynamic>{
         '/projects': _projectJson(id: 'project-02', name: 'Novo projeto'),
+        '/projects/project-01/members': _projectMemberJson(
+          employeeId: 'emp-05',
+          employeeName: 'Ana Lima',
+        ),
       },
       putResponses: <String, dynamic>{
         '/projects/project-01': _projectJson(name: 'Projeto atualizado'),
       },
       deleteResponses: <String, dynamic>{
         '/projects/project-01': null,
+        '/projects/project-01/members/emp-05': null,
       },
     );
     final api = BunchinApi(client: client);
@@ -52,6 +58,19 @@ void main() {
     expect(updated.name, 'Projeto atualizado');
     expect(client.lastPath, '/projects/project-01');
     expect(client.lastWithAuth, isTrue);
+
+    final projectMembers = await api.listProjectMembers('project-01');
+    expect(projectMembers.single.employeeId, 'emp-04');
+
+    final addedProjectMember = await api.addProjectMember(
+      'project-01',
+      'emp-05',
+    );
+    expect(addedProjectMember.employeeName, 'Ana Lima');
+    expect(client.lastBody, <String, dynamic>{'employeeId': 'emp-05'});
+
+    await api.removeProjectMember('project-01', 'emp-05');
+    expect(client.lastPath, '/projects/project-01/members/emp-05');
 
     await api.deleteProject('project-01');
     expect(client.lastPath, '/projects/project-01');
@@ -146,6 +165,18 @@ Map<String, dynamic> _projectJson({
     'status': 'active',
     'createdAt': '2026-09-09T12:00:00Z',
     'updatedAt': '2026-09-09T12:00:00Z',
+  };
+}
+
+Map<String, dynamic> _projectMemberJson({
+  String employeeId = 'emp-04',
+  String employeeName = 'João Lima',
+}) {
+  return <String, dynamic>{
+    'employeeId': employeeId,
+    'projectId': 'project-01',
+    'employeeName': employeeName,
+    'createdAt': '2026-09-09T12:00:00Z',
   };
 }
 

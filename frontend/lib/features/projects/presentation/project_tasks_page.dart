@@ -6,6 +6,7 @@ import 'package:bunchin_flutter/core/network/bunchin_api.dart';
 import 'package:bunchin_flutter/features/projects/presentation/project_tasks_controller.dart';
 import 'package:bunchin_flutter/features/shared/presentation/widgets/workspace_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ProjectTasksPage extends StatefulWidget {
   const ProjectTasksPage({super.key, this.api, this.controller});
@@ -134,6 +135,8 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
             )
           else ...<Widget>[
             _buildSelectedProjectCard(),
+            const SizedBox(height: 20),
+            _buildProjectAccessCard(),
             const SizedBox(height: 20),
             _buildTasksCard(),
             const SizedBox(height: 20),
@@ -278,6 +281,78 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
     );
   }
 
+  Widget _buildProjectAccessCard() {
+    return WorkspaceSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          WorkspaceHeader(
+            title: 'Acesso ao projeto',
+            description:
+                'Somente os funcionários adicionados aqui podem visualizar o projeto e assumir responsabilidades nas tarefas.',
+            maxContentWidth: 620,
+            actions: <Widget>[
+              if (_controller.canManageProjects)
+                FilledButton.tonalIcon(
+                  onPressed: _controller.isMutating
+                      ? null
+                      : _openAddProjectMemberDialog,
+                  icon: const Icon(Icons.person_add_alt_1_rounded),
+                  label: const Text('Adicionar ao projeto'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (_controller.isLoadingProjectMembers)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_controller.projectMembersError != null)
+            _InlineError(
+              message: _controller.projectMembersError!,
+              onRetry: _controller.reloadProjectMembers,
+            )
+          else if (_controller.projectMembers.isEmpty)
+            const _EmptyState(
+              icon: Icons.group_off_outlined,
+              title: 'Nenhum funcionário com acesso',
+              description:
+                  'Adicione funcionários ao projeto antes de atribuí-los às tarefas.',
+            )
+          else
+            Column(
+              children: _controller.projectMembers.map((member) {
+                final isCurrent =
+                    member.employeeId == _controller.currentEmployeeId;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    child: Text(_initials(member.employeeName)),
+                  ),
+                  title: Text(member.employeeName),
+                  subtitle: Text(
+                    isCurrent
+                        ? 'Você • ${member.employeeId}'
+                        : member.employeeId,
+                  ),
+                  trailing: _controller.canManageProjects
+                      ? IconButton(
+                          tooltip: 'Remover acesso ao projeto',
+                          onPressed: _controller.isMutating
+                              ? null
+                              : () => _confirmRemoveProjectMember(member),
+                          icon: const Icon(Icons.person_remove_outlined),
+                        )
+                      : null,
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTasksCard() {
     return WorkspaceSectionCard(
       child: Column(
@@ -358,7 +433,7 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
                 '${_controller.taskMembers.length} de ${project.taskEmployeeLimit} vaga(s) ocupada(s).',
             maxContentWidth: 520,
             actions: <Widget>[
-              if (_controller.canManageMembership)
+              if (_controller.canManageOwnTaskMembership)
                 if (_controller.currentEmployeeIsMember)
                   OutlinedButton.icon(
                     onPressed: _controller.isMutating
@@ -394,7 +469,7 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
           if (!_controller.canManageMembership)
             const _InfoBanner(
               message:
-                  'Sua conta não possui perfil de funcionário associado; a participação em tarefas fica somente para consulta.',
+                  'Sua conta pode consultar participantes, mas não gerenciar responsabilidades nesta tarefa.',
             ),
           if (_controller.isLoadingMembers)
             const Padding(
@@ -558,11 +633,59 @@ class _ProjectTasksPageState extends State<ProjectTasksPage> {
     );
   }
 
+  Future<void> _openAddProjectMemberDialog() async {
+    final employeeId = await showDialog<String>(
+      context: context,
+      builder: (_) => _AddProjectMemberDialog(
+        employees: _controller.employees,
+        existingEmployeeIds: _controller.projectMembers
+            .map((member) => member.employeeId)
+            .toSet(),
+      ),
+    );
+    if (employeeId == null) {
+      return;
+    }
+    await _runAction(
+      () => _controller.addMemberToSelectedProject(employeeId),
+      successMessage: 'Funcionário adicionado ao projeto.',
+    );
+  }
+
+  Future<void> _confirmRemoveProjectMember(ProjectMemberSummary member) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remover acesso ao projeto'),
+        content: Text(
+          'Remover “${member.employeeName}” deste projeto? As responsabilidades dessa pessoa nas tarefas do projeto também serão removidas.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Remover'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    await _runAction(
+      () => _controller.removeMemberFromSelectedProject(member.employeeId),
+      successMessage: 'Acesso ao projeto removido.',
+    );
+  }
+
   Future<void> _openAddMemberDialog() async {
     final employeeId = await showDialog<String>(
       context: context,
       builder: (_) => _AddTaskMemberDialog(
-        employees: _controller.employees,
+        projectMembers: _controller.projectMembers,
         existingEmployeeIds: _controller.taskMembers
             .map((member) => member.employeeId)
             .toSet(),
@@ -753,16 +876,26 @@ class _ProjectEditorDialogState extends State<_ProjectEditorDialog> {
                 TextFormField(
                   controller: _nameController,
                   autofocus: true,
+                  maxLength: projectNameMaxLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   decoration: const InputDecoration(labelText: 'Nome'),
-                  validator: _requiredText,
+                  validator: (value) => _requiredTextWithinLimit(
+                    value,
+                    maxLength: projectNameMaxLength,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _descriptionController,
                   minLines: 3,
                   maxLines: 5,
+                  maxLength: projectDescriptionMaxLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   decoration: const InputDecoration(labelText: 'Descrição'),
-                  validator: _requiredText,
+                  validator: (value) => _requiredTextWithinLimit(
+                    value,
+                    maxLength: projectDescriptionMaxLength,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
@@ -888,16 +1021,26 @@ class _TaskEditorDialogState extends State<_TaskEditorDialog> {
                 TextFormField(
                   controller: _nameController,
                   autofocus: true,
+                  maxLength: taskNameMaxLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   decoration: const InputDecoration(labelText: 'Nome'),
-                  validator: _requiredText,
+                  validator: (value) => _requiredTextWithinLimit(
+                    value,
+                    maxLength: taskNameMaxLength,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _descriptionController,
                   minLines: 3,
                   maxLines: 5,
+                  maxLength: taskDescriptionMaxLength,
+                  maxLengthEnforcement: MaxLengthEnforcement.enforced,
                   decoration: const InputDecoration(labelText: 'Descrição'),
-                  validator: _requiredText,
+                  validator: (value) => _requiredTextWithinLimit(
+                    value,
+                    maxLength: taskDescriptionMaxLength,
+                  ),
                 ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<TaskType>(
@@ -979,8 +1122,8 @@ class _TaskEditorDialogState extends State<_TaskEditorDialog> {
   }
 }
 
-class _AddTaskMemberDialog extends StatefulWidget {
-  const _AddTaskMemberDialog({
+class _AddProjectMemberDialog extends StatefulWidget {
+  const _AddProjectMemberDialog({
     required this.employees,
     required this.existingEmployeeIds,
   });
@@ -989,19 +1132,13 @@ class _AddTaskMemberDialog extends StatefulWidget {
   final Set<String> existingEmployeeIds;
 
   @override
-  State<_AddTaskMemberDialog> createState() => _AddTaskMemberDialogState();
+  State<_AddProjectMemberDialog> createState() =>
+      _AddProjectMemberDialogState();
 }
 
-class _AddTaskMemberDialogState extends State<_AddTaskMemberDialog> {
+class _AddProjectMemberDialogState extends State<_AddProjectMemberDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _employeeIdController = TextEditingController();
   String? _selectedEmployeeId;
-
-  @override
-  void dispose() {
-    _employeeIdController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1012,20 +1149,18 @@ class _AddTaskMemberDialogState extends State<_AddTaskMemberDialog> {
         .toList();
 
     return AlertDialog(
-      title: const Text('Adicionar membro'),
+      title: const Text('Adicionar ao projeto'),
       content: SizedBox(
         width: 460,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (availableEmployees.isNotEmpty)
-                DropdownButtonFormField<String>(
+          child: availableEmployees.isEmpty
+              ? const Text(
+                  'Todos os funcionários disponíveis já possuem acesso a este projeto.',
+                )
+              : DropdownButtonFormField<String>(
                   initialValue: _selectedEmployeeId,
-                  decoration: const InputDecoration(
-                    labelText: 'Funcionário',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Funcionário'),
                   items: availableEmployees
                       .map(
                         (employee) => DropdownMenuItem<String>(
@@ -1034,30 +1169,13 @@ class _AddTaskMemberDialogState extends State<_AddTaskMemberDialog> {
                         ),
                       )
                       .toList(),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Selecione um funcionário.' : null,
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedEmployeeId = value;
-                      if (value != null) {
-                        _employeeIdController.text = value;
-                      }
-                    });
-                  },
-                )
-              else
-                TextFormField(
-                  controller: _employeeIdController,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    labelText: 'ID do funcionário',
-                    helperText:
-                        'Sua função não permite listar funcionários; informe o ID conhecido.',
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Selecione um funcionário.'
+                      : null,
+                  onChanged: (value) => setState(
+                    () => _selectedEmployeeId = value,
                   ),
-                  validator: _requiredText,
                 ),
-            ],
-          ),
         ),
       ),
       actions: <Widget>[
@@ -1066,17 +1184,94 @@ class _AddTaskMemberDialogState extends State<_AddTaskMemberDialog> {
           child: const Text('Cancelar'),
         ),
         FilledButton(
-          onPressed: () {
-            if (!_formKey.currentState!.validate()) {
-              return;
-            }
-            final employeeId =
-                _selectedEmployeeId ?? _employeeIdController.text.trim();
-            if (employeeId.isEmpty) {
-              return;
-            }
-            Navigator.of(context).pop(employeeId);
-          },
+          onPressed: availableEmployees.isEmpty
+              ? null
+              : () {
+                  if (!_formKey.currentState!.validate()) {
+                    return;
+                  }
+                  Navigator.of(context).pop(_selectedEmployeeId);
+                },
+          child: const Text('Adicionar'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddTaskMemberDialog extends StatefulWidget {
+  const _AddTaskMemberDialog({
+    required this.projectMembers,
+    required this.existingEmployeeIds,
+  });
+
+  final List<ProjectMemberSummary> projectMembers;
+  final Set<String> existingEmployeeIds;
+
+  @override
+  State<_AddTaskMemberDialog> createState() => _AddTaskMemberDialogState();
+}
+
+class _AddTaskMemberDialogState extends State<_AddTaskMemberDialog> {
+  final _formKey = GlobalKey<FormState>();
+  String? _selectedEmployeeId;
+
+  @override
+  Widget build(BuildContext context) {
+    final availableMembers = widget.projectMembers
+        .where(
+          (member) => !widget.existingEmployeeIds.contains(member.employeeId),
+        )
+        .toList();
+
+    return AlertDialog(
+      title: const Text('Adicionar responsável'),
+      content: SizedBox(
+        width: 460,
+        child: Form(
+          key: _formKey,
+          child: availableMembers.isEmpty
+              ? const Text(
+                  'Não há membros do projeto disponíveis para esta tarefa.',
+                )
+              : DropdownButtonFormField<String>(
+                  initialValue: _selectedEmployeeId,
+                  decoration: const InputDecoration(
+                    labelText: 'Membro do projeto',
+                    helperText:
+                        'Somente pessoas com acesso ao projeto podem assumir tarefas.',
+                  ),
+                  items: availableMembers
+                      .map(
+                        (member) => DropdownMenuItem<String>(
+                          value: member.employeeId,
+                          child: Text(member.employeeName),
+                        ),
+                      )
+                      .toList(),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Selecione um membro do projeto.'
+                      : null,
+                  onChanged: (value) => setState(
+                    () => _selectedEmployeeId = value,
+                  ),
+                ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: availableMembers.isEmpty
+              ? null
+              : () {
+                  if (!_formKey.currentState!.validate()) {
+                    return;
+                  }
+                  Navigator.of(context).pop(_selectedEmployeeId);
+                },
           child: const Text('Adicionar'),
         ),
       ],
@@ -1234,6 +1429,20 @@ class _InfoBanner extends StatelessWidget {
 String? _requiredText(String? value) {
   if (value == null || value.trim().isEmpty) {
     return 'Campo obrigatório.';
+  }
+  return null;
+}
+
+String? _requiredTextWithinLimit(
+  String? value, {
+  required int maxLength,
+}) {
+  final requiredError = _requiredText(value);
+  if (requiredError != null) {
+    return requiredError;
+  }
+  if (value!.trim().length > maxLength) {
+    return 'Máximo de $maxLength caracteres.';
   }
   return null;
 }

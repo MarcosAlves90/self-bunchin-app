@@ -1,5 +1,8 @@
 import 'package:bunchin_flutter/contracts/contract_parsing.dart';
 
+const int taskNameMaxLength = 160;
+const int taskDescriptionMaxLength = 2000;
+
 enum TaskType { bug, improvement, feature }
 
 TaskType taskTypeFromApi(String value) {

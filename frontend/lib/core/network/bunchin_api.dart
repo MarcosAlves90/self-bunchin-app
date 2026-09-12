@@ -302,6 +302,50 @@ class BunchinApi {
     await _client.delete('/projects/$projectId', withAuth: true);
   }
 
+  Future<List<ProjectMemberSummary>> listProjectMembers(String projectId) async {
+    final response = await _client.get(
+      '/projects/$projectId/members',
+      withAuth: true,
+    );
+    return _parseContract('project members', () {
+      final payload = requireJsonList(response, 'project members response');
+      return payload
+          .map(
+            (item) => ProjectMemberSummary.fromJson(
+              requireJsonMap(item, 'project members[]'),
+            ),
+          )
+          .toList();
+    });
+  }
+
+  Future<ProjectMemberSummary> addProjectMember(
+    String projectId,
+    String employeeId,
+  ) async {
+    final response = await _client.post(
+      '/projects/$projectId/members',
+      withAuth: true,
+      body: <String, dynamic>{'employeeId': employeeId},
+    );
+    return _parseContract(
+      'add project member',
+      () => ProjectMemberSummary.fromJson(
+        requireJsonMap(response, 'add project member response'),
+      ),
+    );
+  }
+
+  Future<void> removeProjectMember(
+    String projectId,
+    String employeeId,
+  ) async {
+    await _client.delete(
+      '/projects/$projectId/members/$employeeId',
+      withAuth: true,
+    );
+  }
+
   Future<List<TaskRecord>> listTasks(String projectId) async {
     final response = await _client.get(
       '/projects/$projectId/tasks',
