@@ -81,7 +81,9 @@ void main() {
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Nova tarefa'));
+    final newTaskButton = find.text('Nova tarefa');
+    await tester.ensureVisible(newTaskButton);
+    await tester.tap(newTaskButton);
     await tester.pumpAndSettle();
 
     final taskNameField = tester.widget<TextField>(
@@ -113,7 +115,7 @@ void main() {
 
     expect(api.joinCalls, 1);
     expect(find.text('Sair da tarefa'), findsOneWidget);
-    expect(find.textContaining('João Lima'), findsOneWidget);
+    expect(find.text('Você • emp-04'), findsOneWidget);
   });
 }
 
